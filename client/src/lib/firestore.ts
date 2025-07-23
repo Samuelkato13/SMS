@@ -16,16 +16,20 @@ import {
 import { db } from "./firebase";
 import { School, Student, User, Class, Subject } from "@/types";
 
-// Enable network connectivity (Firebase v9 approach)
+// Initialize Firebase with graceful error handling
+let isFirebaseConfigured = false;
 try {
-  enableNetwork(db);
+  if (import.meta.env.VITE_FIREBASE_API_KEY && import.meta.env.VITE_FIREBASE_PROJECT_ID) {
+    enableNetwork(db);
+    isFirebaseConfigured = true;
+  }
 } catch (error) {
-  console.log('Network already enabled or unavailable');
+  console.log('Firebase configuration pending - demo mode active');
 }
 
 export class FirestoreService {
   // Generic CRUD operations
-  async create<T>(collectionName: string, data: Omit<T, 'id'>): Promise<string> {
+  async create<T>(collectionName: string, data: any): Promise<string> {
     try {
       const docRef = await addDoc(collection(db, collectionName), {
         ...data,

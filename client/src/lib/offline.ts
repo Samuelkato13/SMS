@@ -8,7 +8,7 @@ export interface OfflineData {
   data: any;
   action: 'create' | 'update' | 'delete';
   timestamp: Date;
-  synced: boolean;
+  synced: number;
 }
 
 class OfflineDatabase extends Dexie {
@@ -45,20 +45,20 @@ export class OfflineService {
       data,
       action,
       timestamp: new Date(),
-      synced: false
+      synced: 0
     });
   }
 
   async getPendingSync(): Promise<OfflineData[]> {
-    return offlineDB.offlineQueue.where('synced').equals(false).toArray();
+    return offlineDB.offlineQueue.where('synced').equals(0).toArray();
   }
 
   async markAsSynced(id: number) {
-    await offlineDB.offlineQueue.update(id, { synced: true });
+    await offlineDB.offlineQueue.update(id, { synced: 1 });
   }
 
   async clearSyncedData() {
-    await offlineDB.offlineQueue.where('synced').equals(true).delete();
+    await offlineDB.offlineQueue.where('synced').equals(1).delete();
   }
 
   // Cache management
