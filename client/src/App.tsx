@@ -36,8 +36,6 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 }
 
 function Router() {
-  const { isAuthenticated } = useAuth();
-
   return (
     <Switch>
       <Route path="/" component={LandingOnly} />

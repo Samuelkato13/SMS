@@ -58,6 +58,36 @@ const isFirebaseConfigured = () => {
 let currentDemoUser: AuthUser | null = null;
 let authChangeListeners: ((user: any) => void)[] = [];
 
+// Persist demo auth state in sessionStorage for consistency across page navigation
+const DEMO_AUTH_KEY = 'edumanage_demo_auth';
+
+const loadDemoAuthState = () => {
+  try {
+    const stored = sessionStorage.getItem(DEMO_AUTH_KEY);
+    if (stored) {
+      const parsed = JSON.parse(stored);
+      currentDemoUser = parsed;
+      return parsed;
+    }
+  } catch (error) {
+    console.log('No demo auth state found');
+  }
+  return null;
+};
+
+const saveDemoAuthState = (user: AuthUser | null) => {
+  try {
+    if (user) {
+      sessionStorage.setItem(DEMO_AUTH_KEY, JSON.stringify(user));
+    } else {
+      sessionStorage.removeItem(DEMO_AUTH_KEY);
+    }
+    currentDemoUser = user;
+  } catch (error) {
+    console.log('Failed to save demo auth state');
+  }
+};
+
 const notifyAuthChange = (user: any) => {
   authChangeListeners.forEach(callback => callback(user));
 };
@@ -82,7 +112,8 @@ export const signIn = async (email: string, password: string) => {
       profile
     };
     
-    currentDemoUser = demoUser;
+    // Save to persistent storage and update state
+    saveDemoAuthState(demoUser);
     
     // Simulate Firebase user object for compatibility
     const firebaseUser = {
@@ -106,7 +137,7 @@ export const signOut = async () => {
     }
   } else {
     // Demo mode logout
-    currentDemoUser = null;
+    saveDemoAuthState(null);
     notifyAuthChange(null);
   }
 };
@@ -135,13 +166,16 @@ export const onAuthChange = (callback: (user: FirebaseUser | null) => void) => {
     return onAuthStateChanged(auth, callback);
   }
 
-  // Demo mode: Manage auth state locally
+  // Demo mode: Manage auth state locally with persistence
   authChangeListeners.push(callback);
   
-  // Immediately call with current user
-  setTimeout(() => callback(currentDemoUser ? {
-    uid: currentDemoUser.uid,
-    email: currentDemoUser.email,
+  // Load persisted auth state on initialization
+  const persistedUser = loadDemoAuthState();
+  
+  // Immediately call with current user (from storage or memory)
+  setTimeout(() => callback(persistedUser ? {
+    uid: persistedUser.uid,
+    email: persistedUser.email,
   } as any : null), 0);
 
   // Return unsubscribe function
