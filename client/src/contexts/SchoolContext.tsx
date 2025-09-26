@@ -26,7 +26,17 @@ interface SchoolProviderProps {
 export const SchoolProvider = ({ children }: SchoolProviderProps) => {
   const [school, setSchool] = useState<School | null>(null);
   const [loading, setLoading] = useState(true);
-  const { profile } = useAuthContext();
+  
+  // Use try-catch to handle context not being ready
+  let authContext;
+  try {
+    authContext = useAuthContext();
+  } catch (error) {
+    // AuthProvider not ready yet, set authContext to null
+    authContext = { profile: null, loading: true };
+  }
+  
+  const { profile } = authContext;
 
   const refreshSchool = async () => {
     if (profile?.schoolId) {
@@ -41,7 +51,12 @@ export const SchoolProvider = ({ children }: SchoolProviderProps) => {
   };
 
   useEffect(() => {
-    refreshSchool();
+    if (profile?.schoolId) {
+      refreshSchool();
+    } else if (profile === null) {
+      // Profile is explicitly null (not loading), stop loading
+      setLoading(false);
+    }
   }, [profile?.schoolId]);
 
   const value = {

@@ -1,4 +1,4 @@
-export type {
+import type {
   School,
   InsertSchool,
   User,
@@ -21,6 +21,30 @@ export type {
   InsertPayment,
   UserRole,
 } from "@shared/schema";
+
+export type {
+  School,
+  InsertSchool,
+  User,
+  InsertUser,
+  Student,
+  InsertStudent,
+  Class,
+  InsertClass,
+  Subject,
+  InsertSubject,
+  Exam,
+  InsertExam,
+  Mark,
+  InsertMark,
+  Attendance,
+  InsertAttendance,
+  FeeStructure,
+  InsertFeeStructure,
+  Payment,
+  InsertPayment,
+  UserRole,
+};
 
 export interface AuthUser {
   uid: string;

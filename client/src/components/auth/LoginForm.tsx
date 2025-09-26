@@ -2,17 +2,17 @@ import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { signIn } from '@/lib/auth';
+import { signIn, isDemoMode } from '@/lib/auth';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
-import { BookOpen } from 'lucide-react';
+import { BookOpen, User } from 'lucide-react';
 
 const loginSchema = z.object({
   email: z.string().email('Please enter a valid email address'),
-  password: z.string().min(6, 'Password must be at least 6 characters'),
+  password: z.string().min(1, 'Password is required'),
 });
 
 type LoginForm = z.infer<typeof loginSchema>;
@@ -42,6 +42,25 @@ export const LoginForm = () => {
         variant: "destructive",
         title: "Login Failed",
         description: error.message || "Please check your credentials and try again",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const quickLoginAsAdmin = async () => {
+    setLoading(true);
+    try {
+      await signIn("admin@demo.com", "demo123");
+      toast({
+        title: "Success",
+        description: "Logged in as Admin for demo",
+      });
+    } catch (error: any) {
+      toast({
+        variant: "destructive",
+        title: "Login Failed",
+        description: error.message,
       });
     } finally {
       setLoading(false);
@@ -117,14 +136,39 @@ export const LoginForm = () => {
             </Button>
           </form>
 
-          <div className="mt-6 text-center">
-            <p className="text-sm text-gray-600">Demo Accounts Available</p>
-            <div className="mt-2 space-y-1 text-xs text-gray-500">
-              <p><strong>Admin:</strong> admin@school.com</p>
-              <p><strong>Director:</strong> director@school.com</p>
-              <p><strong>Teacher:</strong> teacher@school.com</p>
+          {isDemoMode() && (
+            <div className="mt-6 space-y-4">
+              <div className="text-center">
+                <p className="text-sm font-medium text-gray-700">Demo Mode Active</p>
+                <p className="text-xs text-gray-500 mt-1">No Firebase setup required</p>
+              </div>
+              
+              <Button 
+                type="button" 
+                onClick={quickLoginAsAdmin}
+                className="w-full h-10 bg-green-600 hover:bg-green-700 text-white font-medium"
+                disabled={loading}
+                data-testid="button-quick-admin-login"
+              >
+                <User className="w-4 h-4 mr-2" />
+                {loading ? 'Logging in...' : 'Quick Login as Admin'}
+              </Button>
+
+              <div className="text-center space-y-2">
+                <p className="text-sm text-gray-600">Available Demo Accounts:</p>
+                <div className="space-y-1 text-xs text-gray-500 bg-gray-50 p-3 rounded-md">
+                  <div className="flex justify-between">
+                    <span><strong>Admin:</strong> admin@demo.com</span>
+                    <span className="text-gray-400">demo123</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span><strong>Director:</strong> director@demo.com</span>
+                    <span className="text-gray-400">demo123</span>
+                  </div>
+                </div>
+              </div>
             </div>
-          </div>
+          )}
         </CardContent>
       </Card>
     </div>
