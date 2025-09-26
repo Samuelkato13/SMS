@@ -48,13 +48,13 @@ export const LoginForm = () => {
     }
   };
 
-  const quickLoginAsAdmin = async () => {
+  const quickLogin = async (email: string, roleName: string) => {
     setLoading(true);
     try {
-      await signIn("admin@demo.com", "demo123");
+      await signIn(email, "demo123");
       toast({
         title: "Success",
-        description: "Logged in as Admin for demo",
+        description: `Logged in as ${roleName} for demo`,
       });
     } catch (error: any) {
       toast({
@@ -143,16 +143,77 @@ export const LoginForm = () => {
                 <p className="text-xs text-gray-500 mt-1">No Firebase setup required</p>
               </div>
               
-              <Button 
-                type="button" 
-                onClick={quickLoginAsAdmin}
-                className="w-full h-10 bg-green-600 hover:bg-green-700 text-white font-medium"
-                disabled={loading}
-                data-testid="button-quick-admin-login"
-              >
-                <User className="w-4 h-4 mr-2" />
-                {loading ? 'Logging in...' : 'Quick Login as Admin'}
-              </Button>
+              <div className="space-y-2">
+                <p className="text-sm font-medium text-gray-700 text-center">Quick Login by Role:</p>
+                
+                <div className="grid grid-cols-2 gap-2">
+                  <Button 
+                    type="button" 
+                    onClick={() => quickLogin("admin@demo.com", "Admin")}
+                    className="h-10 bg-red-600 hover:bg-red-700 text-white text-xs font-medium"
+                    disabled={loading}
+                    data-testid="button-quick-admin-login"
+                  >
+                    <User className="w-3 h-3 mr-1" />
+                    Admin
+                  </Button>
+                  
+                  <Button 
+                    type="button" 
+                    onClick={() => quickLogin("director@demo.com", "Director")}
+                    className="h-10 bg-orange-600 hover:bg-orange-700 text-white text-xs font-medium"
+                    disabled={loading}
+                    data-testid="button-quick-director-login"
+                  >
+                    <User className="w-3 h-3 mr-1" />
+                    Director
+                  </Button>
+                  
+                  <Button 
+                    type="button" 
+                    onClick={() => quickLogin("headteacher@demo.com", "Head Teacher")}
+                    className="h-10 bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium"
+                    disabled={loading}
+                    data-testid="button-quick-headteacher-login"
+                  >
+                    <User className="w-3 h-3 mr-1" />
+                    Head Teacher
+                  </Button>
+                  
+                  <Button 
+                    type="button" 
+                    onClick={() => quickLogin("classteacher@demo.com", "Class Teacher")}
+                    className="h-10 bg-green-600 hover:bg-green-700 text-white text-xs font-medium"
+                    disabled={loading}
+                    data-testid="button-quick-classteacher-login"
+                  >
+                    <User className="w-3 h-3 mr-1" />
+                    Class Teacher
+                  </Button>
+                  
+                  <Button 
+                    type="button" 
+                    onClick={() => quickLogin("subjectteacher@demo.com", "Subject Teacher")}
+                    className="h-10 bg-purple-600 hover:bg-purple-700 text-white text-xs font-medium"
+                    disabled={loading}
+                    data-testid="button-quick-subjectteacher-login"
+                  >
+                    <User className="w-3 h-3 mr-1" />
+                    Subject Teacher
+                  </Button>
+                  
+                  <Button 
+                    type="button" 
+                    onClick={() => quickLogin("bursar@demo.com", "Bursar")}
+                    className="h-10 bg-teal-600 hover:bg-teal-700 text-white text-xs font-medium"
+                    disabled={loading}
+                    data-testid="button-quick-bursar-login"
+                  >
+                    <User className="w-3 h-3 mr-1" />
+                    Bursar
+                  </Button>
+                </div>
+              </div>
 
               <div className="text-center space-y-2">
                 <p className="text-sm text-gray-600">Available Demo Accounts:</p>
@@ -163,6 +224,22 @@ export const LoginForm = () => {
                   </div>
                   <div className="flex justify-between">
                     <span><strong>Director:</strong> director@demo.com</span>
+                    <span className="text-gray-400">demo123</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span><strong>Head Teacher:</strong> headteacher@demo.com</span>
+                    <span className="text-gray-400">demo123</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span><strong>Class Teacher:</strong> classteacher@demo.com</span>
+                    <span className="text-gray-400">demo123</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span><strong>Subject Teacher:</strong> subjectteacher@demo.com</span>
+                    <span className="text-gray-400">demo123</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span><strong>Bursar:</strong> bursar@demo.com</span>
                     <span className="text-gray-400">demo123</span>
                   </div>
                 </div>
