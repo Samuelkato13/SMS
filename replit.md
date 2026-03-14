@@ -2,7 +2,7 @@
 
 ## Overview
 
-This is a modern SaaS School Management System built with a React frontend and Express.js backend, designed to serve multiple schools with role-based access control. The application features a multi-tenant architecture where each school operates as a separate entity with its own branding, users, and data.
+**EduPay** — A multi-tenant SaaS School Management System built for Ugandan schools. Features a React frontend and Express.js backend with PostgreSQL database, role-based access control, mobile money payment integration, and offline capabilities.
 
 ## User Preferences
 
@@ -10,133 +10,100 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes
 
-### January 23, 2025
-- **SaaS Landing Page Created**: Built comprehensive landing page for EduManage
-  - Professional hero section with Ugandan school focus
-  - Feature showcase highlighting 6 core capabilities
-  - Customer testimonials and social proof
-  - Transparent pricing in UGX (50k-120k per school/month)
-  - Interactive demo request form for lead generation
-  - Mobile-responsive design with gradient backgrounds
-  - Smooth scrolling navigation and modern UI components
+### March 2026
+- **Full PostgreSQL Migration**: Removed all Firebase/Firestore data dependencies; all CRUD operations now use PostgreSQL REST API
+- **All 6 Dashboards Updated**: Admin, Director, HeadTeacher, ClassTeacher, SubjectTeacher, Bursar — all use real API data
+- **Student Management**: Full CRUD with Add Student dialog, payment code display, class filtering
+- **Bursar Dashboard**: Record payments dialog with MTN/Airtel Mobile Money support, real payment history table
+- **Login Flow Fixed**: After quick-login, users are redirected to `/dashboard` automatically
+- **Payment Seed Data**: 7 demo payments seeded in the database (950K UGX total revenue)
+- **Schools Page**: Uses real API data; SchoolForm creates schools via REST API
+- **Forms Updated**: StudentForm, SchoolForm, PDFGenerator, PaymentModal all use REST API
+
+### Earlier
+- **EduPay Brand**: Rebranded from EduManage → EduPay with dark sidebar and role badges
+- **Demo Auth**: sessionStorage-based demo auth for 6 roles (all use password `demo123`)
+- **Database Schema**: 11 PostgreSQL tables with realistic Ugandan demo data
+
+## Demo Credentials
+
+All demo users use password: `demo123`
+
+| Email | Role | Color |
+|-------|------|-------|
+| admin@demo.com | Admin | Blue |
+| director@demo.com | Director | Indigo |
+| headteacher@demo.com | Head Teacher | Green |
+| classteacher@demo.com | Class Teacher | Yellow |
+| subjectteacher@demo.com | Subject Teacher | Purple |
+| bursar@demo.com | Bursar | Teal |
+
+Demo School ID: `a0000000-0000-0000-0000-000000000001`
 
 ## System Architecture
 
 ### Frontend Architecture
 - **Framework**: React 18 with TypeScript
 - **Styling**: Tailwind CSS with shadcn/ui component library
-- **State Management**: React Context API for auth and school data
-- **Data Fetching**: TanStack Query (React Query) for server state management
+- **State Management**: React Context API (AuthContext, SchoolContext)
+- **Data Fetching**: TanStack Query v5 (React Query) — all queries use fetch to REST API
 - **Routing**: Wouter for client-side routing
-- **Offline Support**: Dexie.js (IndexedDB wrapper) for offline data storage and synchronization
-- **PDF Generation**: jsPDF for generating reports and documents
-- **Charts**: Chart.js for data visualization
+- **PDF Generation**: jsPDF for student reports
+- **Charts**: Chart.js for performance/attendance visualization
 
 ### Backend Architecture
 - **Framework**: Express.js with TypeScript
-- **Database**: PostgreSQL with Drizzle ORM for type-safe database operations
-- **Authentication**: Firebase Authentication integration
-- **File Storage**: Firebase Storage for images and documents
-- **Session Management**: Express sessions with PostgreSQL store
-- **Build System**: Vite for frontend bundling, esbuild for backend bundling
+- **Database**: PostgreSQL (Replit) via `pg` Pool — 11 tables, raw SQL queries
+- **Authentication**: Demo auth via sessionStorage (Firebase removed from data flow)
+- **Build System**: Vite for frontend, esbuild for backend
 
-### Multi-Tenant Design
-- Each school is a separate entity with unique branding (logo, name, colors)
-- School-scoped data isolation ensures users only access their school's information
-- Centralized admin role can manage multiple schools
+### Database Tables
+1. `schools` — Multi-tenant school entities
+2. `users` — Staff accounts with roles
+3. `classes` — School classes/streams
+4. `students` — Student records with payment codes
+5. `subjects` — Academic subjects
+6. `exams` — Assessment definitions
+7. `marks` — Student grades
+8. `attendance` — Daily attendance records
+9. `fee_structures` — Fee types and amounts
+10. `payments` — Payment transactions (MTN/Airtel/Cash/Bank)
+11. `documents` — File/document references
 
-## Key Components
+### API Endpoints
+- `GET/POST /api/schools` — School management
+- `GET/POST /api/users` — User management
+- `GET/POST /api/classes` — Class management
+- `GET/POST /api/students` — Student CRUD
+- `GET/POST /api/subjects` — Subject management
+- `GET/POST /api/attendance` — Attendance tracking
+- `GET/POST /api/exams` — Exam management
+- `GET/POST /api/marks` — Grade recording
+- `GET/POST /api/fees` — Fee structures
+- `GET/POST /api/payments` — Payment recording
+- `GET /api/stats?schoolId=` — Dashboard statistics
+- `POST /api/demo-request` — Landing page lead capture
 
-### Authentication System
-- Firebase Authentication for user management
-- Role-based access control with 6 distinct roles:
-  - **Admin**: System-wide access, can manage all schools
-  - **Director**: School-level management, limited user management
-  - **Head Teacher**: Academic oversight within school
-  - **Class Teacher**: Class-specific management
-  - **Subject Teacher**: Subject-specific teaching duties
-  - **Bursar**: Financial management and fee collection
-
-### Permission System
-- Granular permissions for each role (create, read, update, delete)
-- Resource-based access control for students, classes, subjects, exams, marks, attendance, fees, payments, users, reports, and schools
-- Navigation items dynamically generated based on user role
-
-### Data Models
-- **Schools**: Multi-tenant entities with branding information
-- **Users**: Role-based user accounts linked to specific schools
-- **Students**: Student records with payment codes and class assignments
-- **Classes**: Organizational units within schools
-- **Subjects**: Academic subjects with teacher assignments
-- **Exams**: Assessment management
-- **Marks**: Grade recording and tracking
-- **Attendance**: Daily attendance tracking
-- **Fees**: Fee structure management
-- **Payments**: Payment processing and tracking
-
-## Data Flow
-
-### Authentication Flow
-1. User logs in via Firebase Authentication
-2. User profile fetched from Firestore with role and school information
-3. School context loaded based on user's school ID
-4. Navigation and permissions configured based on user role
-
-### Data Synchronization
-1. Online operations use Firebase Firestore directly
-2. Offline operations queue in IndexedDB via Dexie.js
-3. Background sync process uploads queued changes when connectivity returns
-4. Optimistic updates provide immediate feedback
+### Role-Based Access
+- **Admin**: System-wide access, all schools
+- **Director**: School-level management
+- **Head Teacher**: Academic oversight
+- **Class Teacher**: Class management, attendance
+- **Subject Teacher**: Marks and exams
+- **Bursar**: Fee collection and payments
 
 ### Payment Processing
-1. Students assigned unique payment codes (SCHOOL-YEAR-NUMBER format)
-2. Mobile money integration for MTN and Airtel (mock implementation included)
-3. Payment validation and transaction tracking
-4. Automatic fee balance updates
+- Students have unique payment codes: `ABBR-YEAR-NNNN` format (e.g., `EDS-2025-0001`)
+- Bursar dashboard records payments (MTN MoMo, Airtel Money, Cash, Bank Transfer)
+- Payment Modal validates payment code against student database before processing
 
-## External Dependencies
+## Key Files
 
-### Firebase Services
-- **Authentication**: User login/logout, session management
-- **Firestore**: Primary database for all application data
-- **Storage**: File uploads (school logos, student photos, reports)
-- **Functions**: Serverless backend logic (if needed)
-
-### Third-Party Libraries
-- **Neon Database**: Serverless PostgreSQL for session storage and caching
-- **Drizzle ORM**: Type-safe database operations
-- **Radix UI**: Accessible component primitives
-- **TanStack Query**: Server state management and caching
-- **React Hook Form**: Form validation and management
-- **Zod**: Runtime type validation
-
-### Mobile Money APIs
-- MTN Mobile Money API integration
-- Airtel Money API integration
-- Mock implementations provided for development
-
-## Deployment Strategy
-
-### Development Environment
-- Vite dev server for frontend with HMR
-- Express server with auto-reload via tsx
-- Environment variables for Firebase configuration
-- Database migrations via Drizzle Kit
-
-### Production Build
-- Frontend: Vite build optimized for production
-- Backend: esbuild bundle for Node.js deployment
-- Static assets served from Express
-- Database schema managed via migrations
-
-### Environment Configuration
-- Firebase project configuration via environment variables
-- Database connection string for PostgreSQL
-- Mobile money API credentials
-- Session secret for security
-
-### Scaling Considerations
-- Firebase Firestore provides automatic scaling
-- Offline-first architecture reduces server load
-- Multi-tenant design allows horizontal scaling
-- Static asset CDN for performance optimization
+- `server/routes.ts` — All REST API routes + database seed on startup
+- `server/db.ts` — PostgreSQL pool connection
+- `client/src/lib/auth.ts` — Demo authentication logic (sessionStorage)
+- `client/src/contexts/AuthContext.tsx` — Auth state management
+- `client/src/contexts/SchoolContext.tsx` — School data context
+- `client/src/pages/LandingOnly.tsx` — EduPay marketing landing page
+- `client/src/components/auth/LoginForm.tsx` — 6-role quick login buttons
+- `client/src/App.tsx` — Route configuration with ProtectedRoute

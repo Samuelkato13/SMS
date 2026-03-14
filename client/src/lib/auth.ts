@@ -4,42 +4,41 @@ import {
   onAuthStateChanged,
   User as FirebaseUser
 } from "firebase/auth";
-import { doc, getDoc } from "firebase/firestore";
-import { auth, db } from "./firebase";
+import { auth } from "./firebase";
 import { User, AuthUser } from "@/types";
 
-// Development demo users for immediate testing
+// Demo users for all 6 roles (password: demo123)
 const DEMO_USERS = {
   "admin@demo.com": {
-    id: "demo-admin-1",
-    username: "EduManage_admin_1",
+    id: "c0000000-0000-0000-0000-000000000001",
+    username: "edupay_admin",
     email: "admin@demo.com",
     role: "admin" as const,
-    schoolId: "demo-school-1",
-    firstName: "Admin",
-    lastName: "User",
+    schoolId: "a0000000-0000-0000-0000-000000000001",
+    firstName: "System",
+    lastName: "Admin",
     isActive: true,
     createdAt: new Date(),
     updatedAt: new Date(),
   },
   "director@demo.com": {
-    id: "demo-director-1",
-    username: "EduManage_director_1",
+    id: "c0000000-0000-0000-0000-000000000002",
+    username: "edupay_director",
     email: "director@demo.com",
     role: "director" as const,
-    schoolId: "demo-school-1",
+    schoolId: "a0000000-0000-0000-0000-000000000001",
     firstName: "Sarah",
-    lastName: "Director",
+    lastName: "Mugisha",
     isActive: true,
     createdAt: new Date(),
     updatedAt: new Date(),
   },
   "headteacher@demo.com": {
-    id: "demo-headteacher-1",
-    username: "EduManage_headteacher_1",
+    id: "c0000000-0000-0000-0000-000000000003",
+    username: "edupay_headteacher",
     email: "headteacher@demo.com",
     role: "head_teacher" as const,
-    schoolId: "demo-school-1",
+    schoolId: "a0000000-0000-0000-0000-000000000001",
     firstName: "James",
     lastName: "Okello",
     isActive: true,
@@ -47,11 +46,11 @@ const DEMO_USERS = {
     updatedAt: new Date(),
   },
   "classteacher@demo.com": {
-    id: "demo-classteacher-1",
-    username: "EduManage_classteacher_1",
+    id: "c0000000-0000-0000-0000-000000000004",
+    username: "edupay_classteacher",
     email: "classteacher@demo.com",
     role: "class_teacher" as const,
-    schoolId: "demo-school-1",
+    schoolId: "a0000000-0000-0000-0000-000000000001",
     firstName: "Grace",
     lastName: "Nakato",
     isActive: true,
@@ -59,11 +58,11 @@ const DEMO_USERS = {
     updatedAt: new Date(),
   },
   "subjectteacher@demo.com": {
-    id: "demo-subjectteacher-1",
-    username: "EduManage_subjectteacher_1",
+    id: "c0000000-0000-0000-0000-000000000005",
+    username: "edupay_subjectteacher",
     email: "subjectteacher@demo.com",
     role: "subject_teacher" as const,
-    schoolId: "demo-school-1",
+    schoolId: "a0000000-0000-0000-0000-000000000001",
     firstName: "David",
     lastName: "Mugisha",
     isActive: true,
@@ -71,11 +70,11 @@ const DEMO_USERS = {
     updatedAt: new Date(),
   },
   "bursar@demo.com": {
-    id: "demo-bursar-1",
-    username: "EduManage_bursar_1",
+    id: "c0000000-0000-0000-0000-000000000006",
+    username: "edupay_bursar",
     email: "bursar@demo.com",
     role: "bursar" as const,
-    schoolId: "demo-school-1",
+    schoolId: "a0000000-0000-0000-0000-000000000001",
     firstName: "Christine",
     lastName: "Nabukeera",
     isActive: true,
@@ -85,31 +84,31 @@ const DEMO_USERS = {
 };
 
 const DEMO_SCHOOL = {
-  id: "demo-school-1",
-  name: "EduManage Demo School",
+  id: "a0000000-0000-0000-0000-000000000001",
+  name: "EduPay Demo School",
   abbreviation: "EDS",
-  email: "contact@demoschool.edu",
-  phone: "+256123456789",
-  address: "Kampala, Uganda",
-  createdAt: new Date(),
-  updatedAt: new Date(),
+  email: "admin@edupay.com",
+  phone: "+256 700 123456",
+  address: "Plot 45, Kampala Road, Kampala, Uganda",
 };
 
 // Check if Firebase is properly configured
 const isFirebaseConfigured = () => {
-  return !!(import.meta.env.VITE_FIREBASE_API_KEY && 
-           import.meta.env.VITE_FIREBASE_PROJECT_ID &&
-           import.meta.env.VITE_FIREBASE_APP_ID);
+  return !!(
+    import.meta.env.VITE_FIREBASE_API_KEY &&
+    import.meta.env.VITE_FIREBASE_APP_ID &&
+    import.meta.env.VITE_FIREBASE_PROJECT_ID
+  );
 };
 
-// Demo authentication state management
+export const isDemoMode = () => !isFirebaseConfigured();
+
+// Persist demo auth state across page navigation
+const DEMO_AUTH_KEY = 'edupay_demo_auth';
 let currentDemoUser: AuthUser | null = null;
 let authChangeListeners: ((user: any) => void)[] = [];
 
-// Persist demo auth state in sessionStorage for consistency across page navigation
-const DEMO_AUTH_KEY = 'edumanage_demo_auth';
-
-const loadDemoAuthState = () => {
+const loadDemoAuthState = (): AuthUser | null => {
   try {
     const stored = sessionStorage.getItem(DEMO_AUTH_KEY);
     if (stored) {
@@ -117,9 +116,7 @@ const loadDemoAuthState = () => {
       currentDemoUser = parsed;
       return parsed;
     }
-  } catch (error) {
-    console.log('No demo auth state found');
-  }
+  } catch (_) {}
   return null;
 };
 
@@ -131,49 +128,34 @@ const saveDemoAuthState = (user: AuthUser | null) => {
       sessionStorage.removeItem(DEMO_AUTH_KEY);
     }
     currentDemoUser = user;
-  } catch (error) {
-    console.log('Failed to save demo auth state');
-  }
+  } catch (_) {}
 };
 
 const notifyAuthChange = (user: any) => {
-  authChangeListeners.forEach(callback => callback(user));
+  authChangeListeners.forEach(cb => cb(user));
 };
 
+// ─── Public API ──────────────────────────────────────────────────────────────
+
 export const signIn = async (email: string, password: string) => {
-  // If Firebase is configured, use Firebase authentication
   if (isFirebaseConfigured()) {
     try {
-      const userCredential = await signInWithEmailAndPassword(auth, email, password);
-      return userCredential.user;
+      const result = await signInWithEmailAndPassword(auth, email, password);
+      return result.user;
     } catch (error: any) {
       throw new Error(error.message || "Login failed");
     }
   }
 
-  // Development mode: Use demo credentials
   if (email in DEMO_USERS && password === "demo123") {
     const profile = DEMO_USERS[email as keyof typeof DEMO_USERS];
-    const demoUser: AuthUser = {
-      uid: profile.id,
-      email: profile.email,
-      profile
-    };
-    
-    // Save to persistent storage and update state
+    const demoUser: AuthUser = { uid: profile.id, email: profile.email, profile };
     saveDemoAuthState(demoUser);
-    
-    // Simulate Firebase user object for compatibility
-    const firebaseUser = {
-      uid: profile.id,
-      email: profile.email,
-    };
-    
-    notifyAuthChange(firebaseUser);
-    return firebaseUser;
+    notifyAuthChange({ uid: profile.id, email: profile.email });
+    return { uid: profile.id, email: profile.email };
   }
 
-  throw new Error("Invalid credentials. For demo mode, use: admin@demo.com / demo123");
+  throw new Error("Invalid credentials. Use one of the demo accounts with password: demo123");
 };
 
 export const signOut = async () => {
@@ -184,7 +166,6 @@ export const signOut = async () => {
       throw new Error(error.message || "Logout failed");
     }
   } else {
-    // Demo mode logout
     saveDemoAuthState(null);
     notifyAuthChange(null);
   }
@@ -193,19 +174,15 @@ export const signOut = async () => {
 export const getUserProfile = async (uid: string): Promise<User | null> => {
   if (isFirebaseConfigured()) {
     try {
-      const userDoc = await getDoc(doc(db, "users", uid));
-      if (userDoc.exists()) {
-        return { id: userDoc.id, ...userDoc.data() } as User;
-      }
-      return null;
-    } catch (error) {
-      console.error("Error fetching user profile:", error);
+      const res = await fetch(`/api/auth/user?replitId=${uid}`);
+      if (!res.ok) return null;
+      return await res.json();
+    } catch (_) {
       return null;
     }
   }
-
-  // Demo mode: Return demo user profile
-  const demoUser = Object.values(DEMO_USERS).find(user => user.id === uid);
+  // Demo mode: look up by uid
+  const demoUser = Object.values(DEMO_USERS).find(u => u.id === uid);
   return demoUser || null;
 };
 
@@ -214,29 +191,15 @@ export const onAuthChange = (callback: (user: FirebaseUser | null) => void) => {
     return onAuthStateChanged(auth, callback);
   }
 
-  // Demo mode: Manage auth state locally with persistence
   authChangeListeners.push(callback);
-  
-  // Load persisted auth state on initialization
-  const persistedUser = loadDemoAuthState();
-  
-  // Immediately call with current user (from storage or memory)
-  setTimeout(() => callback(persistedUser ? {
-    uid: persistedUser.uid,
-    email: persistedUser.email,
-  } as any : null), 0);
+  const persisted = loadDemoAuthState();
+  setTimeout(() => callback(persisted ? { uid: persisted.uid, email: persisted.email } as any : null), 0);
 
-  // Return unsubscribe function
   return () => {
-    const index = authChangeListeners.indexOf(callback);
-    if (index > -1) {
-      authChangeListeners.splice(index, 1);
-    }
+    const i = authChangeListeners.indexOf(callback);
+    if (i > -1) authChangeListeners.splice(i, 1);
   };
 };
 
-// Helper function to get demo school data
 export const getDemoSchool = () => DEMO_SCHOOL;
-
-// Helper function to check if running in demo mode
-export const isDemoMode = () => !isFirebaseConfigured();
+export const getAllDemoUsers = () => DEMO_USERS;

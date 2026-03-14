@@ -1,6 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
 import { useState } from 'react';
-import { firestoreService } from '@/lib/firestore';
 import { useAuth } from '@/hooks/useAuth';
 import { useRole } from '@/hooks/useRole';
 import { Button } from '@/components/ui/button';
@@ -18,8 +17,7 @@ export default function Schools() {
 
   const { data: schools = [], isLoading, refetch } = useQuery({
     queryKey: ['/api/schools'],
-    queryFn: () => firestoreService.getAllSchools(),
-    enabled: isAdmin, // Only admins can view all schools
+    enabled: isAdmin,
   });
 
   const filteredSchools = schools.filter(school =>

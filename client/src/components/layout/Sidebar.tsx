@@ -3,20 +3,7 @@ import { cn } from '@/lib/utils';
 import { useSchool } from '@/hooks/useSchool';
 import { useAuth } from '@/hooks/useAuth';
 import { useRole } from '@/hooks/useRole';
-import {
-  Home,
-  Users,
-  Building,
-  BookOpen,
-  FileText,
-  Star,
-  CheckSquare,
-  DollarSign,
-  CreditCard,
-  UsersRound,
-  BarChart3,
-  School,
-} from 'lucide-react';
+import { GraduationCap, Home, Users, Building, BookOpen, FileText, Star, CheckSquare, DollarSign, CreditCard, UsersRound, BarChart3, School } from 'lucide-react';
 
 interface SidebarProps {
   isOpen: boolean;
@@ -40,7 +27,7 @@ const iconMap = {
 
 export const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
   const [location] = useLocation();
-  const { school, schoolLogo, schoolName } = useSchool();
+  const { school, schoolName } = useSchool();
   const { profile } = useAuth();
   const { getNavItems } = useRole();
 
@@ -48,49 +35,41 @@ export const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
 
   return (
     <>
-      {/* Mobile overlay */}
       {isOpen && (
-        <div 
-          className="fixed inset-0 bg-black bg-opacity-50 z-40 md:hidden"
-          onClick={onClose}
-        />
+        <div className="fixed inset-0 bg-black/50 z-40 md:hidden" onClick={onClose} />
       )}
 
-      {/* Sidebar */}
       <aside className={cn(
-        "fixed md:static inset-y-0 left-0 z-50 w-64 bg-white shadow-xl transform transition-transform duration-300 ease-in-out",
+        "fixed md:static inset-y-0 left-0 z-50 w-64 flex flex-col bg-gradient-to-b from-slate-900 to-slate-800 text-white transform transition-transform duration-300 ease-in-out",
         isOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"
       )}>
-        {/* School Branding */}
-        <div className="p-6 border-b border-gray-200">
+        {/* Brand Header */}
+        <div className="p-5 border-b border-white/10">
           <div className="flex items-center space-x-3">
-            {schoolLogo ? (
-              <img 
-                src={schoolLogo} 
-                alt={schoolName}
-                className="w-10 h-10 rounded-lg object-cover"
-              />
-            ) : (
-              <div className="w-10 h-10 bg-primary rounded-lg flex items-center justify-center">
-                <span className="text-white font-bold text-sm">
-                  {school?.abbreviation || 'SM'}
-                </span>
-              </div>
-            )}
-            <div className="flex-1 min-w-0">
-              <h2 className="font-semibold text-gray-900 truncate">
+            <div className="bg-gradient-to-r from-blue-500 to-indigo-500 p-2 rounded-xl shrink-0">
+              <GraduationCap className="w-5 h-5 text-white" />
+            </div>
+            <div className="min-w-0">
+              <h2 className="font-bold text-white text-lg leading-tight">EduPay</h2>
+              <p className="text-slate-400 text-xs truncate">
                 {schoolName || 'School Management'}
-              </h2>
-              <p className="text-xs text-gray-500 capitalize">
-                {profile?.role?.replace('_', ' ')} Dashboard
               </p>
             </div>
           </div>
+
+          {/* School abbr badge */}
+          {school?.abbreviation && (
+            <div className="mt-3 bg-white/10 rounded-lg px-3 py-2 text-xs text-slate-300">
+              <span className="text-slate-400">School: </span>
+              <span className="font-semibold text-white">{school.abbreviation}</span>
+            </div>
+          )}
         </div>
 
-        {/* Navigation Menu */}
-        <nav className="p-4 flex-1 overflow-y-auto">
-          <div className="space-y-2">
+        {/* Navigation */}
+        <nav className="flex-1 p-4 overflow-y-auto">
+          <p className="text-slate-500 text-[10px] uppercase font-bold tracking-widest px-2 mb-3">Navigation</p>
+          <div className="space-y-1">
             {navigationItems.map((item) => {
               const Icon = iconMap[item.icon as keyof typeof iconMap] || Home;
               const isActive = location === item.path;
@@ -100,39 +79,39 @@ export const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
                   key={item.path}
                   href={item.path}
                   className={cn(
-                    "flex items-center space-x-3 px-3 py-2 rounded-lg transition-colors",
+                    "flex items-center space-x-3 px-3 py-2.5 rounded-xl transition-all duration-150 text-sm",
                     isActive
-                      ? "bg-primary/10 text-primary font-medium"
-                      : "text-gray-700 hover:bg-gray-50 hover:text-gray-900"
+                      ? "bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-semibold shadow-lg shadow-blue-900/30"
+                      : "text-slate-300 hover:bg-white/10 hover:text-white"
                   )}
                   onClick={() => onClose()}
                 >
-                  <Icon className="w-5 h-5" />
+                  <Icon className="w-4.5 h-4.5 shrink-0" />
                   <span>{item.name}</span>
                 </Link>
               );
             })}
           </div>
+        </nav>
 
-          {/* User Profile Section */}
-          <div className="mt-8 pt-4 border-t border-gray-200">
-            <div className="flex items-center space-x-3 px-3 py-2">
-              <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center">
-                <span className="text-white text-sm font-medium">
-                  {profile?.firstName?.charAt(0)}{profile?.lastName?.charAt(0)}
-                </span>
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-gray-900 truncate">
-                  {profile?.firstName} {profile?.lastName}
-                </p>
-                <p className="text-xs text-gray-500 truncate">
-                  {profile?.username}
-                </p>
-              </div>
+        {/* User Profile */}
+        <div className="p-4 border-t border-white/10">
+          <div className="flex items-center space-x-3 px-2 py-2 rounded-xl bg-white/5">
+            <div className="w-9 h-9 bg-gradient-to-r from-blue-500 to-indigo-500 rounded-full flex items-center justify-center shrink-0">
+              <span className="text-white text-xs font-bold">
+                {profile?.firstName?.charAt(0)}{profile?.lastName?.charAt(0)}
+              </span>
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-medium text-white truncate">
+                {profile?.firstName} {profile?.lastName}
+              </p>
+              <p className="text-xs text-slate-400 capitalize truncate">
+                {profile?.role?.replace(/_/g, ' ')}
+              </p>
             </div>
           </div>
-        </nav>
+        </div>
       </aside>
     </>
   );

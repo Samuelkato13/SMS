@@ -1,7 +1,7 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { School } from '@/types';
-import { firestoreService } from '@/lib/firestore';
 import { useAuthContext } from './AuthContext';
+import { getDemoSchool } from '@/lib/auth';
 
 interface SchoolContextType {
   school: School | null;
@@ -26,47 +26,59 @@ interface SchoolProviderProps {
 export const SchoolProvider = ({ children }: SchoolProviderProps) => {
   const [school, setSchool] = useState<School | null>(null);
   const [loading, setLoading] = useState(true);
-  
-  // Use try-catch to handle context not being ready
-  let authContext;
-  try {
-    authContext = useAuthContext();
-  } catch (error) {
-    // AuthProvider not ready yet, set authContext to null
-    authContext = { profile: null, loading: true };
-  }
-  
-  const { profile } = authContext;
+  const { profile } = useAuthContext();
 
   const refreshSchool = async () => {
-    if (profile?.schoolId) {
-      try {
-        const schoolData = await firestoreService.getSchoolById(profile.schoolId);
-        setSchool(schoolData);
-      } catch (error) {
-        console.error('Error fetching school:', error);
-      }
+    if (!profile?.schoolId) {
+      setLoading(false);
+      return;
     }
-    setLoading(false);
+    try {
+      const res = await fetch(`/api/schools/${profile.schoolId}`);
+      if (res.ok) {
+        const data = await res.json();
+        setSchool(data);
+      } else {
+        // Fall back to demo school data
+        const demo = getDemoSchool();
+        setSchool({
+          id: demo.id,
+          name: demo.name,
+          abbreviation: demo.abbreviation,
+          email: demo.email,
+          phone: demo.phone,
+          address: demo.address,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        } as School);
+      }
+    } catch (_) {
+      const demo = getDemoSchool();
+      setSchool({
+        id: demo.id,
+        name: demo.name,
+        abbreviation: demo.abbreviation,
+        email: demo.email,
+        phone: demo.phone,
+        address: demo.address,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      } as School);
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => {
     if (profile?.schoolId) {
       refreshSchool();
-    } else if (profile === null) {
-      // Profile is explicitly null (not loading), stop loading
+    } else {
       setLoading(false);
     }
   }, [profile?.schoolId]);
 
-  const value = {
-    school,
-    loading,
-    refreshSchool,
-  };
-
   return (
-    <SchoolContext.Provider value={value}>
+    <SchoolContext.Provider value={{ school, loading, refreshSchool }}>
       {children}
     </SchoolContext.Provider>
   );
