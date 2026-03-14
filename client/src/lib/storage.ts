@@ -1,44 +1,42 @@
-import { ref, uploadBytes, getDownloadURL, deleteObject } from "firebase/storage";
-import { storage } from "./firebase";
+// ─── EduPay File Storage — backed by Replit server filesystem ────────────────
+// Files are uploaded to the Express server and stored in /uploads/
+// Served back at /uploads/<filename>
 
 export class StorageService {
-  async uploadFile(file: File, path: string): Promise<string> {
-    try {
-      const storageRef = ref(storage, path);
-      const snapshot = await uploadBytes(storageRef, file);
-      const downloadURL = await getDownloadURL(snapshot.ref);
-      return downloadURL;
-    } catch (error) {
-      console.error("Error uploading file:", error);
-      throw error;
+  private async upload(file: File | Blob, path: string): Promise<string> {
+    const formData = new FormData();
+    const ext = file instanceof File ? (file.name.split('.').pop() || 'bin') : 'bin';
+    const filename = path.replace(/\//g, '_') + '.' + ext;
+    formData.append('file', file, filename);
+    formData.append('path', path);
+
+    const res = await fetch('/api/upload', { method: 'POST', body: formData });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ message: 'Upload failed' }));
+      throw new Error(err.message);
     }
+    const data = await res.json();
+    return data.url;
   }
 
   async uploadSchoolLogo(schoolId: string, file: File): Promise<string> {
-    const path = `schools/${schoolId}/logo.${file.name.split('.').pop()}`;
-    return this.uploadFile(file, path);
+    return this.upload(file, `schools/${schoolId}/logo`);
   }
 
   async uploadStudentPhoto(schoolId: string, studentId: string, file: File): Promise<string> {
-    const path = `schools/${schoolId}/students/${studentId}/photo.${file.name.split('.').pop()}`;
-    return this.uploadFile(file, path);
+    return this.upload(file, `schools/${schoolId}/students/${studentId}/photo`);
   }
 
   async uploadReportPDF(schoolId: string, reportId: string, file: Blob): Promise<string> {
-    const path = `schools/${schoolId}/reports/${reportId}.pdf`;
-    const storageRef = ref(storage, path);
-    const snapshot = await uploadBytes(storageRef, file);
-    return getDownloadURL(snapshot.ref);
+    return this.upload(file, `schools/${schoolId}/reports/${reportId}`);
   }
 
   async deleteFile(path: string): Promise<void> {
-    try {
-      const storageRef = ref(storage, path);
-      await deleteObject(storageRef);
-    } catch (error) {
-      console.error("Error deleting file:", error);
-      throw error;
-    }
+    await fetch('/api/upload', {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ path }),
+    });
   }
 }
 

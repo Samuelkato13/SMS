@@ -1,8 +1,49 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import pool from "./db";
+import bcrypt from "bcryptjs";
+import multer from "multer";
+import path from "path";
+import fs from "fs";
+
+// ── File upload setup (Replit filesystem storage) ────────────────────────────
+const UPLOADS_DIR = path.join(process.cwd(), "uploads");
+if (!fs.existsSync(UPLOADS_DIR)) fs.mkdirSync(UPLOADS_DIR, { recursive: true });
+
+const upload = multer({
+  storage: multer.diskStorage({
+    destination: (_req, _file, cb) => cb(null, UPLOADS_DIR),
+    filename: (_req, file, cb) => cb(null, file.originalname),
+  }),
+  limits: { fileSize: 10 * 1024 * 1024 }, // 10 MB
+});
+
+// ── DB bootstrap: add password_hash column + seed demo passwords ─────────────
+async function bootstrapAuth() {
+  try {
+    await pool.query(`
+      ALTER TABLE users ADD COLUMN IF NOT EXISTS password_hash TEXT;
+    `);
+    const demoHash = await bcrypt.hash("demo123", 10);
+    const demoEmails = [
+      "admin@demo.com", "director@demo.com", "headteacher@demo.com",
+      "classteacher@demo.com", "subjectteacher@demo.com", "bursar@demo.com",
+    ];
+    for (const email of demoEmails) {
+      await pool.query(
+        `UPDATE users SET password_hash = $1 WHERE email = $2 AND (password_hash IS NULL OR password_hash = '')`,
+        [demoHash, email]
+      );
+    }
+    console.log("[auth] Password column ready. Demo passwords seeded.");
+  } catch (err: any) {
+    console.error("[auth] Bootstrap error:", err.message);
+  }
+}
 
 export async function registerRoutes(app: Express): Promise<Server> {
+
+  await bootstrapAuth();
 
   // ─── AUTH ─────────────────────────────────────────────────────────────────
   app.get("/api/auth/user", async (req, res) => {
@@ -23,6 +64,74 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       res.json(result.rows[0]);
+    } catch (err: any) {
+      res.status(500).json({ message: err.message });
+    }
+  });
+
+  // POST /api/auth/login — verifies password against bcrypt hash in PostgreSQL
+  app.post("/api/auth/login", async (req, res) => {
+    try {
+      const { email, password } = req.body;
+      if (!email || !password) {
+        return res.status(400).json({ message: "Email and password are required" });
+      }
+
+      const result = await pool.query(
+        `SELECT u.*, s.name as school_name, s.abbreviation as school_abbreviation
+         FROM users u
+         LEFT JOIN schools s ON u.school_id = s.id
+         WHERE u.email = $1 AND u.is_active = true`,
+        [email.toLowerCase().trim()]
+      );
+
+      if (result.rows.length === 0) {
+        return res.status(401).json({ message: "Invalid email or password" });
+      }
+
+      const user = result.rows[0];
+      if (!user.password_hash) {
+        return res.status(401).json({ message: "Account not set up. Contact your administrator." });
+      }
+
+      const valid = await bcrypt.compare(password, user.password_hash);
+      if (!valid) {
+        return res.status(401).json({ message: "Invalid email or password" });
+      }
+
+      // Return user data (exclude password hash)
+      const { password_hash, ...safeUser } = user;
+      res.json(safeUser);
+    } catch (err: any) {
+      res.status(500).json({ message: err.message });
+    }
+  });
+
+  // POST /api/auth/logout — client clears session; server just acknowledges
+  app.post("/api/auth/logout", (_req, res) => {
+    res.json({ success: true });
+  });
+
+  // POST /api/upload — multipart file upload, stored on Replit filesystem
+  app.post("/api/upload", upload.single("file"), (req, res) => {
+    try {
+      if (!req.file) return res.status(400).json({ message: "No file provided" });
+      const url = `/uploads/${req.file.filename}`;
+      res.json({ url, filename: req.file.filename });
+    } catch (err: any) {
+      res.status(500).json({ message: err.message });
+    }
+  });
+
+  // DELETE /api/upload — remove a previously uploaded file
+  app.delete("/api/upload", async (req, res) => {
+    try {
+      const { path: filePath } = req.body;
+      if (!filePath) return res.status(400).json({ message: "Path required" });
+      const filename = String(filePath).replace(/\//g, '_');
+      const fullPath = path.join(UPLOADS_DIR, filename);
+      if (fs.existsSync(fullPath)) fs.unlinkSync(fullPath);
+      res.json({ success: true });
     } catch (err: any) {
       res.status(500).json({ message: err.message });
     }

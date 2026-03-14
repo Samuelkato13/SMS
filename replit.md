@@ -10,7 +10,14 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes
 
-### March 2026
+### March 2026 (Latest)
+- **Removed Firebase & Supabase completely**: No external auth providers. Pure Replit infrastructure only.
+- **Auth backed by Replit PostgreSQL**: `POST /api/auth/login` verifies bcrypt-hashed passwords stored in the DB. `password_hash` column auto-added and demo passwords seeded on startup.
+- **File storage via Replit filesystem**: `POST /api/upload` saves files to `/uploads/` directory, served at `/uploads/<filename>`. Replaces Firebase Storage.
+- **client/src/lib/firebase.ts** and **firestore.ts**: Stubbed out (no-ops). Can be deleted once confirmed clean.
+- **client/src/lib/supabase.ts**: Stubbed out (no-ops).
+
+### March 2026 (Earlier)
 - **Full PostgreSQL Migration**: Removed all Firebase/Firestore data dependencies; all CRUD operations now use PostgreSQL REST API
 - **All 6 Dashboards Updated**: Admin, Director, HeadTeacher, ClassTeacher, SubjectTeacher, Bursar — all use real API data
 - **Student Management**: Full CRUD with Add Student dialog, payment code display, class filtering
