@@ -1,5 +1,4 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
-import { User as FirebaseUser } from 'firebase/auth';
 import { onAuthChange, getUserProfile, signOut } from '@/lib/auth';
 import { AuthUser, User } from '@/types';
 
@@ -32,7 +31,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
 
   const refreshProfile = async () => {
     if (user?.uid) {
-      const userProfile = await getUserProfile(user.uid);
+      const userProfile = await getUserProfile(user.uid, user.email ?? undefined);
       setProfile(userProfile);
     }
   };
@@ -48,16 +47,10 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   };
 
   useEffect(() => {
-    const unsubscribe = onAuthChange(async (firebaseUser: FirebaseUser | null) => {
-      if (firebaseUser) {
-        const authUser: AuthUser = {
-          uid: firebaseUser.uid,
-          email: firebaseUser.email,
-        };
+    const unsubscribe = onAuthChange(async (authUser: AuthUser | null) => {
+      if (authUser) {
         setUser(authUser);
-        
-        // Fetch user profile
-        const userProfile = await getUserProfile(firebaseUser.uid);
+        const userProfile = await getUserProfile(authUser.uid, authUser.email ?? undefined);
         setProfile(userProfile);
       } else {
         setUser(null);
@@ -69,16 +62,8 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     return () => unsubscribe();
   }, []);
 
-  const value = {
-    user,
-    profile,
-    loading,
-    logout,
-    refreshProfile,
-  };
-
   return (
-    <AuthContext.Provider value={value}>
+    <AuthContext.Provider value={{ user, profile, loading, logout, refreshProfile }}>
       {children}
     </AuthContext.Provider>
   );
