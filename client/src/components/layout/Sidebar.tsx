@@ -3,6 +3,7 @@ import { cn } from '@/lib/utils';
 import { useSchool } from '@/hooks/useSchool';
 import { useAuth } from '@/hooks/useAuth';
 import { useRole } from '@/hooks/useRole';
+import { useTheme } from '@/hooks/useTheme';
 import {
   GraduationCap, Home, Users, BookOpen, FileText, Star,
   CheckSquare, DollarSign, CreditCard, UsersRound,
@@ -42,10 +43,10 @@ export const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
   const { school, schoolName } = useSchool();
   const { profile } = useAuth();
   const { getNavItems } = useRole();
+  const theme = useTheme();
 
   const allItems = getNavItems();
 
-  // Group items
   const groups: Record<string, typeof allItems> = {};
   allItems.forEach(item => {
     const g = item.group || 'main';
@@ -61,26 +62,36 @@ export const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
         <div className="fixed inset-0 bg-black/50 z-40 md:hidden" onClick={onClose} />
       )}
 
-      <aside className={cn(
-        "fixed md:static inset-y-0 left-0 z-50 w-64 flex flex-col bg-gradient-to-b from-slate-900 to-slate-800 text-white transform transition-transform duration-300 ease-in-out",
-        isOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"
-      )}>
+      <aside
+        className={cn(
+          "fixed md:static inset-y-0 left-0 z-50 w-64 flex flex-col text-white transform transition-transform duration-300 ease-in-out",
+          isOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"
+        )}
+        style={{
+          background: `linear-gradient(to bottom, var(--theme-sidebar-from, #0f172a), var(--theme-sidebar-to, #1e293b))`,
+        }}
+      >
         {/* Brand Header */}
         <div className="p-5 border-b border-white/10">
           <div className="flex items-center space-x-3">
-            <div className="bg-gradient-to-r from-blue-500 to-indigo-500 p-2 rounded-xl shrink-0">
+            <div
+              className="p-2 rounded-xl shrink-0"
+              style={{
+                background: `linear-gradient(135deg, var(--theme-accent-from, #3b82f6), var(--theme-accent-to, #1d4ed8))`,
+              }}
+            >
               <GraduationCap className="w-5 h-5 text-white" />
             </div>
             <div className="min-w-0">
               <h2 className="font-bold text-white text-lg leading-tight">EduPay</h2>
-              <p className="text-slate-400 text-xs truncate">
+              <p className="text-white/50 text-xs truncate">
                 {schoolName || 'School Management'}
               </p>
             </div>
           </div>
           {school?.abbreviation && (
-            <div className="mt-3 bg-white/10 rounded-lg px-3 py-2 text-xs text-slate-300">
-              <span className="text-slate-400">School: </span>
+            <div className="mt-3 bg-white/10 rounded-lg px-3 py-2 text-xs text-white/70">
+              <span className="text-white/40">School: </span>
               <span className="font-semibold text-white">{school.abbreviation}</span>
             </div>
           )}
@@ -96,7 +107,7 @@ export const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
             return (
               <div key={groupKey}>
                 {label && (
-                  <p className="text-slate-500 text-[10px] uppercase font-bold tracking-widest px-2 mb-2">
+                  <p className="text-white/30 text-[10px] uppercase font-bold tracking-widest px-2 mb-2">
                     {label}
                   </p>
                 )}
@@ -111,9 +122,13 @@ export const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
                         className={cn(
                           "flex items-center space-x-3 px-3 py-2.5 rounded-xl transition-all duration-150 text-sm",
                           isActive
-                            ? "bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-semibold shadow-lg shadow-blue-900/30"
-                            : "text-slate-300 hover:bg-white/10 hover:text-white"
+                            ? "text-white font-semibold"
+                            : "text-white/60 hover:bg-white/10 hover:text-white"
                         )}
+                        style={isActive ? {
+                          background: `linear-gradient(to right, var(--theme-active-from, #2563eb), var(--theme-active-to, #1d4ed8))`,
+                          boxShadow: `0 4px 14px var(--theme-glow, rgba(37,99,235,0.3))`,
+                        } : undefined}
                         onClick={() => onClose()}
                       >
                         <Icon className="w-4 h-4 shrink-0" />
@@ -127,10 +142,15 @@ export const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
           })}
         </nav>
 
-        {/* User Profile */}
+        {/* User Profile Footer */}
         <div className="p-4 border-t border-white/10">
           <div className="flex items-center space-x-3 px-2 py-2 rounded-xl bg-white/5">
-            <div className="w-9 h-9 bg-gradient-to-r from-blue-500 to-indigo-500 rounded-full flex items-center justify-center shrink-0">
+            <div
+              className="w-9 h-9 rounded-full flex items-center justify-center shrink-0"
+              style={{
+                background: `linear-gradient(135deg, var(--theme-accent-from, #3b82f6), var(--theme-accent-to, #1d4ed8))`,
+              }}
+            >
               <span className="text-white text-xs font-bold">
                 {profile?.firstName?.charAt(0)}{profile?.lastName?.charAt(0)}
               </span>
@@ -139,8 +159,8 @@ export const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
               <p className="text-sm font-medium text-white truncate">
                 {profile?.firstName} {profile?.lastName}
               </p>
-              <p className="text-xs text-slate-400 capitalize truncate">
-                {profile?.role?.replace(/_/g, ' ')}
+              <p className="text-xs text-white/40 capitalize truncate">
+                {theme.label}
               </p>
             </div>
           </div>
