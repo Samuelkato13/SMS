@@ -495,7 +495,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.put("/api/students/:id", async (req, res) => {
     try {
-      const { firstName, lastName, email, dateOfBirth, gender, classId, guardianName, guardianPhone, guardianEmail, address, isActive } = req.body;
+      const { firstName, lastName, email, dateOfBirth, gender, classId, guardianName, guardianPhone, guardianEmail, address, isActive, medicalInfo } = req.body;
       const result = await pool.query(
         `UPDATE students SET
            first_name = COALESCE($1, first_name),
@@ -509,11 +509,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
            guardian_email = COALESCE($9, guardian_email),
            address = COALESCE($10, address),
            is_active = COALESCE($11, is_active),
+           medical_info = COALESCE($12, medical_info),
            updated_at = NOW()
-         WHERE id=$12 RETURNING *`,
+         WHERE id=$13 RETURNING *`,
         [firstName ?? null, lastName ?? null, email ?? null, dateOfBirth ?? null, gender ?? null,
          classId ?? null, guardianName ?? null, guardianPhone ?? null, guardianEmail ?? null,
-         address ?? null, isActive !== undefined ? isActive : null, req.params.id]
+         address ?? null, isActive !== undefined ? isActive : null, medicalInfo ?? null, req.params.id]
       );
       if (result.rows.length === 0) return res.status(404).json({ message: "Student not found" });
       res.json(result.rows[0]);
