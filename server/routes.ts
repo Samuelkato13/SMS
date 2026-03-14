@@ -1218,16 +1218,121 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (err: any) { res.status(500).json({ message: err.message }); }
   });
 
-  // ─── DEMO REQUEST ─────────────────────────────────────────────────────────
+  // ─── DEMO / SIGNUP REQUESTS ───────────────────────────────────────────────
+
   app.post("/api/demo-request", async (req, res) => {
     try {
-      const { schoolName, contactName, email, phone, numberOfStudents, message } = req.body;
-      // Log the demo request (in production would send email)
-      console.log("Demo Request:", { schoolName, contactName, email, phone, numberOfStudents, message });
-      res.json({ success: true, message: "Demo request received! We'll contact you within 24 hours." });
-    } catch (err: any) {
-      res.status(500).json({ message: err.message });
-    }
+      const { schoolName, contactName, email, phone, numberOfStudents, message, district, schoolType } = req.body;
+      if (!schoolName || !contactName || !email)
+        return res.status(400).json({ message: "School name, contact name and email are required" });
+      await pool.query(
+        `INSERT INTO school_signup_requests (school_name, contact_name, email, phone, district, school_type, number_of_students, message, request_type)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,'demo')`,
+        [schoolName, contactName, email, phone ?? null, district ?? null, schoolType ?? 'secondary', numberOfStudents ? parseInt(numberOfStudents) : null, message ?? null]
+      );
+      res.json({ success: true, message: "Demo request received! Our team will contact you within 24 hours." });
+    } catch (err: any) { res.status(500).json({ message: err.message }); }
+  });
+
+  // School free trial / Get Started signup
+  app.post("/api/signup-request", async (req, res) => {
+    try {
+      const { schoolName, contactName, email, phone, district, schoolType, numberOfStudents, message, requestType } = req.body;
+      if (!schoolName || !contactName || !email)
+        return res.status(400).json({ message: "School name, contact name and email are required" });
+      // Check for duplicate email
+      const exists = await pool.query(`SELECT id FROM school_signup_requests WHERE email=$1 AND status='pending'`, [email]);
+      if (exists.rows.length > 0)
+        return res.status(409).json({ message: "A request from this email is already pending review." });
+      const result = await pool.query(
+        `INSERT INTO school_signup_requests (school_name, contact_name, email, phone, district, school_type, number_of_students, message, request_type)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9) RETURNING id`,
+        [schoolName, contactName, email, phone ?? null, district ?? null, schoolType ?? 'secondary',
+         numberOfStudents ? parseInt(numberOfStudents) : null, message ?? null, requestType ?? 'trial']
+      );
+      res.status(201).json({ success: true, id: result.rows[0].id, message: "Your free trial request has been submitted! We'll set up your school within 24 hours." });
+    } catch (err: any) { res.status(500).json({ message: err.message }); }
+  });
+
+  // List all signup/demo requests (super admin only)
+  app.get("/api/admin/signup-requests", async (req, res) => {
+    try {
+      const { status } = req.query;
+      let q = `SELECT * FROM school_signup_requests`;
+      const params: any[] = [];
+      if (status) { q += ` WHERE status=$1`; params.push(status); }
+      q += ` ORDER BY created_at DESC`;
+      const result = await pool.query(q, params);
+      res.json(result.rows);
+    } catch (err: any) { res.status(500).json({ message: err.message }); }
+  });
+
+  // Update request status / add notes
+  app.put("/api/admin/signup-requests/:id", async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { status, adminNotes, reviewedBy } = req.body;
+      const result = await pool.query(
+        `UPDATE school_signup_requests SET status=$1, admin_notes=$2, reviewed_by=$3, reviewed_at=NOW(), updated_at=NOW()
+         WHERE id=$4 RETURNING *`,
+        [status, adminNotes ?? null, reviewedBy ?? null, id]
+      );
+      if (!result.rows.length) return res.status(404).json({ message: "Request not found" });
+      res.json(result.rows[0]);
+    } catch (err: any) { res.status(500).json({ message: err.message }); }
+  });
+
+  // Approve signup request → create school + director user with 1-month trial
+  app.post("/api/admin/signup-requests/:id/approve", async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { reviewedBy, schoolEmail, schoolPhone, schoolAddress, schoolAbbr } = req.body;
+      const req2 = await pool.query(`SELECT * FROM school_signup_requests WHERE id=$1`, [id]);
+      if (!req2.rows.length) return res.status(404).json({ message: "Request not found" });
+      const sr = req2.rows[0];
+      if (sr.status === 'approved') return res.status(400).json({ message: "Already approved" });
+
+      // Generate temp password
+      const tempPassword = `EduPay@${Math.random().toString(36).slice(2,8).toUpperCase()}`;
+      const passwordHash = await bcrypt.hash(tempPassword, 10);
+      const trialEnd = new Date(); trialEnd.setMonth(trialEnd.getMonth() + 1);
+      const abbr = schoolAbbr || sr.school_name.split(' ').map((w: string) => w[0]).join('').toUpperCase().slice(0,5);
+
+      // Create school
+      const schoolResult = await pool.query(
+        `INSERT INTO schools (name, abbreviation, email, phone, address, subscription_plan, status, is_active)
+         VALUES ($1,$2,$3,$4,$5,'trial','active',true) RETURNING *`,
+        [sr.school_name, abbr, schoolEmail || sr.email, schoolPhone || sr.phone || '0700000000', schoolAddress || sr.district || 'Uganda']
+      );
+      const school = schoolResult.rows[0];
+
+      // Create director user
+      const username = sr.email.split('@')[0];
+      const directorResult = await pool.query(
+        `INSERT INTO users (username, email, role, school_id, first_name, last_name, password_hash, is_active)
+         VALUES ($1,$2,'director',$3,$4,$5,$6,true) RETURNING *`,
+        [username, sr.email, school.id, sr.contact_name.split(' ')[0], sr.contact_name.split(' ').slice(1).join(' ') || 'Director', passwordHash]
+      );
+
+      // Mark request as approved
+      await pool.query(
+        `UPDATE school_signup_requests SET status='approved', reviewed_by=$1, reviewed_at=NOW(),
+         trial_start_date=NOW(), trial_end_date=$2, approved_school_id=$3,
+         created_school_admin_email=$4, created_school_admin_password=$5, updated_at=NOW()
+         WHERE id=$6`,
+        [reviewedBy ?? null, trialEnd.toISOString().split('T')[0], school.id, sr.email, tempPassword, id]
+      );
+
+      await auditLog('superadmin@skyvale.com', 'approve_signup', `School: ${sr.school_name}`, sr.school_name);
+
+      res.json({
+        success: true,
+        school,
+        directorEmail: sr.email,
+        tempPassword,
+        message: `School created! Send these credentials to ${sr.contact_name}: Email: ${sr.email} / Password: ${tempPassword}`
+      });
+    } catch (err: any) { res.status(500).json({ message: err.message }); }
   });
 
   // ─── SUPER ADMIN API ──────────────────────────────────────────────────────

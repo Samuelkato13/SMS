@@ -1,8 +1,9 @@
 import { ReactNode, useState } from 'react';
 import { Link, useLocation } from 'wouter';
+import { useQuery } from '@tanstack/react-query';
 import {
   LayoutDashboard, School, Users, CreditCard, Settings, ScrollText,
-  Menu, X, LogOut, Shield, Bell, ChevronRight
+  Menu, X, LogOut, Shield, Bell, ChevronRight, ClipboardList
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -12,18 +13,20 @@ interface NavItem {
   label: string;
   href: string;
   icon: typeof LayoutDashboard;
+  badge?: string;
 }
 
 const NAV: NavItem[] = [
-  { label: 'Dashboard',           href: '/admin',                icon: LayoutDashboard },
-  { label: 'Schools Management',  href: '/admin/schools',        icon: School          },
-  { label: 'All Users',           href: '/admin/users',          icon: Users           },
-  { label: 'Subscriptions',       href: '/admin/subscriptions',  icon: CreditCard      },
-  { label: 'System Settings',     href: '/admin/settings',       icon: Settings        },
-  { label: 'Audit Logs',          href: '/admin/audit-logs',     icon: ScrollText      },
+  { label: 'Dashboard',           href: '/admin',                     icon: LayoutDashboard },
+  { label: 'Schools Management',  href: '/admin/schools',             icon: School          },
+  { label: 'All Users',           href: '/admin/users',               icon: Users           },
+  { label: 'Subscriptions',       href: '/admin/subscriptions',       icon: CreditCard      },
+  { label: 'Signup Requests',     href: '/admin/signup-requests',     icon: ClipboardList   },
+  { label: 'System Settings',     href: '/admin/settings',            icon: Settings        },
+  { label: 'Audit Logs',          href: '/admin/audit-logs',          icon: ScrollText      },
 ];
 
-function SidebarLink({ item, collapsed }: { item: NavItem; collapsed: boolean }) {
+function SidebarLink({ item, collapsed, pendingCount }: { item: NavItem; collapsed: boolean; pendingCount?: number }) {
   const [location] = useLocation();
   const active = location === item.href || (item.href !== '/admin' && location.startsWith(item.href));
   const Icon = item.icon;
@@ -41,9 +44,20 @@ function SidebarLink({ item, collapsed }: { item: NavItem; collapsed: boolean })
         {!collapsed && (
           <>
             <span className="flex-1 text-sm">{item.label}</span>
-            {active && <ChevronRight className="w-3 h-3 opacity-60" />}
+            {pendingCount && pendingCount > 0 ? (
+              <span className="bg-amber-400 text-gray-900 text-[10px] font-bold rounded-full px-1.5 py-0.5 min-w-[18px] text-center">
+                {pendingCount}
+              </span>
+            ) : active ? (
+              <ChevronRight className="w-3 h-3 opacity-60" />
+            ) : null}
           </>
         )}
+        {collapsed && pendingCount && pendingCount > 0 ? (
+          <span className="absolute right-1 top-1 bg-amber-400 text-gray-900 text-[9px] font-bold rounded-full w-4 h-4 flex items-center justify-center">
+            {pendingCount}
+          </span>
+        ) : null}
       </div>
     </Link>
   );
@@ -53,6 +67,12 @@ export function AdminLayout({ children }: { children: ReactNode }) {
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const { profile, logout } = useAuth();
+  const { data: signupReqs } = useQuery<any[]>({
+    queryKey: ['/api/admin/signup-requests'],
+    queryFn: () => fetch('/api/admin/signup-requests').then(r => r.json()),
+    refetchInterval: 60000,
+  });
+  const pendingSignupCount = (signupReqs || []).filter((r: any) => r.status === 'pending').length;
 
   return (
     <div className="flex h-screen bg-gray-50 overflow-hidden">
@@ -92,7 +112,12 @@ export function AdminLayout({ children }: { children: ReactNode }) {
         {/* Navigation */}
         <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
           {NAV.map(item => (
-            <SidebarLink key={item.href} item={item} collapsed={collapsed} />
+            <SidebarLink
+              key={item.href}
+              item={item}
+              collapsed={collapsed}
+              pendingCount={item.href === '/admin/signup-requests' ? pendingSignupCount : undefined}
+            />
           ))}
         </nav>
 

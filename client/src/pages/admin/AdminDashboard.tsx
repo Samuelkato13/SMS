@@ -1,8 +1,10 @@
 import { useQuery } from '@tanstack/react-query';
+import { Link } from 'wouter';
 import { AdminLayout } from '@/components/admin/AdminLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { School, Users, TrendingUp, CreditCard, ArrowUpRight, Clock, Activity } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { School, Users, TrendingUp, CreditCard, ArrowUpRight, Clock, Activity, Bell, ArrowRight, CheckCircle2 } from 'lucide-react';
 
 function StatCard({ label, value, sub, icon: Icon, color }: {
   label: string; value: string | number; sub: string;
@@ -53,9 +55,15 @@ export default function AdminDashboard() {
   const { data: logs } = useQuery<any[]>({
     queryKey: ['/api/admin/audit-logs'],
   });
+  const { data: signupRequests } = useQuery<any[]>({
+    queryKey: ['/api/admin/signup-requests'],
+    queryFn: () => fetch('/api/admin/signup-requests').then(r => r.json()),
+  });
 
   const recentSchools = (schools || []).slice(0, 5);
   const recentLogs = (logs || []).slice(0, 6);
+  const pendingRequests = (signupRequests || []).filter((r: any) => r.status === 'pending');
+  const recentRequests = (signupRequests || []).slice(0, 4);
 
   return (
     <AdminLayout>
@@ -67,6 +75,31 @@ export default function AdminDashboard() {
             {new Date().toLocaleDateString('en-UG', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
           </p>
         </div>
+
+        {/* Pending Signup Requests Alert */}
+        {pendingRequests.length > 0 && (
+          <div className="flex items-center justify-between bg-amber-50 border border-amber-200 rounded-xl px-4 py-3">
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 bg-amber-500 rounded-full flex items-center justify-center flex-shrink-0">
+                <Bell className="w-4 h-4 text-white" />
+              </div>
+              <div>
+                <p className="text-sm font-semibold text-amber-900">
+                  {pendingRequests.length} pending school {pendingRequests.length === 1 ? 'request' : 'requests'} awaiting approval
+                </p>
+                <p className="text-xs text-amber-700">
+                  {pendingRequests.map((r: any) => r.school_name).slice(0, 3).join(', ')}
+                  {pendingRequests.length > 3 ? ` +${pendingRequests.length - 3} more` : ''}
+                </p>
+              </div>
+            </div>
+            <Link href="/admin/signup-requests">
+              <Button size="sm" className="bg-amber-500 hover:bg-amber-600 text-white gap-1">
+                Review <ArrowRight className="w-3 h-3" />
+              </Button>
+            </Link>
+          </div>
+        )}
 
         {/* Stats */}
         {statsLoading ? (

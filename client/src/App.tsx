@@ -30,6 +30,7 @@ import AdminUsers from "@/pages/admin/AdminUsers";
 import AdminSubscriptions from "@/pages/admin/AdminSubscriptions";
 import AdminSettings from "@/pages/admin/AdminSettings";
 import AdminAuditLogs from "@/pages/admin/AdminAuditLogs";
+import AdminSignupRequests from "@/pages/admin/AdminSignupRequests";
 
 // ClassTeacher pages
 import CTDashboard from "@/pages/classteacher/CTDashboard";
@@ -270,6 +271,9 @@ function Router() {
       </Route>
       <Route path="/admin/audit-logs">
         <AdminRoute><AdminAuditLogs /></AdminRoute>
+      </Route>
+      <Route path="/admin/signup-requests">
+        <AdminRoute><AdminSignupRequests /></AdminRoute>
       </Route>
 
       {/* ── School system routes ───────────────────────────────────── */}

@@ -12,6 +12,8 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import {
   GraduationCap,
@@ -44,17 +46,50 @@ interface DemoRequestForm {
   message: string;
 }
 
+interface SignupForm {
+  schoolName: string; contactName: string; email: string;
+  phone: string; district: string; schoolType: string;
+  numberOfStudents: string; message: string;
+}
+
 export const LandingOnly = () => {
   const { toast } = useToast();
   const [formData, setFormData] = useState<DemoRequestForm>({
-    schoolName: "",
-    contactName: "",
-    email: "",
-    phone: "",
-    numberOfStudents: "",
-    message: "",
+    schoolName: "", contactName: "", email: "", phone: "", numberOfStudents: "", message: "",
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // School signup (free trial / get started)
+  const [showSignup, setShowSignup] = useState(false);
+  const [signupDone, setSignupDone] = useState(false);
+  const [signupSubmitting, setSignupSubmitting] = useState(false);
+  const [signupForm, setSignupForm] = useState<SignupForm>({
+    schoolName: "", contactName: "", email: "", phone: "",
+    district: "", schoolType: "secondary", numberOfStudents: "", message: ""
+  });
+
+  const openSignup = (e?: React.MouseEvent) => { e?.preventDefault(); setShowSignup(true); setSignupDone(false); };
+
+  const handleSignup = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!signupForm.schoolName || !signupForm.contactName || !signupForm.email)
+      return toast({ variant: "destructive", title: "Please fill required fields" });
+    setSignupSubmitting(true);
+    try {
+      const res = await fetch("/api/signup-request", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ...signupForm, numberOfStudents: signupForm.numberOfStudents || null, requestType: "trial" })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message);
+      setSignupDone(true);
+      toast({ title: "Request submitted!", description: data.message });
+    } catch (err: any) {
+      toast({ variant: "destructive", title: "Failed", description: err.message || "Please try again." });
+    } finally {
+      setSignupSubmitting(false);
+    }
+  };
 
   const handleDemoRequest = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -270,19 +305,14 @@ export const LandingOnly = () => {
           </nav>
           <div className="flex gap-3">
             <Link href="/login">
-              <Button
-                variant="outline"
-                className="border-blue-200 text-blue-600 hover:bg-blue-50"
-              >
+              <Button variant="outline" className="border-blue-200 text-blue-600 hover:bg-blue-50">
                 Sign In
               </Button>
             </Link>
-            <Link href="/login">
-              <Button className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700">
-                Get Started
-                <ArrowRight className="ml-2 w-4 h-4" />
-              </Button>
-            </Link>
+            <Button onClick={openSignup} className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700">
+              Get Started
+              <ArrowRight className="ml-2 w-4 h-4" />
+            </Button>
           </div>
         </div>
       </header>
@@ -304,15 +334,14 @@ export const LandingOnly = () => {
             track academic performance — all in one place.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center mb-16">
-            <Link href="/login">
-              <Button
-                size="lg"
-                className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-lg px-10 py-6 rounded-xl shadow-lg"
-              >
-                Start Free Trial
-                <ArrowRight className="ml-2 w-5 h-5" />
-              </Button>
-            </Link>
+            <Button
+              size="lg"
+              onClick={openSignup}
+              className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-lg px-10 py-6 rounded-xl shadow-lg"
+            >
+              Start Free Trial
+              <ArrowRight className="ml-2 w-5 h-5" />
+            </Button>
             <Button
               size="lg"
               variant="outline"
@@ -415,15 +444,15 @@ export const LandingOnly = () => {
           </div>
 
           <div className="mt-12">
-            <Link href="/login">
-              <Button
-                size="lg"
-                className="bg-white text-blue-600 hover:bg-blue-50 text-lg px-10 py-6 rounded-xl font-semibold"
-              >
-                Create Your Free Account
-                <ArrowRight className="ml-2 w-5 h-5" />
-              </Button>
-            </Link>
+            <Button
+              size="lg"
+              onClick={openSignup}
+              className="bg-white text-blue-600 hover:bg-blue-50 text-lg px-10 py-6 rounded-xl font-semibold"
+            >
+              Start Your Free Trial
+              <ArrowRight className="ml-2 w-5 h-5" />
+            </Button>
+            <p className="text-blue-200 text-sm mt-3">30-day free trial · No credit card · No IT team needed</p>
           </div>
         </div>
       </section>
@@ -525,15 +554,14 @@ export const LandingOnly = () => {
                       </li>
                     ))}
                   </ul>
-                  <Link href="/login">
-                    <Button
-                      className={`w-full ${plan.popular ? "bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700" : ""}`}
-                      variant={plan.popular ? "default" : "outline"}
-                    >
-                      {plan.cta}
-                      <ArrowRight className="ml-2 w-4 h-4" />
-                    </Button>
-                  </Link>
+                  <Button
+                    onClick={openSignup}
+                    className={`w-full ${plan.popular ? "bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700" : ""}`}
+                    variant={plan.popular ? "default" : "outline"}
+                  >
+                    {plan.cta}
+                    <ArrowRight className="ml-2 w-4 h-4" />
+                  </Button>
                 </CardContent>
               </Card>
             ))}
@@ -860,6 +888,116 @@ export const LandingOnly = () => {
           </div>
         </div>
       </footer>
+
+      {/* School Signup Modal */}
+      <Dialog open={showSignup} onOpenChange={setShowSignup}>
+        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-bold text-gray-900">
+              {signupDone ? "🎉 Request Submitted!" : "Start Your Free 30-Day Trial"}
+            </DialogTitle>
+          </DialogHeader>
+
+          {signupDone ? (
+            <div className="text-center py-6 space-y-4">
+              <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto">
+                <CheckCircle className="w-9 h-9 text-green-600" />
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">We've received your request!</h3>
+                <p className="text-gray-600 text-sm">
+                  Our team will review your details and set up your school on EduPay within <strong>24 hours</strong>.
+                  You'll receive an email with your login credentials.
+                </p>
+              </div>
+              <div className="bg-blue-50 rounded-xl p-4 text-left text-sm space-y-2">
+                <p className="font-semibold text-blue-800">What happens next?</p>
+                <div className="flex items-start gap-2 text-blue-700"><span>1.</span><span>SKYVALE team reviews your request</span></div>
+                <div className="flex items-start gap-2 text-blue-700"><span>2.</span><span>Your school account is created with 30-day free trial</span></div>
+                <div className="flex items-start gap-2 text-blue-700"><span>3.</span><span>You receive login credentials via email/phone</span></div>
+                <div className="flex items-start gap-2 text-blue-700"><span>4.</span><span>You start managing your school immediately!</span></div>
+              </div>
+              <p className="text-xs text-gray-500">Questions? Call us: <strong>0742 751 956</strong></p>
+              <Button onClick={() => setShowSignup(false)} className="w-full bg-blue-600 hover:bg-blue-700">Close</Button>
+            </div>
+          ) : (
+            <form onSubmit={handleSignup} className="space-y-4">
+              <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl p-3 text-sm text-blue-800 flex items-center gap-2">
+                <span className="text-lg">🎁</span>
+                <span><strong>30-day free trial</strong> — No credit card required. Full access to all features.</span>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div className="col-span-2">
+                  <Label>School Name *</Label>
+                  <Input className="mt-1" value={signupForm.schoolName}
+                    onChange={e => setSignupForm(f => ({ ...f, schoolName: e.target.value }))}
+                    placeholder="e.g. St. Mary's College" required />
+                </div>
+                <div className="col-span-2">
+                  <Label>Your Full Name *</Label>
+                  <Input className="mt-1" value={signupForm.contactName}
+                    onChange={e => setSignupForm(f => ({ ...f, contactName: e.target.value }))}
+                    placeholder="Director / Head Teacher name" required />
+                </div>
+                <div>
+                  <Label>Email Address *</Label>
+                  <Input type="email" className="mt-1" value={signupForm.email}
+                    onChange={e => setSignupForm(f => ({ ...f, email: e.target.value }))}
+                    placeholder="your@school.ug" required />
+                </div>
+                <div>
+                  <Label>Phone Number</Label>
+                  <Input className="mt-1" value={signupForm.phone}
+                    onChange={e => setSignupForm(f => ({ ...f, phone: e.target.value }))}
+                    placeholder="07XX XXX XXX" />
+                </div>
+                <div>
+                  <Label>District</Label>
+                  <Input className="mt-1" value={signupForm.district}
+                    onChange={e => setSignupForm(f => ({ ...f, district: e.target.value }))}
+                    placeholder="e.g. Kampala, Wakiso" />
+                </div>
+                <div>
+                  <Label>School Type</Label>
+                  <Select value={signupForm.schoolType} onValueChange={v => setSignupForm(f => ({ ...f, schoolType: v }))}>
+                    <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="primary">Primary School</SelectItem>
+                      <SelectItem value="secondary">Secondary School</SelectItem>
+                      <SelectItem value="combined">Primary + Secondary</SelectItem>
+                      <SelectItem value="vocational">Vocational/BTVET</SelectItem>
+                      <SelectItem value="nursery">Nursery School</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="col-span-2">
+                  <Label>Approximate Number of Students</Label>
+                  <Input type="number" className="mt-1" value={signupForm.numberOfStudents}
+                    onChange={e => setSignupForm(f => ({ ...f, numberOfStudents: e.target.value }))}
+                    placeholder="e.g. 500" />
+                </div>
+                <div className="col-span-2">
+                  <Label>Anything specific you'd like us to know? (optional)</Label>
+                  <Textarea rows={2} className="mt-1" value={signupForm.message}
+                    onChange={e => setSignupForm(f => ({ ...f, message: e.target.value }))}
+                    placeholder="Any specific challenges or features you're looking for..." />
+                </div>
+              </div>
+
+              <div className="flex gap-2 pt-1">
+                <Button type="button" variant="outline" className="flex-1" onClick={() => setShowSignup(false)}>Cancel</Button>
+                <Button type="submit" className="flex-1 bg-blue-600 hover:bg-blue-700" disabled={signupSubmitting}>
+                  {signupSubmitting ? "Submitting..." : "Request Free Trial"}
+                </Button>
+              </div>
+              <p className="text-xs text-center text-gray-500">
+                By submitting, you agree to be contacted by SKYVALE Technologies · 0742 751 956
+              </p>
+            </form>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
