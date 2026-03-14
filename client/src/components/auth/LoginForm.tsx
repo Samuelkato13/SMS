@@ -30,6 +30,7 @@ const DEMO_ACCOUNTS = [
 
 const redirectForRole = (role: string) => {
   if (role === 'super_admin') return '/admin';
+  if (role === 'director') return '/director';
   return '/dashboard';
 };
 

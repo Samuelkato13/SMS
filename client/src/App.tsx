@@ -31,8 +31,19 @@ import AdminSubscriptions from "@/pages/admin/AdminSubscriptions";
 import AdminSettings from "@/pages/admin/AdminSettings";
 import AdminAuditLogs from "@/pages/admin/AdminAuditLogs";
 
+// Director pages
+import DirectorDashboard from "@/pages/director/DirectorDashboard";
+import SchoolSetup from "@/pages/director/SchoolSetup";
+import StaffManagement from "@/pages/director/StaffManagement";
+import StudentManagement from "@/pages/director/StudentManagement";
+import AcademicSetup from "@/pages/director/AcademicSetup";
+import FeesManagement from "@/pages/director/FeesManagement";
+import DirectorReports from "@/pages/director/DirectorReports";
+import ReportStudio from "@/pages/director/ReportStudio";
+import FinancialSummary from "@/pages/director/FinancialSummary";
+
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
-  const { isAuthenticated, loading, isSuperAdmin } = useAuth();
+  const { isAuthenticated, loading, isSuperAdmin, profile } = useAuth();
   const [, navigate] = useLocation();
 
   if (loading) {
@@ -50,13 +61,44 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
     return <Login />;
   }
 
-  // Super admins should be in /admin, not the school system
   if (isSuperAdmin) {
     setTimeout(() => navigate('/admin'), 0);
     return null;
   }
 
+  if (profile?.role === 'director') {
+    setTimeout(() => navigate('/director'), 0);
+    return null;
+  }
+
   return <Layout>{children}</Layout>;
+}
+
+function DirectorRoute({ children }: { children: React.ReactNode }) {
+  const { isAuthenticated, loading, profile } = useAuth();
+  const [, navigate] = useLocation();
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 to-blue-50">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Loading director panel...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return <Login />;
+  }
+
+  if (profile?.role !== 'director' && profile?.role !== 'admin') {
+    setTimeout(() => navigate('/dashboard'), 0);
+    return null;
+  }
+
+  return <>{children}</>;
 }
 
 function AdminRoute({ children }: { children: React.ReactNode }) {
@@ -148,6 +190,35 @@ function Router() {
       </Route>
       <Route path="/schools">
         <ProtectedRoute><Schools /></ProtectedRoute>
+      </Route>
+
+      {/* ── Director routes ────────────────────────────────────────── */}
+      <Route path="/director">
+        <DirectorRoute><DirectorDashboard /></DirectorRoute>
+      </Route>
+      <Route path="/director/school-setup">
+        <DirectorRoute><SchoolSetup /></DirectorRoute>
+      </Route>
+      <Route path="/director/staff">
+        <DirectorRoute><StaffManagement /></DirectorRoute>
+      </Route>
+      <Route path="/director/students">
+        <DirectorRoute><StudentManagement /></DirectorRoute>
+      </Route>
+      <Route path="/director/academic">
+        <DirectorRoute><AcademicSetup /></DirectorRoute>
+      </Route>
+      <Route path="/director/fees">
+        <DirectorRoute><FeesManagement /></DirectorRoute>
+      </Route>
+      <Route path="/director/reports">
+        <DirectorRoute><DirectorReports /></DirectorRoute>
+      </Route>
+      <Route path="/director/report-studio">
+        <DirectorRoute><ReportStudio /></DirectorRoute>
+      </Route>
+      <Route path="/director/financial">
+        <DirectorRoute><FinancialSummary /></DirectorRoute>
       </Route>
 
       <Route component={NotFound} />

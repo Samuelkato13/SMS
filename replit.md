@@ -10,7 +10,15 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes
 
-### March 2026 (Latest)
+### March 14, 2026 (Latest)
+- **Director Panel query fix**: All 9 director pages now use explicit `queryFn` with `?schoolId=` query params to correctly fetch school-scoped data (fixed `queryKey.join("/")` path-join bug)
+- **Security fix**: `GET /api/users`, `POST /api/users`, `PUT /api/users/:id` no longer expose `password_hash` in responses
+- **New `/api/stats` endpoint**: School-level statistics (totalStudents, totalStaff, totalClasses, totalRevenue, expectedRevenue, totalMarks, presentToday) — used by all role dashboards
+- **Password support in user creation**: `POST /api/users` now accepts and bcrypt-hashes a password; `Users.tsx` form now includes a password field for new staff; `StaffManagement.tsx` already had this
+- **Full RBAC verified**: All 7 roles (super_admin, director, admin, head_teacher, class_teacher, subject_teacher, bursar) login and route correctly; navigation scoped per role
+- **All demo accounts working**: `superadmin@skyvale.com`/`Admin@2025!`, plus `director/admin/headteacher/classteacher/subjectteacher/bursar@demo.com` all with password `demo123`
+
+### March 2026 (Earlier)
 - **Super Admin (SaaS Owner) Panel built**: Full `/admin` route with its own layout, sidebar, 6 pages
   - Dashboard with platform stats (schools, users, revenue, subscriptions)
   - Schools Management: CRUD, status (Active/Trial/Suspended/Expired)

@@ -47,10 +47,10 @@ export default function Users() {
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState<{
     firstName: string; lastName: string; email: string;
-    username: string; role: UserRole; phone: string;
+    username: string; role: UserRole; phone: string; password: string;
   }>({
     firstName: '', lastName: '', email: '', username: '',
-    role: (allowedToCreate[0] || 'class_teacher') as UserRole, phone: '',
+    role: (allowedToCreate[0] || 'class_teacher') as UserRole, phone: '', password: '',
   });
 
   const { data: users = [], isLoading } = useQuery<any[]>({
@@ -65,7 +65,7 @@ export default function Users() {
       queryClient.invalidateQueries({ queryKey: ['/api/users', schoolId] });
       toast({ title: 'User created successfully' });
       setOpen(false);
-      setForm({ firstName: '', lastName: '', email: '', username: '', role: allowedToCreate[0] || 'class_teacher', phone: '' });
+      setForm({ firstName: '', lastName: '', email: '', username: '', role: allowedToCreate[0] || 'class_teacher', phone: '', password: '' });
     },
     onError: (e: any) => toast({ title: 'Error creating user', description: e.message, variant: 'destructive' }),
   });
@@ -137,6 +137,10 @@ export default function Users() {
                       <Input placeholder="07XX XXX XXX" value={form.phone}
                         onChange={e => setForm(f => ({ ...f, phone: e.target.value }))} />
                     </div>
+                  </div>
+                  <div>
+                    <Label>Password *</Label>
+                    <Input type="password" value={form.password} onChange={e => setForm(f => ({ ...f, password: e.target.value }))} placeholder="Set login password" required />
                   </div>
                   {myRole === 'head_teacher' && (
                     <div className="bg-blue-50 rounded-lg p-3 text-xs text-blue-700">

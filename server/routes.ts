@@ -101,6 +101,60 @@ async function bootstrapAuth() {
       WHERE NOT EXISTS (SELECT 1 FROM subscriptions WHERE school_id = 'a0000000-0000-0000-0000-000000000001')
     `);
 
+    // ── Director-level tables ─────────────────────────────────────────────────
+    await pool.query(`ALTER TABLE classes ADD COLUMN IF NOT EXISTS section VARCHAR(50)`);
+    await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS department VARCHAR(100)`);
+    await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS phone VARCHAR(50)`);
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS sections (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        school_id UUID REFERENCES schools(id) ON DELETE CASCADE,
+        name VARCHAR(50) NOT NULL,
+        created_at TIMESTAMPTZ DEFAULT NOW()
+      )
+    `);
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS streams (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        class_id UUID REFERENCES classes(id) ON DELETE CASCADE,
+        name VARCHAR(50) NOT NULL,
+        created_at TIMESTAMPTZ DEFAULT NOW()
+      )
+    `);
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS academic_years (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        school_id UUID REFERENCES schools(id) ON DELETE CASCADE,
+        name VARCHAR(50) NOT NULL,
+        start_date DATE,
+        end_date DATE,
+        is_active BOOLEAN DEFAULT FALSE,
+        created_at TIMESTAMPTZ DEFAULT NOW()
+      )
+    `);
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS terms (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        academic_year_id UUID REFERENCES academic_years(id) ON DELETE CASCADE,
+        school_id UUID,
+        name VARCHAR(30) NOT NULL,
+        start_date DATE,
+        end_date DATE,
+        created_at TIMESTAMPTZ DEFAULT NOW()
+      )
+    `);
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS grading_systems (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        school_id UUID REFERENCES schools(id) ON DELETE CASCADE,
+        section_name VARCHAR(50),
+        name VARCHAR(100),
+        grade_ranges JSONB,
+        created_at TIMESTAMPTZ DEFAULT NOW(),
+        UNIQUE(school_id, section_name)
+      )
+    `);
+
     console.log("[admin] SaaS tables ready. Super admin seeded.");
   } catch (err: any) {
     console.error("[auth] Bootstrap error:", err.message);
@@ -263,7 +317,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         ? `SELECT u.*, s.name as school_name FROM users u LEFT JOIN schools s ON u.school_id = s.id WHERE u.school_id = $1 ORDER BY u.last_name`
         : `SELECT u.*, s.name as school_name FROM users u LEFT JOIN schools s ON u.school_id = s.id ORDER BY u.last_name`;
       const result = await pool.query(query, schoolId ? [schoolId] : []);
-      res.json(result.rows);
+      res.json(result.rows.map(({ password_hash, ...u }: any) => u));
     } catch (err: any) {
       res.status(500).json({ message: err.message });
     }
@@ -271,19 +325,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/users", async (req, res) => {
     try {
-      const { email, role, schoolId, firstName, lastName } = req.body;
+      const { email, role, schoolId, firstName, lastName, phone, department, password } = req.body;
       const abbr = await pool.query("SELECT abbreviation FROM schools WHERE id = $1", [schoolId]);
       const schoolAbbr = abbr.rows[0]?.abbreviation || "SYS";
       const countRes = await pool.query("SELECT COUNT(*) FROM users WHERE school_id = $1", [schoolId]);
       const count = parseInt(countRes.rows[0].count) + 1;
-      const username = `${schoolAbbr}_${role.replace("_", "")}_${count}`;
+      const username = `${schoolAbbr}_${role.replace(/_/g, "")}_${count}`;
+      const passwordHash = password ? await bcrypt.hash(password, 10) : null;
 
       const result = await pool.query(
-        `INSERT INTO users (username, email, role, school_id, first_name, last_name)
-         VALUES ($1, $2, $3, $4, $5, $6) RETURNING *`,
-        [username, email, role, schoolId, firstName, lastName]
+        `INSERT INTO users (username, email, role, school_id, first_name, last_name, phone, department, password_hash)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING *`,
+        [username, email, role, schoolId, firstName, lastName, phone ?? null, department ?? null, passwordHash]
       );
-      res.status(201).json(result.rows[0]);
+      const { password_hash, ...newUser } = result.rows[0];
+      res.status(201).json(newUser);
     } catch (err: any) {
       res.status(500).json({ message: err.message });
     }
@@ -291,14 +347,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.put("/api/users/:id", async (req, res) => {
     try {
-      const { role, firstName, lastName, isActive } = req.body;
+      const { role, firstName, lastName, isActive, email, department, phone, password } = req.body;
+      let passwordHash = undefined;
+      if (password) passwordHash = await bcrypt.hash(password, 10);
       const result = await pool.query(
-        `UPDATE users SET role=$1, first_name=$2, last_name=$3, is_active=$4, updated_at=NOW()
-         WHERE id=$5 RETURNING *`,
-        [role, firstName, lastName, isActive, req.params.id]
+        `UPDATE users SET
+           role = COALESCE($1, role),
+           first_name = COALESCE($2, first_name),
+           last_name = COALESCE($3, last_name),
+           is_active = COALESCE($4, is_active),
+           email = COALESCE($5, email),
+           department = COALESCE($6, department),
+           phone = COALESCE($7, phone),
+           password_hash = COALESCE($8, password_hash),
+           updated_at = NOW()
+         WHERE id=$9 RETURNING *`,
+        [role ?? null, firstName ?? null, lastName ?? null,
+         isActive !== undefined ? isActive : null,
+         email ?? null, department ?? null, phone ?? null,
+         passwordHash ?? null, req.params.id]
       );
       if (result.rows.length === 0) return res.status(404).json({ message: "User not found" });
-      res.json(result.rows[0]);
+      const { password_hash, ...safeUser } = result.rows[0];
+      res.json(safeUser);
     } catch (err: any) {
       res.status(500).json({ message: err.message });
     }
@@ -334,6 +405,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (err: any) {
       res.status(500).json({ message: err.message });
     }
+  });
+
+  // ─── SCHOOL STATS ─────────────────────────────────────────────────────────
+  app.get("/api/stats", async (req, res) => {
+    try {
+      const { schoolId } = req.query;
+      if (!schoolId) return res.status(400).json({ message: "schoolId required" });
+      const [studRes, usersRes, classRes, paymentsRes, feesRes, marksRes, attRes] = await Promise.all([
+        pool.query(`SELECT COUNT(*) FROM students WHERE school_id = $1 AND is_active = true`, [schoolId]),
+        pool.query(`SELECT COUNT(*) FROM users WHERE school_id = $1 AND is_active = true AND role != 'super_admin'`, [schoolId]),
+        pool.query(`SELECT COUNT(*) FROM classes WHERE school_id = $1`, [schoolId]),
+        pool.query(`SELECT COALESCE(SUM(amount), 0) as total FROM payments WHERE school_id = $1 AND status = 'completed'`, [schoolId]),
+        pool.query(`SELECT COALESCE(SUM(amount), 0) as expected FROM fee_structures WHERE school_id = $1`, [schoolId]),
+        pool.query(`SELECT COUNT(*) FROM marks WHERE school_id = $1`, [schoolId]),
+        pool.query(`SELECT COUNT(*) as present FROM attendance WHERE school_id = $1 AND status = 'present' AND attendance_date = CURRENT_DATE`, [schoolId]),
+      ]);
+      res.json({
+        totalStudents: parseInt(studRes.rows[0].count),
+        totalStaff: parseInt(usersRes.rows[0].count),
+        totalClasses: parseInt(classRes.rows[0].count),
+        totalRevenue: parseFloat(paymentsRes.rows[0].total),
+        expectedRevenue: parseFloat(feesRes.rows[0].expected),
+        totalMarks: parseInt(marksRes.rows[0].count),
+        presentToday: parseInt(attRes.rows[0].present),
+      });
+    } catch (err: any) { res.status(500).json({ message: err.message }); }
   });
 
   // ─── STUDENTS ─────────────────────────────────────────────────────────────
@@ -400,10 +497,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { firstName, lastName, email, dateOfBirth, gender, classId, guardianName, guardianPhone, guardianEmail, address, isActive } = req.body;
       const result = await pool.query(
-        `UPDATE students SET first_name=$1, last_name=$2, email=$3, date_of_birth=$4, gender=$5, class_id=$6,
-         guardian_name=$7, guardian_phone=$8, guardian_email=$9, address=$10, is_active=$11, updated_at=NOW()
+        `UPDATE students SET
+           first_name = COALESCE($1, first_name),
+           last_name = COALESCE($2, last_name),
+           email = COALESCE($3, email),
+           date_of_birth = COALESCE($4, date_of_birth),
+           gender = COALESCE($5, gender),
+           class_id = COALESCE($6, class_id),
+           guardian_name = COALESCE($7, guardian_name),
+           guardian_phone = COALESCE($8, guardian_phone),
+           guardian_email = COALESCE($9, guardian_email),
+           address = COALESCE($10, address),
+           is_active = COALESCE($11, is_active),
+           updated_at = NOW()
          WHERE id=$12 RETURNING *`,
-        [firstName, lastName, email, dateOfBirth, gender, classId, guardianName, guardianPhone, guardianEmail, address, isActive, req.params.id]
+        [firstName ?? null, lastName ?? null, email ?? null, dateOfBirth ?? null, gender ?? null,
+         classId ?? null, guardianName ?? null, guardianPhone ?? null, guardianEmail ?? null,
+         address ?? null, isActive !== undefined ? isActive : null, req.params.id]
       );
       if (result.rows.length === 0) return res.status(404).json({ message: "Student not found" });
       res.json(result.rows[0]);
@@ -891,31 +1001,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // ─── DASHBOARD STATS ──────────────────────────────────────────────────────
-  app.get("/api/stats", async (req, res) => {
-    try {
-      const { schoolId } = req.query;
-      if (!schoolId) return res.status(400).json({ message: "schoolId required" });
-
-      const [studentsRes, classesRes, paymentsRes, pendingRes, todayAttRes] = await Promise.all([
-        pool.query("SELECT COUNT(*) FROM students WHERE school_id = $1 AND is_active = true", [schoolId]),
-        pool.query("SELECT COUNT(*) FROM classes WHERE school_id = $1", [schoolId]),
-        pool.query("SELECT COALESCE(SUM(amount),0) FROM payments WHERE school_id = $1 AND status = 'completed'", [schoolId]),
-        pool.query("SELECT COUNT(*) FROM payments WHERE school_id = $1 AND status = 'pending'", [schoolId]),
-        pool.query("SELECT COUNT(*) FROM attendance WHERE school_id = $1 AND attendance_date = CURRENT_DATE AND status = 'present'", [schoolId]),
-      ]);
-
-      res.json({
-        totalStudents: parseInt(studentsRes.rows[0].count),
-        totalClasses: parseInt(classesRes.rows[0].count),
-        totalRevenue: parseFloat(paymentsRes.rows[0].coalesce),
-        pendingPayments: parseInt(pendingRes.rows[0].count),
-        presentToday: parseInt(todayAttRes.rows[0].count),
-      });
-    } catch (err: any) {
-      res.status(500).json({ message: err.message });
-    }
-  });
 
   // ─── DEMO REQUEST ─────────────────────────────────────────────────────────
   app.post("/api/demo-request", async (req, res) => {
@@ -1197,6 +1282,181 @@ export async function registerRoutes(app: Express): Promise<Server> {
         [JSON.stringify(subjects)]
       );
       res.json({ success: true });
+    } catch (err: any) { res.status(500).json({ message: err.message }); }
+  });
+
+  // ─── DIRECTOR — SCHOOL UPDATE ─────────────────────────────────────────────
+  app.put("/api/schools/:id", async (req, res) => {
+    try {
+      const { name, address, phone, email, motto } = req.body;
+      const result = await pool.query(
+        `UPDATE schools SET name=COALESCE($1,name), address=COALESCE($2,address), phone=COALESCE($3,phone),
+         email=COALESCE($4,email), motto=COALESCE($5,motto) WHERE id=$6 RETURNING *`,
+        [name, address, phone, email, motto, req.params.id]
+      );
+      res.json(result.rows[0]);
+    } catch (err: any) { res.status(500).json({ message: err.message }); }
+  });
+
+  // ─── SECTIONS ────────────────────────────────────────────────────────────
+  app.get("/api/sections", async (req, res) => {
+    try {
+      const { schoolId } = req.query;
+      const result = await pool.query(`SELECT * FROM sections WHERE school_id=$1 ORDER BY name`, [schoolId]);
+      res.json(result.rows);
+    } catch (err: any) { res.status(500).json({ message: err.message }); }
+  });
+
+  app.post("/api/sections", async (req, res) => {
+    try {
+      const { name, schoolId } = req.body;
+      const existing = await pool.query(`SELECT id FROM sections WHERE school_id=$1 AND name=$2`, [schoolId, name]);
+      if (existing.rows.length > 0) return res.status(400).json({ message: 'Section already exists' });
+      const result = await pool.query(
+        `INSERT INTO sections (school_id, name) VALUES ($1, $2) RETURNING *`,
+        [schoolId, name]
+      );
+      res.json(result.rows[0]);
+    } catch (err: any) { res.status(500).json({ message: err.message }); }
+  });
+
+  app.delete("/api/sections/:id", async (req, res) => {
+    try {
+      await pool.query(`DELETE FROM sections WHERE id=$1`, [req.params.id]);
+      res.json({ success: true });
+    } catch (err: any) { res.status(500).json({ message: err.message }); }
+  });
+
+  // ─── STREAMS ────────────────────────────────────────────────────────────
+  app.get("/api/streams", async (req, res) => {
+    try {
+      const { schoolId } = req.query;
+      const result = await pool.query(
+        `SELECT s.*, c.name as class_name FROM streams s
+         LEFT JOIN classes c ON s.class_id = c.id
+         WHERE c.school_id=$1 ORDER BY c.name, s.name`,
+        [schoolId]
+      );
+      res.json(result.rows);
+    } catch (err: any) { res.status(500).json({ message: err.message }); }
+  });
+
+  app.post("/api/streams", async (req, res) => {
+    try {
+      const { name, classId, schoolId } = req.body;
+      const result = await pool.query(
+        `INSERT INTO streams (class_id, name) VALUES ($1, $2) RETURNING *`,
+        [classId, name]
+      );
+      res.json(result.rows[0]);
+    } catch (err: any) { res.status(500).json({ message: err.message }); }
+  });
+
+  app.delete("/api/streams/:id", async (req, res) => {
+    try {
+      await pool.query(`DELETE FROM streams WHERE id=$1`, [req.params.id]);
+      res.json({ success: true });
+    } catch (err: any) { res.status(500).json({ message: err.message }); }
+  });
+
+  // ─── ACADEMIC YEARS ──────────────────────────────────────────────────────
+  app.get("/api/academic-years", async (req, res) => {
+    try {
+      const { schoolId } = req.query;
+      const result = await pool.query(
+        `SELECT * FROM academic_years WHERE school_id=$1 ORDER BY start_date DESC NULLS LAST, name DESC`,
+        [schoolId]
+      );
+      res.json(result.rows);
+    } catch (err: any) { res.status(500).json({ message: err.message }); }
+  });
+
+  app.post("/api/academic-years", async (req, res) => {
+    try {
+      const { name, startDate, endDate, isActive, schoolId } = req.body;
+      if (isActive) await pool.query(`UPDATE academic_years SET is_active=false WHERE school_id=$1`, [schoolId]);
+      const result = await pool.query(
+        `INSERT INTO academic_years (school_id, name, start_date, end_date, is_active)
+         VALUES ($1, $2, $3, $4, $5) RETURNING *`,
+        [schoolId, name, startDate || null, endDate || null, !!isActive]
+      );
+      res.json(result.rows[0]);
+    } catch (err: any) { res.status(500).json({ message: err.message }); }
+  });
+
+  app.put("/api/academic-years/:id/activate", async (req, res) => {
+    try {
+      const yr = await pool.query(`SELECT school_id FROM academic_years WHERE id=$1`, [req.params.id]);
+      if (yr.rows.length === 0) return res.status(404).json({ message: 'Not found' });
+      await pool.query(`UPDATE academic_years SET is_active=false WHERE school_id=$1`, [yr.rows[0].school_id]);
+      const result = await pool.query(`UPDATE academic_years SET is_active=true WHERE id=$1 RETURNING *`, [req.params.id]);
+      res.json(result.rows[0]);
+    } catch (err: any) { res.status(500).json({ message: err.message }); }
+  });
+
+  app.delete("/api/academic-years/:id", async (req, res) => {
+    try {
+      await pool.query(`DELETE FROM academic_years WHERE id=$1`, [req.params.id]);
+      res.json({ success: true });
+    } catch (err: any) { res.status(500).json({ message: err.message }); }
+  });
+
+  // ─── TERMS ───────────────────────────────────────────────────────────────
+  app.get("/api/terms", async (req, res) => {
+    try {
+      const { schoolId } = req.query;
+      const result = await pool.query(
+        `SELECT t.*, ay.name as year_name FROM terms t
+         LEFT JOIN academic_years ay ON t.academic_year_id = ay.id
+         WHERE t.school_id=$1 ORDER BY ay.name DESC, t.name`,
+        [schoolId]
+      );
+      res.json(result.rows);
+    } catch (err: any) { res.status(500).json({ message: err.message }); }
+  });
+
+  app.post("/api/terms", async (req, res) => {
+    try {
+      const { name, academicYearId, startDate, endDate, schoolId } = req.body;
+      const result = await pool.query(
+        `INSERT INTO terms (academic_year_id, school_id, name, start_date, end_date)
+         VALUES ($1, $2, $3, $4, $5) RETURNING *`,
+        [academicYearId, schoolId, name, startDate || null, endDate || null]
+      );
+      res.json(result.rows[0]);
+    } catch (err: any) { res.status(500).json({ message: err.message }); }
+  });
+
+  app.delete("/api/terms/:id", async (req, res) => {
+    try {
+      await pool.query(`DELETE FROM terms WHERE id=$1`, [req.params.id]);
+      res.json({ success: true });
+    } catch (err: any) { res.status(500).json({ message: err.message }); }
+  });
+
+  // ─── GRADING SYSTEMS ─────────────────────────────────────────────────────
+  app.get("/api/grading-systems", async (req, res) => {
+    try {
+      const { schoolId } = req.query;
+      const result = await pool.query(
+        `SELECT * FROM grading_systems WHERE school_id=$1 ORDER BY section_name`,
+        [schoolId]
+      );
+      res.json(result.rows);
+    } catch (err: any) { res.status(500).json({ message: err.message }); }
+  });
+
+  app.post("/api/grading-systems", async (req, res) => {
+    try {
+      const { schoolId, sectionName, name, gradeRanges } = req.body;
+      const result = await pool.query(
+        `INSERT INTO grading_systems (school_id, section_name, name, grade_ranges)
+         VALUES ($1, $2, $3, $4)
+         ON CONFLICT (school_id, section_name) DO UPDATE SET name=$3, grade_ranges=$4
+         RETURNING *`,
+        [schoolId, sectionName, name, JSON.stringify(gradeRanges)]
+      );
+      res.json(result.rows[0]);
     } catch (err: any) { res.status(500).json({ message: err.message }); }
   });
 
