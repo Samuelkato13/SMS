@@ -50,6 +50,15 @@ import PerformanceReports from "@/pages/headteacher/PerformanceReports";
 import ReportCards from "@/pages/headteacher/ReportCards";
 import PrintIDs from "@/pages/headteacher/PrintIDs";
 
+// Bursar pages
+import BursarDashboard from "@/pages/bursar/BursarDashboard";
+import PaymentsReceived from "@/pages/bursar/PaymentsReceived";
+import FeeManagement from "@/pages/bursar/FeeManagement";
+import FinancialReports from "@/pages/bursar/FinancialReports";
+import Reconciliation from "@/pages/bursar/Reconciliation";
+import BankStatements from "@/pages/bursar/BankStatements";
+import ReceiptsPage from "@/pages/bursar/ReceiptsPage";
+
 // Director pages
 import DirectorDashboard from "@/pages/director/DirectorDashboard";
 import SchoolSetup from "@/pages/director/SchoolSetup";
@@ -100,6 +109,11 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
     return null;
   }
 
+  if (profile?.role === 'bursar') {
+    setTimeout(() => navigate('/bursar'), 0);
+    return null;
+  }
+
   return <Layout>{children}</Layout>;
 }
 
@@ -146,6 +160,31 @@ function ClassTeacherRoute({ children }: { children: React.ReactNode }) {
   if (!isAuthenticated) return <Login />;
 
   if (profile?.role !== 'class_teacher' && profile?.role !== 'admin') {
+    setTimeout(() => navigate('/dashboard'), 0);
+    return null;
+  }
+
+  return <>{children}</>;
+}
+
+function BursarRoute({ children }: { children: React.ReactNode }) {
+  const { isAuthenticated, loading, profile } = useAuth();
+  const [, navigate] = useLocation();
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-teal-50 to-emerald-50">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-teal-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Loading Finance panel...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!isAuthenticated) return <Login />;
+
+  if (profile?.role !== 'bursar' && profile?.role !== 'admin') {
     setTimeout(() => navigate('/dashboard'), 0);
     return null;
   }
@@ -318,6 +357,29 @@ function Router() {
       </Route>
       <Route path="/classteacher/communication">
         <ClassTeacherRoute><ParentCommunication /></ClassTeacherRoute>
+      </Route>
+
+      {/* ── Bursar routes ──────────────────────────────────────────── */}
+      <Route path="/bursar">
+        <BursarRoute><BursarDashboard /></BursarRoute>
+      </Route>
+      <Route path="/bursar/payments">
+        <BursarRoute><PaymentsReceived /></BursarRoute>
+      </Route>
+      <Route path="/bursar/fees">
+        <BursarRoute><FeeManagement /></BursarRoute>
+      </Route>
+      <Route path="/bursar/reports">
+        <BursarRoute><FinancialReports /></BursarRoute>
+      </Route>
+      <Route path="/bursar/reconciliation">
+        <BursarRoute><Reconciliation /></BursarRoute>
+      </Route>
+      <Route path="/bursar/bank-statements">
+        <BursarRoute><BankStatements /></BursarRoute>
+      </Route>
+      <Route path="/bursar/receipts">
+        <BursarRoute><ReceiptsPage /></BursarRoute>
       </Route>
 
       {/* ── Director routes ────────────────────────────────────────── */}
