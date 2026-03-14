@@ -2,7 +2,7 @@
 
 ## Overview
 
-**EduPay** — A multi-tenant SaaS School Management System built for Ugandan schools. Features a React frontend and Express.js backend with PostgreSQL database, role-based access control, mobile money payment integration, and offline capabilities.
+**EduPay** (edupayapp.com) — A multi-tenant SaaS School Management System built for Ugandan schools by SKYVALE Technologies Uganda Limited. Helpline: 0742 751 956. Features a React frontend and Express.js backend with PostgreSQL database, role-based access control, mobile money payment integration, and offline capabilities.
 
 ## User Preferences
 

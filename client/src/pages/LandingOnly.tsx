@@ -97,8 +97,8 @@ export const LandingOnly = () => {
   ];
 
   const stats = [
-    { value: '500+', label: 'Schools Onboarded' },
-    { value: '150K+', label: 'Students Managed' },
+    { value: '500+', label: 'Schools' },
+    { value: '150K+', label: 'Students' },
     { value: 'UGX 2B+', label: 'Fees Collected' },
     { value: '99.9%', label: 'Uptime' },
   ];
@@ -164,11 +164,11 @@ export const LandingOnly = () => {
           </div>
           
           {/* Stats */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-6 max-w-3xl mx-auto">
+          <div className="flex flex-wrap justify-center gap-8 max-w-2xl mx-auto">
             {stats.map((stat, i) => (
-              <div key={i} className="bg-white rounded-2xl p-4 shadow-sm border border-blue-100">
-                <div className="text-2xl font-bold text-blue-600">{stat.value}</div>
-                <div className="text-sm text-gray-500 mt-1">{stat.label}</div>
+              <div key={i} className="text-center">
+                <div className="text-3xl font-bold text-blue-600">{stat.value}</div>
+                <div className="text-sm text-gray-400 mt-0.5">{stat.label}</div>
               </div>
             ))}
           </div>
@@ -424,7 +424,7 @@ export const LandingOnly = () => {
               <p className="text-gray-400 leading-relaxed text-sm">
                 Empowering Ugandan schools with modern, efficient management tools designed for the local context.
               </p>
-              <p className="text-gray-500 text-sm mt-3">edupay.com</p>
+              <p className="text-gray-500 text-sm mt-3">edupayapp.com</p>
             </div>
             
             <div>
@@ -450,16 +450,35 @@ export const LandingOnly = () => {
             <div>
               <h3 className="text-lg font-semibold mb-4">Contact</h3>
               <ul className="space-y-3 text-gray-400 text-sm">
-                <li className="flex items-center gap-2"><Phone className="w-4 h-4" /><span>+256 700 123 456</span></li>
-                <li className="flex items-center gap-2"><Mail className="w-4 h-4" /><span>hello@edupay.com</span></li>
+                <li className="flex items-center gap-2"><Phone className="w-4 h-4" /><span>0742 751 956</span></li>
+                <li className="flex items-center gap-2"><Mail className="w-4 h-4" /><span>hello@edupayapp.com</span></li>
                 <li className="flex items-center gap-2"><MapPin className="w-4 h-4" /><span>Kampala, Uganda</span></li>
-                <li className="flex items-center gap-2"><Globe className="w-4 h-4" /><span>edupay.com</span></li>
+                <li className="flex items-center gap-2"><Globe className="w-4 h-4" /><span>edupayapp.com</span></li>
               </ul>
             </div>
           </div>
-          
-          <div className="border-t border-gray-800 pt-8 flex flex-col md:flex-row justify-between items-center gap-4 text-gray-400 text-sm">
-            <p>&copy; 2025 EduPay. All rights reserved. Built with ❤️ for Ugandan schools.</p>
+
+          {/* Built by SKYVALE */}
+          <div className="border-t border-gray-800 pt-8 mb-6">
+            <div className="flex flex-col md:flex-row items-center justify-between gap-4">
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-lg flex items-center justify-center">
+                  <span className="text-white font-bold text-xs">SV</span>
+                </div>
+                <div>
+                  <p className="text-white text-sm font-semibold">SKYVALE Technologies Uganda Limited</p>
+                  <p className="text-gray-400 text-xs">The team behind EduPay</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2 text-gray-400 text-sm">
+                <Phone className="w-4 h-4" />
+                <span>Helpline: <span className="text-white font-medium">0742 751 956</span></span>
+              </div>
+            </div>
+          </div>
+
+          <div className="flex flex-col md:flex-row justify-between items-center gap-4 text-gray-500 text-xs">
+            <p>&copy; {new Date().getFullYear()} EduPay by SKYVALE Technologies Uganda Limited. All rights reserved.</p>
             <div className="flex gap-6">
               <a href="#" className="hover:text-white transition-colors">Privacy Policy</a>
               <a href="#" className="hover:text-white transition-colors">Terms of Service</a>
