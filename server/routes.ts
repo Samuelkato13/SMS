@@ -1460,6 +1460,121 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (err: any) { res.status(500).json({ message: err.message }); }
   });
 
+  // ─── PUT EXAMS (status, details update) ─────────────────────────────────────
+  app.put("/api/exams/:id", async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { title, term, examType, examDate, duration, totalMarks, passingMarks, description, classId, subjectId, status } = req.body;
+      const fields: string[] = [];
+      const params: any[] = [];
+      let idx = 1;
+
+      if (title !== undefined)       { fields.push(`title = $${idx++}`);         params.push(title); }
+      if (term !== undefined)        { fields.push(`term = $${idx++}`);          params.push(term); }
+      if (examType !== undefined)    { fields.push(`exam_type = $${idx++}`);     params.push(examType); }
+      if (examDate !== undefined)    { fields.push(`exam_date = $${idx++}`);     params.push(examDate); }
+      if (duration !== undefined)    { fields.push(`duration = $${idx++}`);      params.push(duration); }
+      if (totalMarks !== undefined)  { fields.push(`total_marks = $${idx++}`);   params.push(totalMarks); }
+      if (passingMarks !== undefined){ fields.push(`passing_marks = $${idx++}`); params.push(passingMarks); }
+      if (description !== undefined) { fields.push(`description = $${idx++}`);   params.push(description); }
+      if (classId !== undefined)     { fields.push(`class_id = $${idx++}`);      params.push(classId || null); }
+      if (subjectId !== undefined)   { fields.push(`subject_id = $${idx++}`);    params.push(subjectId || null); }
+      if (status !== undefined)      { fields.push(`status = $${idx++}`);        params.push(status); }
+
+      if (fields.length === 0) return res.status(400).json({ message: 'No fields to update' });
+
+      fields.push(`updated_at = now()`);
+      params.push(id);
+      const result = await pool.query(
+        `UPDATE exams SET ${fields.join(', ')} WHERE id = $${idx} RETURNING *`,
+        params
+      );
+      if (result.rows.length === 0) return res.status(404).json({ message: 'Exam not found' });
+      res.json(result.rows[0]);
+    } catch (err: any) { res.status(500).json({ message: err.message }); }
+  });
+
+  // ─── PUT CLASSES (assign class teacher) ──────────────────────────────────────
+  app.put("/api/classes/:id", async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { name, classTeacherId, capacity } = req.body;
+      const fields: string[] = [];
+      const params: any[] = [];
+      let idx = 1;
+
+      if (name !== undefined)           { fields.push(`name = $${idx++}`);              params.push(name); }
+      if (classTeacherId !== undefined)  { fields.push(`class_teacher_id = $${idx++}`); params.push(classTeacherId || null); }
+      if (capacity !== undefined)        { fields.push(`capacity = $${idx++}`);          params.push(capacity); }
+
+      if (fields.length === 0) return res.status(400).json({ message: 'No fields to update' });
+      params.push(id);
+      const result = await pool.query(
+        `UPDATE classes SET ${fields.join(', ')} WHERE id = $${idx} RETURNING *`,
+        params
+      );
+      if (result.rows.length === 0) return res.status(404).json({ message: 'Class not found' });
+      res.json(result.rows[0]);
+    } catch (err: any) { res.status(500).json({ message: err.message }); }
+  });
+
+  // ─── PUT SUBJECTS (assign teacher) ───────────────────────────────────────────
+  app.put("/api/subjects/:id", async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { name, code, teacherId } = req.body;
+      const fields: string[] = [];
+      const params: any[] = [];
+      let idx = 1;
+
+      if (name !== undefined)     { fields.push(`name = $${idx++}`);       params.push(name); }
+      if (code !== undefined)     { fields.push(`code = $${idx++}`);       params.push(code); }
+      if (teacherId !== undefined){ fields.push(`teacher_id = $${idx++}`); params.push(teacherId || null); }
+
+      if (fields.length === 0) return res.status(400).json({ message: 'No fields to update' });
+      params.push(id);
+      const result = await pool.query(
+        `UPDATE subjects SET ${fields.join(', ')} WHERE id = $${idx} RETURNING *`,
+        params
+      );
+      if (result.rows.length === 0) return res.status(404).json({ message: 'Subject not found' });
+      res.json(result.rows[0]);
+    } catch (err: any) { res.status(500).json({ message: err.message }); }
+  });
+
+  // ─── SCHOOL EVENTS (Academic Calendar) ───────────────────────────────────────
+  app.get("/api/school-events", async (req, res) => {
+    try {
+      const { schoolId } = req.query;
+      if (!schoolId) return res.status(400).json({ message: 'schoolId required' });
+      const result = await pool.query(
+        `SELECT * FROM school_events WHERE school_id = $1 ORDER BY date ASC`,
+        [schoolId]
+      );
+      res.json(result.rows);
+    } catch (err: any) { res.status(500).json({ message: err.message }); }
+  });
+
+  app.post("/api/school-events", async (req, res) => {
+    try {
+      const { title, type, date, endDate, description, schoolId } = req.body;
+      if (!title || !date || !schoolId) return res.status(400).json({ message: 'title, date, schoolId required' });
+      const result = await pool.query(
+        `INSERT INTO school_events (school_id, title, type, date, end_date, description)
+         VALUES ($1, $2, $3, $4, $5, $6) RETURNING *`,
+        [schoolId, title, type || 'event', date, endDate || null, description || null]
+      );
+      res.status(201).json(result.rows[0]);
+    } catch (err: any) { res.status(500).json({ message: err.message }); }
+  });
+
+  app.delete("/api/school-events/:id", async (req, res) => {
+    try {
+      await pool.query(`DELETE FROM school_events WHERE id = $1`, [req.params.id]);
+      res.json({ success: true });
+    } catch (err: any) { res.status(500).json({ message: err.message }); }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

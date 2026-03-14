@@ -31,6 +31,16 @@ import AdminSubscriptions from "@/pages/admin/AdminSubscriptions";
 import AdminSettings from "@/pages/admin/AdminSettings";
 import AdminAuditLogs from "@/pages/admin/AdminAuditLogs";
 
+// HeadTeacher pages
+import HTDashboard from "@/pages/headteacher/HTDashboard";
+import AcademicCalendar from "@/pages/headteacher/AcademicCalendar";
+import TeacherManagement from "@/pages/headteacher/TeacherManagement";
+import HTStudents from "@/pages/headteacher/HTStudents";
+import ExamManagement from "@/pages/headteacher/ExamManagement";
+import PerformanceReports from "@/pages/headteacher/PerformanceReports";
+import ReportCards from "@/pages/headteacher/ReportCards";
+import PrintIDs from "@/pages/headteacher/PrintIDs";
+
 // Director pages
 import DirectorDashboard from "@/pages/director/DirectorDashboard";
 import SchoolSetup from "@/pages/director/SchoolSetup";
@@ -71,7 +81,37 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
     return null;
   }
 
+  if (profile?.role === 'head_teacher') {
+    setTimeout(() => navigate('/headteacher'), 0);
+    return null;
+  }
+
   return <Layout>{children}</Layout>;
+}
+
+function HeadTeacherRoute({ children }: { children: React.ReactNode }) {
+  const { isAuthenticated, loading, profile } = useAuth();
+  const [, navigate] = useLocation();
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-emerald-50 to-green-50">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-emerald-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Loading Head Teacher panel...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!isAuthenticated) return <Login />;
+
+  if (profile?.role !== 'head_teacher' && profile?.role !== 'admin') {
+    setTimeout(() => navigate('/dashboard'), 0);
+    return null;
+  }
+
+  return <>{children}</>;
 }
 
 function DirectorRoute({ children }: { children: React.ReactNode }) {
@@ -190,6 +230,32 @@ function Router() {
       </Route>
       <Route path="/schools">
         <ProtectedRoute><Schools /></ProtectedRoute>
+      </Route>
+
+      {/* ── HeadTeacher routes ─────────────────────────────────────── */}
+      <Route path="/headteacher">
+        <HeadTeacherRoute><HTDashboard /></HeadTeacherRoute>
+      </Route>
+      <Route path="/headteacher/calendar">
+        <HeadTeacherRoute><AcademicCalendar /></HeadTeacherRoute>
+      </Route>
+      <Route path="/headteacher/teachers">
+        <HeadTeacherRoute><TeacherManagement /></HeadTeacherRoute>
+      </Route>
+      <Route path="/headteacher/students">
+        <HeadTeacherRoute><HTStudents /></HeadTeacherRoute>
+      </Route>
+      <Route path="/headteacher/exams">
+        <HeadTeacherRoute><ExamManagement /></HeadTeacherRoute>
+      </Route>
+      <Route path="/headteacher/performance">
+        <HeadTeacherRoute><PerformanceReports /></HeadTeacherRoute>
+      </Route>
+      <Route path="/headteacher/report-cards">
+        <HeadTeacherRoute><ReportCards /></HeadTeacherRoute>
+      </Route>
+      <Route path="/headteacher/print-ids">
+        <HeadTeacherRoute><PrintIDs /></HeadTeacherRoute>
       </Route>
 
       {/* ── Director routes ────────────────────────────────────────── */}
