@@ -31,6 +31,15 @@ import AdminSubscriptions from "@/pages/admin/AdminSubscriptions";
 import AdminSettings from "@/pages/admin/AdminSettings";
 import AdminAuditLogs from "@/pages/admin/AdminAuditLogs";
 
+// ClassTeacher pages
+import CTDashboard from "@/pages/classteacher/CTDashboard";
+import CTStudents from "@/pages/classteacher/CTStudents";
+import CTAttendance from "@/pages/classteacher/CTAttendance";
+import CTMarks from "@/pages/classteacher/CTMarks";
+import ClassPerformance from "@/pages/classteacher/ClassPerformance";
+import CTReportCards from "@/pages/classteacher/CTReportCards";
+import ParentCommunication from "@/pages/classteacher/ParentCommunication";
+
 // HeadTeacher pages
 import HTDashboard from "@/pages/headteacher/HTDashboard";
 import AcademicCalendar from "@/pages/headteacher/AcademicCalendar";
@@ -86,6 +95,11 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
     return null;
   }
 
+  if (profile?.role === 'class_teacher') {
+    setTimeout(() => navigate('/classteacher'), 0);
+    return null;
+  }
+
   return <Layout>{children}</Layout>;
 }
 
@@ -107,6 +121,31 @@ function HeadTeacherRoute({ children }: { children: React.ReactNode }) {
   if (!isAuthenticated) return <Login />;
 
   if (profile?.role !== 'head_teacher' && profile?.role !== 'admin') {
+    setTimeout(() => navigate('/dashboard'), 0);
+    return null;
+  }
+
+  return <>{children}</>;
+}
+
+function ClassTeacherRoute({ children }: { children: React.ReactNode }) {
+  const { isAuthenticated, loading, profile } = useAuth();
+  const [, navigate] = useLocation();
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-orange-50 to-amber-50">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Loading Class Teacher panel...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!isAuthenticated) return <Login />;
+
+  if (profile?.role !== 'class_teacher' && profile?.role !== 'admin') {
     setTimeout(() => navigate('/dashboard'), 0);
     return null;
   }
@@ -256,6 +295,29 @@ function Router() {
       </Route>
       <Route path="/headteacher/print-ids">
         <HeadTeacherRoute><PrintIDs /></HeadTeacherRoute>
+      </Route>
+
+      {/* ── Class Teacher routes ────────────────────────────────────── */}
+      <Route path="/classteacher">
+        <ClassTeacherRoute><CTDashboard /></ClassTeacherRoute>
+      </Route>
+      <Route path="/classteacher/students">
+        <ClassTeacherRoute><CTStudents /></ClassTeacherRoute>
+      </Route>
+      <Route path="/classteacher/attendance">
+        <ClassTeacherRoute><CTAttendance /></ClassTeacherRoute>
+      </Route>
+      <Route path="/classteacher/marks">
+        <ClassTeacherRoute><CTMarks /></ClassTeacherRoute>
+      </Route>
+      <Route path="/classteacher/performance">
+        <ClassTeacherRoute><ClassPerformance /></ClassTeacherRoute>
+      </Route>
+      <Route path="/classteacher/report-cards">
+        <ClassTeacherRoute><CTReportCards /></ClassTeacherRoute>
+      </Route>
+      <Route path="/classteacher/communication">
+        <ClassTeacherRoute><ParentCommunication /></ClassTeacherRoute>
       </Route>
 
       {/* ── Director routes ────────────────────────────────────────── */}

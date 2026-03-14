@@ -1542,6 +1542,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (err: any) { res.status(500).json({ message: err.message }); }
   });
 
+  // ─── PARENT COMMUNICATIONS ───────────────────────────────────────────────────
+  app.get("/api/parent-communications", async (req, res) => {
+    try {
+      const { schoolId, classId } = req.query;
+      if (!schoolId) return res.status(400).json({ message: 'schoolId required' });
+      let query = `SELECT pc.*, s.first_name, s.last_name, u.first_name || ' ' || u.last_name as sent_by_name
+                   FROM parent_communications pc
+                   LEFT JOIN students s ON pc.student_id = s.id
+                   LEFT JOIN users u ON pc.sent_by = u.id
+                   WHERE pc.school_id = $1`;
+      const params: any[] = [schoolId];
+      if (classId) { query += ` AND pc.class_id = $2`; params.push(classId); }
+      query += ` ORDER BY pc.sent_at DESC`;
+      const result = await pool.query(query, params);
+      res.json(result.rows);
+    } catch (err: any) { res.status(500).json({ message: err.message }); }
+  });
+
+  app.post("/api/parent-communications", async (req, res) => {
+    try {
+      const { schoolId, classId, studentId, sentBy, message, subject, type } = req.body;
+      if (!schoolId || !message) return res.status(400).json({ message: 'schoolId and message required' });
+      const result = await pool.query(
+        `INSERT INTO parent_communications (school_id, class_id, student_id, sent_by, message, subject, type)
+         VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`,
+        [schoolId, classId || null, studentId || null, sentBy || null, message, subject || null, type || 'individual']
+      );
+      res.status(201).json(result.rows[0]);
+    } catch (err: any) { res.status(500).json({ message: err.message }); }
+  });
+
   // ─── SCHOOL EVENTS (Academic Calendar) ───────────────────────────────────────
   app.get("/api/school-events", async (req, res) => {
     try {
