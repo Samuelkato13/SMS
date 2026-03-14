@@ -3,17 +3,21 @@ import { cn } from '@/lib/utils';
 import { useSchool } from '@/hooks/useSchool';
 import { useAuth } from '@/hooks/useAuth';
 import { useRole } from '@/hooks/useRole';
-import { GraduationCap, Home, Users, Building, BookOpen, FileText, Star, CheckSquare, DollarSign, CreditCard, UsersRound, BarChart3, School } from 'lucide-react';
+import {
+  GraduationCap, Home, Users, BookOpen, FileText, Star,
+  CheckSquare, DollarSign, CreditCard, UsersRound,
+  BarChart3, School, Building2, ClipboardList,
+} from 'lucide-react';
 
 interface SidebarProps {
   isOpen: boolean;
   onClose: () => void;
 }
 
-const iconMap = {
+const iconMap: Record<string, React.ElementType> = {
   home: Home,
   users: Users,
-  building: Building,
+  building: Building2,
   book: BookOpen,
   document: FileText,
   star: Star,
@@ -23,6 +27,14 @@ const iconMap = {
   'user-group': UsersRound,
   chart: BarChart3,
   'building-office': School,
+  clipboard: ClipboardList,
+};
+
+const GROUP_LABELS: Record<string, string> = {
+  main: '',
+  academic: 'Academic',
+  finance: 'Finance',
+  admin: 'Administration',
 };
 
 export const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
@@ -31,7 +43,17 @@ export const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
   const { profile } = useAuth();
   const { getNavItems } = useRole();
 
-  const navigationItems = getNavItems();
+  const allItems = getNavItems();
+
+  // Group items
+  const groups: Record<string, typeof allItems> = {};
+  allItems.forEach(item => {
+    const g = item.group || 'main';
+    if (!groups[g]) groups[g] = [];
+    groups[g].push(item);
+  });
+
+  const groupOrder = ['main', 'academic', 'finance', 'admin'];
 
   return (
     <>
@@ -56,8 +78,6 @@ export const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
               </p>
             </div>
           </div>
-
-          {/* School abbr badge */}
           {school?.abbreviation && (
             <div className="mt-3 bg-white/10 rounded-lg px-3 py-2 text-xs text-slate-300">
               <span className="text-slate-400">School: </span>
@@ -67,31 +87,44 @@ export const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
         </div>
 
         {/* Navigation */}
-        <nav className="flex-1 p-4 overflow-y-auto">
-          <p className="text-slate-500 text-[10px] uppercase font-bold tracking-widest px-2 mb-3">Navigation</p>
-          <div className="space-y-1">
-            {navigationItems.map((item) => {
-              const Icon = iconMap[item.icon as keyof typeof iconMap] || Home;
-              const isActive = location === item.path;
-              
-              return (
-                <Link
-                  key={item.path}
-                  href={item.path}
-                  className={cn(
-                    "flex items-center space-x-3 px-3 py-2.5 rounded-xl transition-all duration-150 text-sm",
-                    isActive
-                      ? "bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-semibold shadow-lg shadow-blue-900/30"
-                      : "text-slate-300 hover:bg-white/10 hover:text-white"
-                  )}
-                  onClick={() => onClose()}
-                >
-                  <Icon className="w-4.5 h-4.5 shrink-0" />
-                  <span>{item.name}</span>
-                </Link>
-              );
-            })}
-          </div>
+        <nav className="flex-1 p-4 overflow-y-auto space-y-4">
+          {groupOrder.map(groupKey => {
+            const items = groups[groupKey];
+            if (!items || items.length === 0) return null;
+            const label = GROUP_LABELS[groupKey];
+
+            return (
+              <div key={groupKey}>
+                {label && (
+                  <p className="text-slate-500 text-[10px] uppercase font-bold tracking-widest px-2 mb-2">
+                    {label}
+                  </p>
+                )}
+                <div className="space-y-0.5">
+                  {items.map(item => {
+                    const Icon = iconMap[item.icon] || Home;
+                    const isActive = location === item.path;
+                    return (
+                      <Link
+                        key={item.path}
+                        href={item.path}
+                        className={cn(
+                          "flex items-center space-x-3 px-3 py-2.5 rounded-xl transition-all duration-150 text-sm",
+                          isActive
+                            ? "bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-semibold shadow-lg shadow-blue-900/30"
+                            : "text-slate-300 hover:bg-white/10 hover:text-white"
+                        )}
+                        onClick={() => onClose()}
+                      >
+                        <Icon className="w-4 h-4 shrink-0" />
+                        <span>{item.name}</span>
+                      </Link>
+                    );
+                  })}
+                </div>
+              </div>
+            );
+          })}
         </nav>
 
         {/* User Profile */}

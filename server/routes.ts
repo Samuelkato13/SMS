@@ -314,7 +314,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!schoolId) return res.status(400).json({ message: "schoolId required" });
 
       let query = `SELECT e.*, s.name as subject_name, c.name as class_name
-                   FROM exams e JOIN subjects s ON e.subject_id = s.id JOIN classes c ON e.class_id = c.id
+                   FROM exams e LEFT JOIN subjects s ON e.subject_id = s.id LEFT JOIN classes c ON e.class_id = c.id
                    WHERE e.school_id = $1`;
       const params: any[] = [schoolId];
       if (classId) { query += ` AND e.class_id = $2`; params.push(classId); }

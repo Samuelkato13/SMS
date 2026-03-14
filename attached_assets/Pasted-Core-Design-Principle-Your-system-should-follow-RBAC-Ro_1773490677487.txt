@@ -1,0 +1,242 @@
+Core Design Principle
+
+Your system should follow RBAC (Role Based Access Control).
+
+Two rules must exist:
+
+1️⃣ School isolation
+Each school only sees its own data.
+
+2️⃣ Permission hierarchy
+
+System Admin
+   ↓
+Director
+   ↓
+Headteacher
+   ↓
+Class Teacher
+   ↓
+Subject Teacher
+   ↓
+Bursar (separate financial role)
+2. SYSTEM ADMIN (SaaS Owner)
+
+This is not part of the school, it manages the platform.
+
+Access
+
+✅ Create schools
+✅ Activate / deactivate schools
+✅ Assign director account
+✅ View system usage
+✅ Reset user passwords
+✅ Monitor logs
+
+Restrictions
+
+❌ Cannot edit student marks
+❌ Cannot edit school finances
+❌ Cannot change report cards
+
+This protects school independence.
+
+3. DIRECTOR (School Owner)
+
+The highest authority inside a school.
+
+Can Manage Users
+
+✅ Create Headteacher
+✅ Create Class Teacher
+✅ Create Subject Teacher
+✅ Create Bursar
+✅ Edit staff roles
+
+❌ Cannot create another director
+
+Student Management
+
+✅ Add students
+✅ Import students
+✅ Edit students
+✅ Archive students
+✅ Promote students
+✅ Assign students to classes
+
+School Setup
+
+✅ School information
+✅ Classes
+✅ Subjects
+✅ Terms
+✅ Exams
+
+Fees
+
+✅ Define fee structure
+✅ Edit fees
+
+Reports
+
+✅ View all reports
+✅ Generate report cards
+✅ Print report cards
+
+4. HEADTEACHER (Academic Manager)
+
+Responsible for academic supervision.
+
+Students
+
+✅ Add students
+✅ Edit student details
+✅ View all students
+
+Teachers
+
+✅ Create Class Teachers
+✅ Create Subject Teachers
+
+Academic Structure
+
+✅ Assign class teachers
+✅ Assign subject teachers
+✅ Manage exams
+
+Example
+
+Term 1
+• Beginning of term
+• Midterm
+• End of term
+
+Marks Control
+
+✅ Approve teacher marks
+✅ Lock marks after approval
+
+Report Cards
+
+✅ Configure grading system
+✅ Add academic comments
+✅ Generate report cards
+
+Example grading:
+
+Primary
+
+D1
+D2
+C3
+C4
+
+Secondary
+
+A+
+A
+B+
+B
+C
+5. CLASS TEACHER
+
+Responsible for one class only.
+
+Example: P4 Class Teacher
+
+Students
+
+✅ View students in their class
+✅ Edit student details
+
+⚠️ Cannot add new students.
+
+Academic
+
+✅ View marks for students in class
+
+Reports
+
+✅ Generate report cards for their class
+
+Remarks
+
+Can add:
+
+Class teacher comment.
+
+Example:
+
+Patrick is a diligent learner who grasps new concepts with ease.
+
+6. SUBJECT TEACHER
+
+Very important rule:
+
+A subject teacher must be linked to:
+
+Teacher
+   ↓
+Subject
+   ↓
+Class
+
+Example
+
+John
+Mathematics
+P6
+Permissions
+
+✅ View students in assigned class
+✅ Enter marks for subject
+✅ Edit marks before approval
+
+Restrictions
+
+❌ Cannot edit student bio
+❌ Cannot see fees
+❌ Cannot see other classes
+
+7. BURSAR (Finance Officer)
+
+Handles money only.
+
+Payments
+
+✅ Record payments
+✅ View payment history
+✅ Print receipts
+
+Fees
+
+✅ View fee structure
+❌ Cannot edit fee structure (unless allowed)
+
+Finance Reports
+
+✅ Payment summaries
+✅ Defaulters list
+✅ Daily collections
+✅ Term collections
+
+Restrictions
+
+❌ Cannot view marks
+❌ Cannot edit students
+❌ Cannot edit teachers
+
+8. IMPORTANT EDGE CASE (You mentioned)
+
+A teacher can be:
+
+Class Teacher + Subject Teacher
+
+Example
+
+Mary
+
+Class Teacher → P5
+Subject Teacher → Mathematics P5
+
+Your system should support multiple roles per user.

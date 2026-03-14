@@ -1,4 +1,4 @@
-import { Switch, Route } from "wouter";
+import { Switch, Route, useLocation } from "wouter";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { queryClient } from "./lib/queryClient";
 import { Toaster } from "@/components/ui/toaster";
@@ -12,6 +12,15 @@ import Login from "@/pages/Login";
 import Dashboard from "@/pages/Dashboard";
 import Students from "@/pages/Students";
 import Schools from "@/pages/Schools";
+import Classes from "@/pages/Classes";
+import Subjects from "@/pages/Subjects";
+import Exams from "@/pages/Exams";
+import Marks from "@/pages/Marks";
+import Attendance from "@/pages/Attendance";
+import Fees from "@/pages/Fees";
+import Payments from "@/pages/Payments";
+import Users from "@/pages/Users";
+import Reports from "@/pages/Reports";
 import NotFound from "@/pages/not-found";
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -40,21 +49,51 @@ function Router() {
     <Switch>
       <Route path="/" component={LandingOnly} />
       <Route path="/login" component={Login} />
+
+      {/* Dashboard */}
       <Route path="/dashboard">
-        <ProtectedRoute>
-          <Dashboard />
-        </ProtectedRoute>
+        <ProtectedRoute><Dashboard /></ProtectedRoute>
       </Route>
+
+      {/* Academic */}
       <Route path="/students">
-        <ProtectedRoute>
-          <Students />
-        </ProtectedRoute>
+        <ProtectedRoute><Students /></ProtectedRoute>
+      </Route>
+      <Route path="/classes">
+        <ProtectedRoute><Classes /></ProtectedRoute>
+      </Route>
+      <Route path="/subjects">
+        <ProtectedRoute><Subjects /></ProtectedRoute>
+      </Route>
+      <Route path="/exams">
+        <ProtectedRoute><Exams /></ProtectedRoute>
+      </Route>
+      <Route path="/marks">
+        <ProtectedRoute><Marks /></ProtectedRoute>
+      </Route>
+      <Route path="/attendance">
+        <ProtectedRoute><Attendance /></ProtectedRoute>
+      </Route>
+
+      {/* Finance */}
+      <Route path="/fees">
+        <ProtectedRoute><Fees /></ProtectedRoute>
+      </Route>
+      <Route path="/payments">
+        <ProtectedRoute><Payments /></ProtectedRoute>
+      </Route>
+
+      {/* Administration */}
+      <Route path="/users">
+        <ProtectedRoute><Users /></ProtectedRoute>
+      </Route>
+      <Route path="/reports">
+        <ProtectedRoute><Reports /></ProtectedRoute>
       </Route>
       <Route path="/schools">
-        <ProtectedRoute>
-          <Schools />
-        </ProtectedRoute>
+        <ProtectedRoute><Schools /></ProtectedRoute>
       </Route>
+
       <Route component={NotFound} />
     </Switch>
   );

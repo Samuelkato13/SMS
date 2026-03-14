@@ -15,14 +15,14 @@ export default function Schools() {
   const [searchTerm, setSearchTerm] = useState('');
   const [showCreateForm, setShowCreateForm] = useState(false);
 
-  const { data: schools = [], isLoading, refetch } = useQuery({
+  const { data: schools = [], isLoading, refetch } = useQuery<any[]>({
     queryKey: ['/api/schools'],
     enabled: isAdmin,
   });
 
-  const filteredSchools = schools.filter(school =>
-    school.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    school.address.toLowerCase().includes(searchTerm.toLowerCase())
+  const filteredSchools = schools.filter((school: any) =>
+    school.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    school.address?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   if (!isAdmin) {
