@@ -344,10 +344,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // ─── MARKS ────────────────────────────────────────────────────────────────
   app.get("/api/marks", async (req, res) => {
     try {
-      const { schoolId, examId, studentId } = req.query;
+      const { schoolId, examId, studentId, classId, subjectId, term, academicYear } = req.query;
       if (!schoolId) return res.status(400).json({ message: "schoolId required" });
 
-      let query = `SELECT m.*, s.first_name, s.last_name, s.payment_code, sub.name as subject_name, e.title as exam_title
+      let query = `SELECT m.*, s.first_name, s.last_name, s.student_number, s.payment_code,
+                          sub.name as subject_name, sub.code as subject_code,
+                          e.title as exam_title, e.total_marks as exam_total_marks, e.exam_type
                    FROM marks m
                    JOIN students s ON m.student_id = s.id
                    JOIN subjects sub ON m.subject_id = sub.id
@@ -358,7 +360,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       if (examId) { query += ` AND m.exam_id = $${idx++}`; params.push(examId); }
       if (studentId) { query += ` AND m.student_id = $${idx++}`; params.push(studentId); }
-      query += ` ORDER BY s.last_name`;
+      if (classId) { query += ` AND m.class_id = $${idx++}`; params.push(classId); }
+      if (subjectId) { query += ` AND m.subject_id = $${idx++}`; params.push(subjectId); }
+      if (term) { query += ` AND m.term = $${idx++}`; params.push(term); }
+      if (academicYear) { query += ` AND m.academic_year = $${idx++}`; params.push(academicYear); }
+      query += ` ORDER BY s.last_name, sub.name`;
 
       const result = await pool.query(query, params);
       res.json(result.rows);
@@ -367,15 +373,247 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Bulk save marks (upsert) for a class/subject/exam
+  app.post("/api/marks/bulk", async (req, res) => {
+    try {
+      const { entries, examId, subjectId, classId, schoolId, term, academicYear, recordedBy } = req.body;
+      if (!Array.isArray(entries) || !examId || !subjectId || !classId || !schoolId) {
+        return res.status(400).json({ message: "Missing required fields" });
+      }
+
+      const results = [];
+      for (const entry of entries) {
+        const { studentId, marksObtained, subjectTeacherRemarks } = entry;
+        if (!studentId || marksObtained === undefined || marksObtained === null || marksObtained === '') continue;
+
+        const score = parseFloat(marksObtained);
+        if (isNaN(score)) continue;
+
+        // Get exam total marks for grade calculation
+        const examRow = await pool.query('SELECT total_marks FROM exams WHERE id = $1', [examId]);
+        const total = examRow.rows[0]?.total_marks || 100;
+        const pct = (score / total) * 100;
+        let grade = 'F8';
+        if (pct >= 90) grade = 'D1';
+        else if (pct >= 80) grade = 'D2';
+        else if (pct >= 70) grade = 'C3';
+        else if (pct >= 60) grade = 'C4';
+        else if (pct >= 50) grade = 'C5';
+        else if (pct >= 45) grade = 'C6';
+        else if (pct >= 35) grade = 'P7';
+
+        const r = await pool.query(
+          `INSERT INTO marks (student_id, exam_id, subject_id, class_id, school_id, marks_obtained, total_marks, grade, term, academic_year, subject_teacher_remarks, recorded_by)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+           ON CONFLICT (student_id, exam_id, subject_id) DO UPDATE SET
+             marks_obtained = EXCLUDED.marks_obtained,
+             grade = EXCLUDED.grade,
+             term = EXCLUDED.term,
+             academic_year = EXCLUDED.academic_year,
+             subject_teacher_remarks = EXCLUDED.subject_teacher_remarks,
+             recorded_by = EXCLUDED.recorded_by,
+             updated_at = NOW()
+           RETURNING *`,
+          [studentId, examId, subjectId, classId, schoolId, score, total, grade, term || 'Term 1', academicYear || '2025', subjectTeacherRemarks || null, recordedBy]
+        );
+        results.push(r.rows[0]);
+      }
+      res.json({ saved: results.length, marks: results });
+    } catch (err: any) {
+      res.status(500).json({ message: err.message });
+    }
+  });
+
+  // Lock/unlock marks for an exam
+  app.post("/api/marks/lock", async (req, res) => {
+    try {
+      const { examId, classId, schoolId, subjectId, lock, approvedBy } = req.body;
+      if (!examId || !schoolId) return res.status(400).json({ message: "examId and schoolId required" });
+
+      let query = `UPDATE marks SET is_locked = $1, approved_by = $2, updated_at = NOW()
+                   WHERE exam_id = $3 AND school_id = $4`;
+      const params: any[] = [lock !== false, approvedBy || null, examId, schoolId];
+      let idx = 5;
+      if (classId) { query += ` AND class_id = $${idx++}`; params.push(classId); }
+      if (subjectId) { query += ` AND subject_id = $${idx++}`; params.push(subjectId); }
+      query += ' RETURNING id';
+
+      const result = await pool.query(query, params);
+      res.json({ locked: result.rowCount, message: `${result.rowCount} marks ${lock !== false ? 'locked' : 'unlocked'}` });
+    } catch (err: any) {
+      res.status(500).json({ message: err.message });
+    }
+  });
+
+  // Single mark save (legacy)
   app.post("/api/marks", async (req, res) => {
     try {
-      const { studentId, examId, subjectId, classId, schoolId, marksObtained, totalMarks, grade, remarks, recordedBy } = req.body;
+      const { studentId, examId, subjectId, classId, schoolId, marksObtained, totalMarks, grade, remarks, recordedBy, term, academicYear } = req.body;
       const result = await pool.query(
-        `INSERT INTO marks (student_id, exam_id, subject_id, class_id, school_id, marks_obtained, total_marks, grade, remarks, recorded_by)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING *`,
-        [studentId, examId, subjectId, classId, schoolId, marksObtained, totalMarks, grade, remarks, recordedBy]
+        `INSERT INTO marks (student_id, exam_id, subject_id, class_id, school_id, marks_obtained, total_marks, grade, remarks, recorded_by, term, academic_year)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+         ON CONFLICT (student_id, exam_id, subject_id) DO UPDATE SET
+           marks_obtained = EXCLUDED.marks_obtained, grade = EXCLUDED.grade, updated_at = NOW()
+         RETURNING *`,
+        [studentId, examId, subjectId, classId, schoolId, marksObtained, totalMarks, grade, remarks, recordedBy, term || 'Term 1', academicYear || '2025']
       );
       res.status(201).json(result.rows[0]);
+    } catch (err: any) {
+      res.status(500).json({ message: err.message });
+    }
+  });
+
+  // ─── REPORT CARDS ─────────────────────────────────────────────────────────
+  // Get full report card data for a student (term/year)
+  app.get("/api/report-cards/student", async (req, res) => {
+    try {
+      const { studentId, schoolId, term, academicYear, examId } = req.query;
+      if (!studentId || !schoolId) return res.status(400).json({ message: "studentId and schoolId required" });
+
+      // Get student info
+      const studentResult = await pool.query(
+        `SELECT s.*, c.name as class_name, c.level as class_level, sch.name as school_name,
+                sch.abbreviation as school_abbr, sch.address as school_address, sch.phone as school_phone,
+                sch.email as school_email, sch.logo_url
+         FROM students s
+         JOIN classes c ON s.class_id = c.id
+         JOIN schools sch ON s.school_id = sch.id
+         WHERE s.id = $1 AND s.school_id = $2`,
+        [studentId, schoolId]
+      );
+      if (!studentResult.rows.length) return res.status(404).json({ message: "Student not found" });
+      const student = studentResult.rows[0];
+
+      // Get marks
+      let marksQuery = `SELECT m.*, sub.name as subject_name, sub.code as subject_code,
+                               e.title as exam_title, e.total_marks as exam_total, e.exam_type,
+                               u.first_name || ' ' || u.last_name as teacher_name
+                        FROM marks m
+                        JOIN subjects sub ON m.subject_id = sub.id
+                        JOIN exams e ON m.exam_id = e.id
+                        LEFT JOIN users u ON m.recorded_by = u.id
+                        WHERE m.student_id = $1 AND m.school_id = $2`;
+      const marksParams: any[] = [studentId, schoolId];
+      let idx = 3;
+      if (term) { marksQuery += ` AND m.term = $${idx++}`; marksParams.push(term); }
+      if (academicYear) { marksQuery += ` AND m.academic_year = $${idx++}`; marksParams.push(academicYear); }
+      if (examId) { marksQuery += ` AND m.exam_id = $${idx++}`; marksParams.push(examId); }
+      marksQuery += ` ORDER BY sub.name`;
+
+      const marksResult = await pool.query(marksQuery, marksParams);
+
+      // Get report card remarks
+      let remarksQuery = `SELECT * FROM report_card_remarks WHERE student_id = $1`;
+      const remarksParams: any[] = [studentId];
+      let ridx = 2;
+      if (term) { remarksQuery += ` AND term = $${ridx++}`; remarksParams.push(term); }
+      if (academicYear) { remarksQuery += ` AND academic_year = $${ridx++}`; remarksParams.push(academicYear); }
+      const remarksResult = await pool.query(remarksQuery, remarksParams);
+
+      // Calculate aggregates
+      const marksData = marksResult.rows;
+      const totalObtained = marksData.reduce((sum: number, m: any) => sum + parseFloat(m.marks_obtained), 0);
+      const totalMax = marksData.reduce((sum: number, m: any) => sum + parseFloat(m.total_marks || m.exam_total || 100), 0);
+      const average = totalMax > 0 ? (totalObtained / totalMax) * 100 : 0;
+
+      // Grade point for aggregate (D1=1, D2=2, C3=3, C4=4, C5=5, C6=6, P7=7, F8=8)
+      const gradePoints: Record<string, number> = { D1: 1, D2: 2, C3: 3, C4: 4, C5: 5, C6: 6, P7: 7, F8: 8 };
+      const aggregate = marksData.reduce((sum: number, m: any) => sum + (gradePoints[m.grade] || 8), 0);
+
+      res.json({
+        student,
+        marks: marksData,
+        remarks: remarksResult.rows[0] || null,
+        summary: {
+          totalSubjects: marksData.length,
+          totalObtained: Math.round(totalObtained * 10) / 10,
+          totalMax,
+          average: Math.round(average * 10) / 10,
+          aggregate,
+          term: term || marksData[0]?.term,
+          academicYear: academicYear || marksData[0]?.academic_year,
+        }
+      });
+    } catch (err: any) {
+      res.status(500).json({ message: err.message });
+    }
+  });
+
+  // Get all students' report cards for a class (for class overview)
+  app.get("/api/report-cards/class", async (req, res) => {
+    try {
+      const { schoolId, classId, term, academicYear, examId } = req.query;
+      if (!schoolId || !classId) return res.status(400).json({ message: "schoolId and classId required" });
+
+      const studentsResult = await pool.query(
+        `SELECT s.*, c.name as class_name FROM students s
+         JOIN classes c ON s.class_id = c.id
+         WHERE s.class_id = $1 AND s.school_id = $2 AND s.is_active = true
+         ORDER BY s.first_name`,
+        [classId, schoolId]
+      );
+
+      const gradePoints: Record<string, number> = { D1: 1, D2: 2, C3: 3, C4: 4, C5: 5, C6: 6, P7: 7, F8: 8 };
+
+      const cards = await Promise.all(studentsResult.rows.map(async (student: any) => {
+        let mQuery = `SELECT m.marks_obtained, m.total_marks, m.grade, sub.name as subject_name
+                      FROM marks m JOIN subjects sub ON m.subject_id = sub.id
+                      WHERE m.student_id = $1 AND m.school_id = $2`;
+        const mParams: any[] = [student.id, schoolId];
+        let idx = 3;
+        if (term) { mQuery += ` AND m.term = $${idx++}`; mParams.push(term); }
+        if (academicYear) { mQuery += ` AND m.academic_year = $${idx++}`; mParams.push(academicYear); }
+        if (examId) { mQuery += ` AND m.exam_id = $${idx++}`; mParams.push(examId); }
+
+        const marks = await pool.query(mQuery, mParams);
+        const marksData = marks.rows;
+        const totalObtained = marksData.reduce((s: number, m: any) => s + parseFloat(m.marks_obtained), 0);
+        const totalMax = marksData.reduce((s: number, m: any) => s + parseFloat(m.total_marks || 100), 0);
+        const average = totalMax > 0 ? (totalObtained / totalMax) * 100 : 0;
+        const aggregate = marksData.reduce((s: number, m: any) => s + (gradePoints[m.grade] || 8), 0);
+
+        return {
+          student,
+          totalObtained: Math.round(totalObtained * 10) / 10,
+          totalMax,
+          average: Math.round(average * 10) / 10,
+          aggregate,
+          subjectCount: marksData.length,
+        };
+      }));
+
+      // Add rank
+      const ranked = [...cards].sort((a, b) => b.average - a.average)
+        .map((card, i) => ({ ...card, rank: i + 1 }));
+
+      res.json(ranked);
+    } catch (err: any) {
+      res.status(500).json({ message: err.message });
+    }
+  });
+
+  // Save report card remarks (class teacher / head teacher)
+  app.post("/api/report-cards/remarks", async (req, res) => {
+    try {
+      const { studentId, schoolId, classId, term, academicYear, classTeacherRemarks, headteacherRemarks, nextTermBegins, isPublished } = req.body;
+      if (!studentId || !schoolId || !term || !academicYear) {
+        return res.status(400).json({ message: "studentId, schoolId, term, academicYear required" });
+      }
+
+      const result = await pool.query(
+        `INSERT INTO report_card_remarks (student_id, school_id, class_id, term, academic_year, class_teacher_remarks, headteacher_remarks, next_term_begins, is_published)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+         ON CONFLICT (student_id, term, academic_year) DO UPDATE SET
+           class_teacher_remarks = EXCLUDED.class_teacher_remarks,
+           headteacher_remarks = EXCLUDED.headteacher_remarks,
+           next_term_begins = EXCLUDED.next_term_begins,
+           is_published = EXCLUDED.is_published,
+           published_at = CASE WHEN EXCLUDED.is_published THEN NOW() ELSE report_card_remarks.published_at END,
+           updated_at = NOW()
+         RETURNING *`,
+        [studentId, schoolId, classId, term, academicYear, classTeacherRemarks, headteacherRemarks, nextTermBegins || null, isPublished || false]
+      );
+      res.json(result.rows[0]);
     } catch (err: any) {
       res.status(500).json({ message: err.message });
     }
