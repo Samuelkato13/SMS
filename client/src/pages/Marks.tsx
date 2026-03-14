@@ -3,6 +3,8 @@ import { useQuery, useMutation } from '@tanstack/react-query';
 import { queryClient, apiRequest } from '@/lib/queryClient';
 import { useAuth } from '@/hooks/useAuth';
 import { useRole } from '@/hooks/useRole';
+import { useOffline } from '@/hooks/useOffline';
+import { syncManager } from '@/lib/syncManager';
 import { RoleGuard } from '@/components/layout/RoleGuard';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -11,7 +13,7 @@ import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useToast } from '@/hooks/use-toast';
-import { Save, Star, Lock, Unlock, CheckCircle2, AlertCircle } from 'lucide-react';
+import { Save, Star, Lock, Unlock, CheckCircle2, AlertCircle, WifiOff } from 'lucide-react';
 
 const TERMS = ['Term 1', 'Term 2', 'Term 3'];
 const YEARS = ['2025', '2026', '2027', '2024'];
@@ -31,6 +33,7 @@ export const getGradeInfo = (score: number, max: number): { grade: string; point
 export default function Marks() {
   const { profile } = useAuth();
   const { canCreate, canUpdate } = useRole();
+  const { isOnline } = useOffline();
   const { toast } = useToast();
   const schoolId = profile?.schoolId;
 
@@ -107,7 +110,7 @@ export default function Marks() {
     [marks]
   );
 
-  const handleSave = () => {
+  const handleSave = async () => {
     const entries = students.map((s: any) => ({
       studentId: s.id,
       marksObtained: localMarks[s.id]?.score ?? existingMap[s.id]?.score ?? '',
@@ -116,7 +119,7 @@ export default function Marks() {
 
     if (!entries.length) { toast({ title: 'No marks to save', variant: 'destructive' }); return; }
 
-    saveMutation.mutate({
+    const payload = {
       entries,
       examId: selectedExam,
       subjectId: selectedSubject,
@@ -125,7 +128,24 @@ export default function Marks() {
       term: selectedTerm,
       academicYear: selectedYear,
       recordedBy: profile?.id,
-    });
+    };
+
+    if (!isOnline) {
+      const examName = exams.find((e: any) => e.id === selectedExam)?.title || 'Exam';
+      const subjectName = subjects.find((s: any) => s.id === selectedSubject)?.name || 'Subject';
+      const className = classes.find((c: any) => c.id === selectedClass)?.name || 'Class';
+      await syncManager.queueMarksSave(payload,
+        `${entries.length} marks for ${subjectName} — ${className} (${examName})`
+      );
+      toast({
+        title: 'Saved offline',
+        description: `${entries.length} marks queued. Will sync when reconnected.`,
+      });
+      setLocalMarks({});
+      return;
+    }
+
+    saveMutation.mutate(payload);
   };
 
   const filtersReady = !!(selectedExam && selectedClass && selectedSubject);
@@ -153,9 +173,10 @@ export default function Marks() {
           </div>
           {filtersReady && canEdit && (
             <div className="flex gap-2">
-              <Button size="sm" onClick={handleSave} disabled={saveMutation.isPending} className="gap-1.5">
-                <Save className="w-4 h-4" />
-                {saveMutation.isPending ? 'Saving...' : 'Save Marks'}
+              <Button size="sm" onClick={handleSave} disabled={saveMutation.isPending}
+                className={`gap-1.5 ${!isOnline ? 'bg-gray-700 hover:bg-gray-600' : ''}`}>
+                {!isOnline ? <WifiOff className="w-4 h-4" /> : <Save className="w-4 h-4" />}
+                {saveMutation.isPending ? 'Saving...' : !isOnline ? 'Save Offline' : 'Save Marks'}
               </Button>
               {isHeadTeacher && marks.length > 0 && !isAnyLocked && (
                 <Button size="sm" variant="outline" onClick={() => lockMutation.mutate(true)}

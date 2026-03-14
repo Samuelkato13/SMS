@@ -293,15 +293,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/attendance", async (req, res) => {
     try {
-      const { studentId, classId, schoolId, date, status, remarks, recordedBy } = req.body;
+      const { studentId, classId, schoolId, date, attendanceDate, status, remarks, recordedBy } = req.body;
+      const dateVal = attendanceDate || date;
       const result = await pool.query(
         `INSERT INTO attendance (student_id, class_id, school_id, attendance_date, status, remarks, recorded_by)
          VALUES ($1, $2, $3, $4, $5, $6, $7)
          ON CONFLICT (student_id, attendance_date) DO UPDATE SET status=EXCLUDED.status, remarks=EXCLUDED.remarks
          RETURNING *`,
-        [studentId, classId, schoolId, date, status, remarks, recordedBy]
+        [studentId, classId, schoolId, dateVal, status, remarks, recordedBy]
       );
       res.status(201).json(result.rows[0]);
+    } catch (err: any) {
+      res.status(500).json({ message: err.message });
+    }
+  });
+
+  app.post("/api/attendance/bulk", async (req, res) => {
+    try {
+      const { entries } = req.body;
+      if (!Array.isArray(entries) || !entries.length) {
+        return res.status(400).json({ message: "entries array required" });
+      }
+      const saved: any[] = [];
+      for (const e of entries) {
+        const { studentId, classId, schoolId, attendanceDate, status, remarks, recordedBy } = e;
+        const r = await pool.query(
+          `INSERT INTO attendance (student_id, class_id, school_id, attendance_date, status, remarks, recorded_by)
+           VALUES ($1, $2, $3, $4, $5, $6, $7)
+           ON CONFLICT (student_id, attendance_date) DO UPDATE SET status=EXCLUDED.status, remarks=EXCLUDED.remarks
+           RETURNING *`,
+          [studentId, classId, schoolId, attendanceDate, status, remarks || null, recordedBy || null]
+        );
+        saved.push(r.rows[0]);
+      }
+      res.status(201).json({ saved: saved.length, records: saved });
     } catch (err: any) {
       res.status(500).json({ message: err.message });
     }

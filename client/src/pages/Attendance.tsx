@@ -3,6 +3,8 @@ import { useQuery, useMutation } from '@tanstack/react-query';
 import { queryClient, apiRequest } from '@/lib/queryClient';
 import { useAuth } from '@/hooks/useAuth';
 import { useRole } from '@/hooks/useRole';
+import { useOffline } from '@/hooks/useOffline';
+import { syncManager } from '@/lib/syncManager';
 import { RoleGuard } from '@/components/layout/RoleGuard';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -10,7 +12,7 @@ import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useToast } from '@/hooks/use-toast';
-import { CheckSquare, Save, CalendarDays } from 'lucide-react';
+import { CheckSquare, Save, CalendarDays, WifiOff } from 'lucide-react';
 import { format } from 'date-fns';
 
 type AttendanceStatus = 'present' | 'absent' | 'late' | 'excused';
@@ -25,6 +27,7 @@ const STATUS_COLORS: Record<AttendanceStatus, string> = {
 export default function Attendance() {
   const { profile } = useAuth();
   const { canCreate, canUpdate } = useRole();
+  const { isOnline } = useOffline();
   const { toast } = useToast();
   const schoolId = profile?.schoolId;
 
@@ -52,13 +55,13 @@ export default function Attendance() {
   });
 
   const saveMutation = useMutation({
-    mutationFn: (data: any) => apiRequest('POST', '/api/attendance', data),
-    onSuccess: () => {
+    mutationFn: (data: any) => apiRequest('POST', '/api/attendance/bulk', data),
+    onSuccess: (res: any) => {
       queryClient.invalidateQueries({ queryKey: ['/api/attendance'] });
-      toast({ title: 'Attendance saved successfully' });
+      toast({ title: `Attendance saved — ${res?.saved || 0} records updated` });
       setLocalStatus({});
     },
-    onError: (e: any) => toast({ title: 'Error', description: e.message, variant: 'destructive' }),
+    onError: (e: any) => toast({ title: 'Error saving attendance', description: e.message, variant: 'destructive' }),
   });
 
   const existingMap = attendance.reduce((acc: any, a: any) => {
@@ -72,12 +75,31 @@ export default function Attendance() {
     setLocalStatus(all);
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     const entries = Object.entries(localStatus).map(([studentId, status]) => ({
       studentId, status, classId: selectedClass, schoolId,
       attendanceDate: selectedDate, recordedBy: profile?.id,
     }));
-    entries.forEach(entry => saveMutation.mutate(entry));
+
+    if (!entries.length) return;
+
+    if (!isOnline) {
+      const cls = classes.find((c: any) => c.id === selectedClass);
+      const className = cls?.name || 'class';
+      await syncManager.queueAttendanceSave(
+        { entries },
+        `Attendance for ${className} on ${format(new Date(selectedDate), 'MMM d, yyyy')} (${entries.length} students)`
+      );
+      toast({
+        title: 'Saved offline',
+        description: `Attendance queued. Will sync when reconnected.`,
+      });
+      setLocalStatus({});
+      return;
+    }
+
+    // Online: use bulk endpoint
+    saveMutation.mutate({ entries });
   };
 
   const canEdit = canCreate('attendance') || canUpdate('attendance');
@@ -143,9 +165,10 @@ export default function Attendance() {
                       All Absent
                     </Button>
                     {Object.keys(localStatus).length > 0 && (
-                      <Button size="sm" onClick={handleSave} disabled={saveMutation.isPending} className="gap-1.5 h-8">
-                        <Save className="w-3.5 h-3.5" />
-                        {saveMutation.isPending ? 'Saving...' : 'Save'}
+                      <Button size="sm" onClick={handleSave} disabled={saveMutation.isPending}
+                        className={`gap-1.5 h-8 ${!isOnline ? 'bg-gray-700 hover:bg-gray-600' : ''}`}>
+                        {!isOnline ? <WifiOff className="w-3.5 h-3.5" /> : <Save className="w-3.5 h-3.5" />}
+                        {saveMutation.isPending ? 'Saving...' : !isOnline ? 'Save Offline' : 'Save'}
                       </Button>
                     )}
                   </div>

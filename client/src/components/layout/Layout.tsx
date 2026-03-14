@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Sidebar } from './Sidebar';
 import { Header } from './Header';
+import { OfflineBanner } from './OfflineBanner';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -16,10 +17,11 @@ export const Layout = ({ children }: LayoutProps) => {
         onClose={() => setSidebarOpen(false)} 
       />
       
-      <main className="flex-1 overflow-hidden">
+      <main className="flex-1 overflow-hidden flex flex-col">
         <Header onMenuClick={() => setSidebarOpen(true)} />
+        <OfflineBanner />
         
-        <div className="p-6 h-full overflow-y-auto">
+        <div className="p-6 flex-1 overflow-y-auto">
           {children}
         </div>
       </main>
