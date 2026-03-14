@@ -1,0 +1,322 @@
+import { useState } from 'react';
+import { useQuery, useMutation } from '@tanstack/react-query';
+import { AdminLayout } from '@/components/admin/AdminLayout';
+import { apiRequest, queryClient } from '@/lib/queryClient';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Badge } from '@/components/ui/badge';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
+import { useToast } from '@/hooks/use-toast';
+import { Plus, Search, Pencil, Ban, Trash2, ChevronLeft, ChevronRight, School, MoreHorizontal } from 'lucide-react';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+
+const STATUS_COLORS: Record<string, string> = {
+  active: 'bg-green-100 text-green-700 border-green-200',
+  trial: 'bg-yellow-100 text-yellow-700 border-yellow-200',
+  suspended: 'bg-red-100 text-red-700 border-red-200',
+  expired: 'bg-gray-100 text-gray-600 border-gray-200',
+};
+const PLAN_COLORS: Record<string, string> = {
+  enterprise: 'bg-purple-100 text-purple-700',
+  professional: 'bg-blue-100 text-blue-700',
+  basic: 'bg-green-100 text-green-700',
+  trial: 'bg-yellow-100 text-yellow-700',
+};
+
+const PAGE_SIZE = 10;
+
+const emptyForm = { name: '', abbreviation: '', subdomain: '', email: '', phone: '', address: '', status: 'trial' };
+
+export default function AdminSchools() {
+  const { toast } = useToast();
+  const [search, setSearch] = useState('');
+  const [page, setPage] = useState(1);
+  const [showForm, setShowForm] = useState(false);
+  const [editing, setEditing] = useState<any>(null);
+  const [form, setForm] = useState(emptyForm);
+  const [confirm, setConfirm] = useState<{ action: 'suspend' | 'delete'; school: any } | null>(null);
+
+  const { data: schools = [], isLoading } = useQuery<any[]>({ queryKey: ['/api/admin/schools'] });
+
+  const createMut = useMutation({
+    mutationFn: (data: any) => apiRequest('POST', '/api/admin/schools', data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/admin/schools'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/admin/stats'] });
+      toast({ title: 'School created successfully' });
+      setShowForm(false);
+      setForm(emptyForm);
+    },
+    onError: (e: any) => toast({ variant: 'destructive', title: 'Error', description: e.message }),
+  });
+
+  const updateMut = useMutation({
+    mutationFn: ({ id, data }: any) => apiRequest('PUT', `/api/admin/schools/${id}`, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/admin/schools'] });
+      toast({ title: 'School updated successfully' });
+      setShowForm(false);
+      setEditing(null);
+    },
+    onError: (e: any) => toast({ variant: 'destructive', title: 'Error', description: e.message }),
+  });
+
+  const statusMut = useMutation({
+    mutationFn: ({ id, status }: any) => apiRequest('PUT', `/api/admin/schools/${id}/status`, { status }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/admin/schools'] });
+      toast({ title: 'School status updated' });
+      setConfirm(null);
+    },
+    onError: (e: any) => toast({ variant: 'destructive', title: 'Error', description: e.message }),
+  });
+
+  const deleteMut = useMutation({
+    mutationFn: (id: string) => apiRequest('DELETE', `/api/admin/schools/${id}`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/admin/schools'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/admin/stats'] });
+      toast({ title: 'School deleted' });
+      setConfirm(null);
+    },
+    onError: (e: any) => toast({ variant: 'destructive', title: 'Error', description: e.message }),
+  });
+
+  const filtered = schools.filter(s =>
+    s.name?.toLowerCase().includes(search.toLowerCase()) ||
+    s.email?.toLowerCase().includes(search.toLowerCase()) ||
+    s.subdomain?.toLowerCase().includes(search.toLowerCase())
+  );
+  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  const paged = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+
+  const openAdd = () => { setEditing(null); setForm(emptyForm); setShowForm(true); };
+  const openEdit = (s: any) => {
+    setEditing(s);
+    setForm({ name: s.name ?? '', abbreviation: s.abbreviation ?? '', subdomain: s.subdomain ?? '', email: s.email ?? '', phone: s.phone ?? '', address: s.address ?? '', status: s.status ?? 'active' });
+    setShowForm(true);
+  };
+
+  const handleSave = () => {
+    if (!form.name || !form.email) return toast({ variant: 'destructive', title: 'School name and email are required' });
+    if (editing) updateMut.mutate({ id: editing.id, data: form });
+    else createMut.mutate(form);
+  };
+
+  const isPending = createMut.isPending || updateMut.isPending;
+
+  return (
+    <AdminLayout>
+      <div className="space-y-5">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-xl font-bold text-gray-900">Schools Management</h1>
+            <p className="text-sm text-gray-500">{schools.length} school{schools.length !== 1 ? 's' : ''} on the platform</p>
+          </div>
+          <Button onClick={openAdd} className="bg-indigo-600 hover:bg-indigo-700 gap-2">
+            <Plus className="w-4 h-4" />
+            Add New School
+          </Button>
+        </div>
+
+        <Card className="border-0 shadow-sm">
+          <CardHeader className="pb-3 pt-4 px-5">
+            <div className="flex items-center gap-3">
+              <div className="relative flex-1 max-w-xs">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                <Input value={search} onChange={e => { setSearch(e.target.value); setPage(1); }}
+                  placeholder="Search schools..." className="pl-9 h-9" />
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent className="p-0">
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-gray-100 bg-gray-50">
+                    <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">School</th>
+                    <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Subdomain</th>
+                    <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Users</th>
+                    <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Plan</th>
+                    <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Status</th>
+                    <th className="text-right px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-50">
+                  {isLoading ? (
+                    [...Array(5)].map((_, i) => (
+                      <tr key={i}><td colSpan={6} className="px-5 py-3">
+                        <div className="animate-pulse h-4 bg-gray-100 rounded" />
+                      </td></tr>
+                    ))
+                  ) : paged.length === 0 ? (
+                    <tr><td colSpan={6} className="px-5 py-10 text-center text-gray-400">
+                      <School className="w-8 h-8 mx-auto mb-2 opacity-40" />
+                      No schools found
+                    </td></tr>
+                  ) : paged.map((s: any) => (
+                    <tr key={s.id} className="hover:bg-gray-50/60 transition-colors">
+                      <td className="px-5 py-3">
+                        <div className="flex items-center gap-3">
+                          <div className="w-8 h-8 bg-indigo-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                            <span className="text-indigo-600 text-xs font-bold">{(s.abbreviation ?? s.name ?? 'S').slice(0, 2)}</span>
+                          </div>
+                          <div>
+                            <p className="font-medium text-gray-900">{s.name}</p>
+                            <p className="text-xs text-gray-400">{s.email}</p>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-4 py-3 text-gray-600 font-mono text-xs">{s.subdomain || '—'}</td>
+                      <td className="px-4 py-3 text-gray-700 font-medium">{s.user_count ?? 0}</td>
+                      <td className="px-4 py-3">
+                        <Badge className={`text-xs ${PLAN_COLORS[s.plan ?? 'trial']}`}>{s.plan ?? 'trial'}</Badge>
+                      </td>
+                      <td className="px-4 py-3">
+                        <Badge className={`text-xs border ${STATUS_COLORS[s.status ?? 'active']}`}>{s.status ?? 'active'}</Badge>
+                      </td>
+                      <td className="px-5 py-3 text-right">
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="sm" className="h-7 w-7 p-0">
+                              <MoreHorizontal className="w-4 h-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end" className="w-40">
+                            <DropdownMenuItem onClick={() => openEdit(s)}>
+                              <Pencil className="w-3.5 h-3.5 mr-2" />Edit
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              onClick={() => setConfirm({ action: 'suspend', school: s })}
+                              className="text-yellow-700"
+                            >
+                              <Ban className="w-3.5 h-3.5 mr-2" />
+                              {s.status === 'suspended' ? 'Reactivate' : 'Suspend'}
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              onClick={() => setConfirm({ action: 'delete', school: s })}
+                              className="text-red-600"
+                            >
+                              <Trash2 className="w-3.5 h-3.5 mr-2" />Delete
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Pagination */}
+            {totalPages > 1 && (
+              <div className="flex items-center justify-between px-5 py-3 border-t border-gray-100">
+                <p className="text-xs text-gray-500">
+                  Showing {((page - 1) * PAGE_SIZE) + 1}–{Math.min(page * PAGE_SIZE, filtered.length)} of {filtered.length}
+                </p>
+                <div className="flex gap-1">
+                  <Button variant="outline" size="sm" onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1} className="h-7 w-7 p-0">
+                    <ChevronLeft className="w-3 h-3" />
+                  </Button>
+                  <Button variant="outline" size="sm" onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page === totalPages} className="h-7 w-7 p-0">
+                    <ChevronRight className="w-3 h-3" />
+                  </Button>
+                </div>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Add/Edit dialog */}
+      <Dialog open={showForm} onOpenChange={setShowForm}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>{editing ? 'Edit School' : 'Add New School'}</DialogTitle>
+          </DialogHeader>
+          <div className="grid gap-3 py-2">
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1">
+                <Label>School Name *</Label>
+                <Input value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} placeholder="St. Mary's School" />
+              </div>
+              <div className="space-y-1">
+                <Label>Abbreviation</Label>
+                <Input value={form.abbreviation} onChange={e => setForm(f => ({ ...f, abbreviation: e.target.value }))} placeholder="SMS" />
+              </div>
+            </div>
+            <div className="space-y-1">
+              <Label>Subdomain</Label>
+              <Input value={form.subdomain} onChange={e => setForm(f => ({ ...f, subdomain: e.target.value }))} placeholder="stmarys" />
+            </div>
+            <div className="space-y-1">
+              <Label>Email *</Label>
+              <Input type="email" value={form.email} onChange={e => setForm(f => ({ ...f, email: e.target.value }))} placeholder="admin@school.com" />
+            </div>
+            <div className="space-y-1">
+              <Label>Phone</Label>
+              <Input value={form.phone} onChange={e => setForm(f => ({ ...f, phone: e.target.value }))} placeholder="+256 700 000000" />
+            </div>
+            <div className="space-y-1">
+              <Label>Address</Label>
+              <Input value={form.address} onChange={e => setForm(f => ({ ...f, address: e.target.value }))} placeholder="Kampala, Uganda" />
+            </div>
+            <div className="space-y-1">
+              <Label>Status</Label>
+              <Select value={form.status} onValueChange={v => setForm(f => ({ ...f, status: v }))}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="active">Active</SelectItem>
+                  <SelectItem value="trial">Trial</SelectItem>
+                  <SelectItem value="suspended">Suspended</SelectItem>
+                  <SelectItem value="expired">Expired</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowForm(false)}>Cancel</Button>
+            <Button onClick={handleSave} disabled={isPending} className="bg-indigo-600 hover:bg-indigo-700">
+              {isPending ? 'Saving...' : editing ? 'Save Changes' : 'Create School'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Confirm dialog */}
+      <AlertDialog open={!!confirm} onOpenChange={() => setConfirm(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {confirm?.action === 'delete' ? 'Delete School' : 'Change School Status'}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {confirm?.action === 'delete'
+                ? `Are you sure you want to delete "${confirm?.school?.name}"? This action cannot be undone.`
+                : confirm?.school?.status === 'suspended'
+                  ? `Reactivate "${confirm?.school?.name}"? They will regain access immediately.`
+                  : `Suspend "${confirm?.school?.name}"? All users at this school will lose access.`
+              }
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className={confirm?.action === 'delete' ? 'bg-red-600 hover:bg-red-700' : 'bg-yellow-600 hover:bg-yellow-700'}
+              onClick={() => {
+                if (confirm?.action === 'delete') deleteMut.mutate(confirm.school.id);
+                else statusMut.mutate({ id: confirm?.school?.id, status: confirm?.school?.status === 'suspended' ? 'active' : 'suspended' });
+              }}
+            >
+              {statusMut.isPending || deleteMut.isPending ? 'Processing...' : 'Confirm'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </AdminLayout>
+  );
+}

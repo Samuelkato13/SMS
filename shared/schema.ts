@@ -2,6 +2,7 @@ import { z } from "zod";
 
 // User Roles
 export const UserRole = z.enum([
+  "super_admin",
   "admin",
   "director", 
   "head_teacher",
@@ -21,6 +22,8 @@ export const schoolSchema = z.object({
   email: z.string().email(),
   phone: z.string(),
   address: z.string(),
+  subdomain: z.string().optional(),
+  status: z.enum(['active', 'trial', 'suspended', 'expired']).default('active'),
   createdAt: z.date(),
   updatedAt: z.date(),
 });
@@ -141,7 +144,7 @@ export const examSchema = z.object({
   classId: z.string(),
   schoolId: z.string(),
   date: z.date(),
-  duration: z.number(), // in minutes
+  duration: z.number(),
   totalMarks: z.number(),
   passingMarks: z.number(),
   examType: z.enum(["quiz", "midterm", "final", "assignment"]),
@@ -158,19 +161,15 @@ export const insertExamSchema = examSchema.omit({
 export type Exam = z.infer<typeof examSchema>;
 export type InsertExam = z.infer<typeof insertExamSchema>;
 
-// Marks schema
+// Mark schema
 export const markSchema = z.object({
   id: z.string(),
-  studentId: z.string(),
   examId: z.string(),
-  subjectId: z.string(),
-  classId: z.string(),
+  studentId: z.string(),
   schoolId: z.string(),
   marksObtained: z.number(),
-  totalMarks: z.number(),
-  grade: z.string().optional(),
   remarks: z.string().optional(),
-  recordedBy: z.string(), // teacher ID
+  gradedBy: z.string(),
   createdAt: z.date(),
   updatedAt: z.date(),
 });
@@ -192,8 +191,8 @@ export const attendanceSchema = z.object({
   schoolId: z.string(),
   date: z.date(),
   status: z.enum(["present", "absent", "late", "excused"]),
-  remarks: z.string().optional(),
-  recordedBy: z.string(), // teacher ID
+  notes: z.string().optional(),
+  recordedBy: z.string(),
   createdAt: z.date(),
   updatedAt: z.date(),
 });
@@ -258,3 +257,31 @@ export const insertPaymentSchema = paymentSchema.omit({
 
 export type Payment = z.infer<typeof paymentSchema>;
 export type InsertPayment = z.infer<typeof insertPaymentSchema>;
+
+// Subscription schema
+export const subscriptionSchema = z.object({
+  id: z.string(),
+  schoolId: z.string(),
+  plan: z.enum(['trial', 'basic', 'professional', 'enterprise']),
+  startDate: z.date(),
+  endDate: z.date(),
+  status: z.enum(['active', 'expired', 'cancelled']),
+  amountUgx: z.number(),
+  createdAt: z.date(),
+});
+
+export type Subscription = z.infer<typeof subscriptionSchema>;
+
+// Audit Log schema
+export const auditLogSchema = z.object({
+  id: z.string(),
+  userId: z.string().optional(),
+  userEmail: z.string().optional(),
+  schoolId: z.string().optional(),
+  action: z.string(),
+  details: z.string().optional(),
+  ipAddress: z.string().optional(),
+  createdAt: z.date(),
+});
+
+export type AuditLog = z.infer<typeof auditLogSchema>;

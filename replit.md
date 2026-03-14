@@ -11,11 +11,19 @@ Preferred communication style: Simple, everyday language.
 ## Recent Changes
 
 ### March 2026 (Latest)
+- **Super Admin (SaaS Owner) Panel built**: Full `/admin` route with its own layout, sidebar, 6 pages
+  - Dashboard with platform stats (schools, users, revenue, subscriptions)
+  - Schools Management: CRUD, status (Active/Trial/Suspended/Expired)
+  - All Users: view/search/filter across all schools, create Director/Head Teacher, deactivate users
+  - Subscriptions: assign Basic/Professional/Enterprise plans, expiry alerts
+  - System Settings: global subject pool, security settings
+  - Audit Logs: read-only log of all admin actions, CSV export
+- **New DB tables**: `subscriptions`, `audit_logs`, `global_settings`; `schools` gets `status` + `subdomain` columns
+- **New role: `super_admin`**: DB constraint updated; seeded as `superadmin@skyvale.com` / `Admin@2025!`
+- **Role-based redirect**: login detects `super_admin` → `/admin`; all others → `/dashboard`
 - **Removed Firebase & Supabase completely**: No external auth providers. Pure Replit infrastructure only.
-- **Auth backed by Replit PostgreSQL**: `POST /api/auth/login` verifies bcrypt-hashed passwords stored in the DB. `password_hash` column auto-added and demo passwords seeded on startup.
-- **File storage via Replit filesystem**: `POST /api/upload` saves files to `/uploads/` directory, served at `/uploads/<filename>`. Replaces Firebase Storage.
-- **client/src/lib/firebase.ts** and **firestore.ts**: Stubbed out (no-ops). Can be deleted once confirmed clean.
-- **client/src/lib/supabase.ts**: Stubbed out (no-ops).
+- **Auth backed by Replit PostgreSQL**: `POST /api/auth/login` verifies bcrypt-hashed passwords stored in the DB.
+- **File storage via Replit filesystem**: `POST /api/upload` saves files to `/uploads/` directory.
 
 ### March 2026 (Earlier)
 - **Full PostgreSQL Migration**: Removed all Firebase/Firestore data dependencies; all CRUD operations now use PostgreSQL REST API

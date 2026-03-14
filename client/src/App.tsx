@@ -23,8 +23,17 @@ import Users from "@/pages/Users";
 import Reports from "@/pages/Reports";
 import NotFound from "@/pages/not-found";
 
+// Super Admin pages
+import AdminDashboard from "@/pages/admin/AdminDashboard";
+import AdminSchools from "@/pages/admin/AdminSchools";
+import AdminUsers from "@/pages/admin/AdminUsers";
+import AdminSubscriptions from "@/pages/admin/AdminSubscriptions";
+import AdminSettings from "@/pages/admin/AdminSettings";
+import AdminAuditLogs from "@/pages/admin/AdminAuditLogs";
+
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
-  const { isAuthenticated, loading } = useAuth();
+  const { isAuthenticated, loading, isSuperAdmin } = useAuth();
+  const [, navigate] = useLocation();
 
   if (loading) {
     return (
@@ -41,7 +50,40 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
     return <Login />;
   }
 
+  // Super admins should be in /admin, not the school system
+  if (isSuperAdmin) {
+    setTimeout(() => navigate('/admin'), 0);
+    return null;
+  }
+
   return <Layout>{children}</Layout>;
+}
+
+function AdminRoute({ children }: { children: React.ReactNode }) {
+  const { isAuthenticated, loading, isSuperAdmin } = useAuth();
+  const [, navigate] = useLocation();
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 to-indigo-50">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Loading admin panel...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return <Login />;
+  }
+
+  if (!isSuperAdmin) {
+    setTimeout(() => navigate('/dashboard'), 0);
+    return null;
+  }
+
+  return <>{children}</>;
 }
 
 function Router() {
@@ -50,12 +92,30 @@ function Router() {
       <Route path="/" component={LandingOnly} />
       <Route path="/login" component={Login} />
 
-      {/* Dashboard */}
+      {/* ── Super Admin routes ─────────────────────────────────────── */}
+      <Route path="/admin">
+        <AdminRoute><AdminDashboard /></AdminRoute>
+      </Route>
+      <Route path="/admin/schools">
+        <AdminRoute><AdminSchools /></AdminRoute>
+      </Route>
+      <Route path="/admin/users">
+        <AdminRoute><AdminUsers /></AdminRoute>
+      </Route>
+      <Route path="/admin/subscriptions">
+        <AdminRoute><AdminSubscriptions /></AdminRoute>
+      </Route>
+      <Route path="/admin/settings">
+        <AdminRoute><AdminSettings /></AdminRoute>
+      </Route>
+      <Route path="/admin/audit-logs">
+        <AdminRoute><AdminAuditLogs /></AdminRoute>
+      </Route>
+
+      {/* ── School system routes ───────────────────────────────────── */}
       <Route path="/dashboard">
         <ProtectedRoute><Dashboard /></ProtectedRoute>
       </Route>
-
-      {/* Academic */}
       <Route path="/students">
         <ProtectedRoute><Students /></ProtectedRoute>
       </Route>
@@ -74,16 +134,12 @@ function Router() {
       <Route path="/attendance">
         <ProtectedRoute><Attendance /></ProtectedRoute>
       </Route>
-
-      {/* Finance */}
       <Route path="/fees">
         <ProtectedRoute><Fees /></ProtectedRoute>
       </Route>
       <Route path="/payments">
         <ProtectedRoute><Payments /></ProtectedRoute>
       </Route>
-
-      {/* Administration */}
       <Route path="/users">
         <ProtectedRoute><Users /></ProtectedRoute>
       </Route>

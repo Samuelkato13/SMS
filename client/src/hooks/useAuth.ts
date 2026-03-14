@@ -6,6 +6,7 @@ export const useAuth = () => {
   return {
     ...context,
     isAuthenticated: !!context.user,
+    isSuperAdmin: context.profile?.role === 'super_admin',
     isAdmin: context.profile?.role === 'admin',
     isDirector: context.profile?.role === 'director',
     isTeacher: ['head_teacher', 'class_teacher', 'subject_teacher'].includes(context.profile?.role || ''),
