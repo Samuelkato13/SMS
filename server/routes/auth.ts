@@ -38,41 +38,24 @@ export function registerAuthRoutes(app: Express) {
     }
   });
 
-  // POST /api/auth/login — login by username or email, return user profile
+  // POST /api/auth/login — login by username only, return user profile
   app.post("/api/auth/login", async (req, res) => {
     try {
-      const { username, email, password } = req.body;
-      if (!password) {
-        return res.status(400).json({ message: "Password is required" });
+      const { username, password } = req.body;
+      if (!username || !password) {
+        return res.status(400).json({ message: "Username and password are required" });
       }
 
-      const loginId = username || email;
-      if (!loginId) {
-        return res.status(400).json({ message: "Username or email is required" });
-      }
-
-      // Try username first (preferred), then fall back to email for backward compatibility
-      let result = await pool.query(
+      const result = await pool.query(
         `SELECT u.*, s.name as school_name, s.abbreviation as school_abbreviation
          FROM users u LEFT JOIN schools s ON u.school_id = s.id
          WHERE LOWER(u.username) = LOWER($1) AND u.is_active = true
          LIMIT 1`,
-        [loginId]
+        [username.trim()]
       );
 
       if (result.rows.length === 0) {
-        // Fall back to email login for backward compatibility
-        result = await pool.query(
-          `SELECT u.*, s.name as school_name, s.abbreviation as school_abbreviation
-           FROM users u LEFT JOIN schools s ON u.school_id = s.id
-           WHERE LOWER(u.email) = LOWER($1) AND u.is_active = true
-           ORDER BY u.created_at DESC LIMIT 1`,
-          [loginId]
-        );
-      }
-
-      if (result.rows.length === 0) {
-        return res.status(401).json({ message: "No account found. Please check your username or email." });
+        return res.status(401).json({ message: "Username not found or account inactive. Please check your username." });
       }
 
       const user = result.rows[0];

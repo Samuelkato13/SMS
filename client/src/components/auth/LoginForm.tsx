@@ -115,10 +115,7 @@ export const LoginForm = () => {
     setLoading(true);
     try {
       const authUser = await signIn(username, password);
-      const profile = await getUserProfile(
-        authUser.uid,
-        authUser.email ?? undefined,
-      );
+      const profile = await getUserProfile(authUser.uid);
       const dest = redirectForRole(profile?.role ?? "");
       toast({
         title: roleLabel ? `Welcome, ${roleLabel}!` : "Welcome back!",
@@ -151,17 +148,11 @@ export const LoginForm = () => {
         </Link>
 
         <Card className="border border-blue-100 shadow-xl">
-          <CardHeader className="text-center space-y-4 pb-2">
-            <div className="mx-auto">
-              <div className="bg-gradient-to-r from-blue-600 to-indigo-600 p-4 rounded-2xl inline-flex">
-                <GraduationCap className="w-10 h-10 text-white" />
-              </div>
-            </div>
+          <CardHeader className="text-center space-y-4 pb-3">
+            <img src="/logo.png" alt="EduPay" className="h-16 mx-auto" />
             <div>
-              <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
-                EduPay
-              </h1>
-              <p className="text-gray-500 mt-1">School Management Platform</p>
+              <h1 className="text-3xl font-bold text-gray-900">EduPay</h1>
+              <p className="text-gray-600 text-sm mt-1">Demo Accounts - All Schools</p>
             </div>
           </CardHeader>
 
@@ -179,13 +170,16 @@ export const LoginForm = () => {
                   type="text"
                   placeholder="e.g., dr-eds"
                   {...form.register("username")}
-                  className="h-11"
+                  className="h-11 font-mono"
                 />
                 {form.formState.errors.username && (
                   <p className="text-sm text-red-600">
                     {form.formState.errors.username.message}
                   </p>
                 )}
+                <p className="text-xs text-gray-500 mt-1">
+                  Format: role-schoolcode (e.g., dr-eds, ht-hs)
+                </p>
               </div>
 
               <div className="space-y-1">

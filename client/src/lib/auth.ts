@@ -28,16 +28,20 @@ const notify = (user: AuthUser | null) => listeners.forEach(cb => cb(user));
 // ── Public API ────────────────────────────────────────────────────────────────
 
 export const signIn = async (username: string, password: string): Promise<AuthUser> => {
+  if (!username || !password) {
+    throw new Error('Username and password are required');
+  }
+  
   const res = await fetch('/api/auth/login', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ username, password }),
+    body: JSON.stringify({ username: username.trim(), password }),
   });
 
   const data = await res.json();
   if (!res.ok) throw new Error(data.message || 'Login failed');
 
-  // Store both id AND username so we can look up by ID later
+  // Store user ID for session management
   const authUser: AuthUser = { uid: data.id, email: data.email };
   saveSession(authUser);
   notify(authUser);
@@ -50,17 +54,12 @@ export const signOut = async (): Promise<void> => {
   notify(null);
 };
 
-// Fetch profile by user ID (preferred) — falls back to username if no ID
-export const getUserProfile = async (uid: string, email?: string): Promise<User | null> => {
+// Fetch profile by user ID
+export const getUserProfile = async (uid: string): Promise<User | null> => {
   try {
-    // Always prefer lookup by ID to avoid duplicate issues
-    const param = uid && uid !== 'undefined'
-      ? `id=${encodeURIComponent(uid)}`
-      : email ? `username=${encodeURIComponent(email)}` : null;
+    if (!uid || uid === 'undefined') return null;
 
-    if (!param) return null;
-
-    const res = await fetch(`/api/auth/user?${param}`);
+    const res = await fetch(`/api/auth/user?id=${encodeURIComponent(uid)}`);
     if (!res.ok) return null;
     const data = await res.json();
 

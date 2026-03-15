@@ -10,7 +10,27 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes
 
-### March 15, 2026 (Latest)
+### March 15, 2026 (Final)
+- **Username-Only Authentication**: Auth system completely refactored to use usernames only (no email logins)
+  - Backend: `POST /api/auth/login` accepts only `{ username, password }`
+  - Frontend: `signIn()` function takes username + password
+  - Database: Added UNIQUE constraint on usernames
+  - Both login pages (official and demo) now username-based
+- **Professional Branding**: EduPay logo (blue gradient) integrated into all login pages
+  - Copied logo to `/public/logo.png`
+  - Used on OfficialLogin.tsx and demo LoginForm
+  - Replaces generic graduation cap icon
+- **Dynamic Demo Accounts Page**: `/demo-login` displays all schools and staff with quick login buttons
+  - Fetches users and schools from API
+  - Groups by school with code and name
+  - Shows username/password for each staff member
+  - One-click "Log In" buttons for instant access
+- **Real Schools Working**: All 4 schools (EDS, Heritage, Ndejje, St. Clutues) have staff with working demo accounts
+  - Staff can login with `username-schoolcode` format
+  - Password: `demo123` for all demos
+  - No email required for any staff account
+
+### March 15, 2026 (Earlier)
 - **MVC Server Restructure COMPLETED**: `server/routes.ts` (1932 lines) split into 14 focused route files under `server/routes/`:
   - `auth.ts` — login, logout, user profile, change-password
   - `schools.ts` — CRUD for schools
