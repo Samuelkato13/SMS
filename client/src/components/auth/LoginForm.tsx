@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -10,7 +10,7 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { GraduationCap, User, ArrowLeft } from "lucide-react";
+import { GraduationCap, User, ArrowLeft, BookOpen } from "lucide-react";
 
 const loginSchema = z.object({
   username: z.string().min(1, "Username is required"),
@@ -19,38 +19,32 @@ const loginSchema = z.object({
 
 type LoginFormData = z.infer<typeof loginSchema>;
 
-const DEMO_ACCOUNTS = [
-  {
-    username: "dr-eds",
-    role: "Director",
-    color: "bg-orange-600 hover:bg-orange-700",
-    description: "School-level management",
-  },
-  {
-    username: "ht-eds",
-    role: "Head Teacher",
-    color: "bg-blue-600 hover:bg-blue-700",
-    description: "Academic oversight",
-  },
-  {
-    username: "ct-eds",
-    role: "Class Teacher",
-    color: "bg-green-600 hover:bg-green-700",
-    description: "Class management",
-  },
-  {
-    username: "st-eds",
-    role: "Subject Teacher",
-    color: "bg-purple-600 hover:bg-purple-700",
-    description: "Marks management",
-  },
-  {
-    username: "bsr-eds",
-    role: "Bursar",
-    color: "bg-teal-600 hover:bg-teal-700",
-    description: "Fee collection",
-  },
-];
+interface StaffAccount {
+  username: string;
+  role: string;
+  name: string;
+  schoolCode: string;
+  schoolName: string;
+  color: string;
+  description: string;
+}
+
+// Color mapping for roles
+const roleColors: Record<string, string> = {
+  director: "bg-orange-600 hover:bg-orange-700",
+  head_teacher: "bg-blue-600 hover:bg-blue-700",
+  class_teacher: "bg-green-600 hover:bg-green-700",
+  subject_teacher: "bg-purple-600 hover:bg-purple-700",
+  bursar: "bg-teal-600 hover:bg-teal-700",
+};
+
+const roleDescriptions: Record<string, string> = {
+  director: "School-level management",
+  head_teacher: "Academic oversight",
+  class_teacher: "Class management",
+  subject_teacher: "Marks & assessments",
+  bursar: "Fee collection & payments",
+};
 
 const redirectForRole = (role: string) => {
   switch (role) {
@@ -66,6 +60,7 @@ const redirectForRole = (role: string) => {
 
 export const LoginForm = () => {
   const [loading, setLoading] = useState(false);
+  const [staffAccounts, setStaffAccounts] = useState<StaffAccount[]>([]);
   const { toast } = useToast();
   const [, navigate] = useLocation();
 
@@ -73,6 +68,44 @@ export const LoginForm = () => {
     resolver: zodResolver(loginSchema),
     defaultValues: { username: "", password: "" },
   });
+
+  // Load all staff accounts from API on mount
+  useEffect(() => {
+    (async () => {
+      try {
+        const [usersRes, schoolsRes] = await Promise.all([
+          fetch("/api/users"),
+          fetch("/api/schools"),
+        ]);
+        const users = await usersRes.json();
+        const schools = await schoolsRes.json();
+
+        const schoolMap = Object.fromEntries(
+          schools.map((s: any) => [s.id, { name: s.name, abbr: s.abbreviation }])
+        );
+
+        const accounts = users
+          .filter((u: any) => u.role !== "super_admin")
+          .map((u: any) => ({
+            username: u.username,
+            role: u.role,
+            name: `${u.first_name} ${u.last_name}`,
+            schoolCode: schoolMap[u.school_id]?.abbr || "?",
+            schoolName: schoolMap[u.school_id]?.name || "Unknown School",
+            color: roleColors[u.role] || "bg-gray-600",
+            description: roleDescriptions[u.role] || "Staff member",
+          }))
+          .sort((a: StaffAccount, b: StaffAccount) => 
+            a.schoolName.localeCompare(b.schoolName) || 
+            a.role.localeCompare(b.role)
+          );
+
+        setStaffAccounts(accounts);
+      } catch (err) {
+        console.error("Failed to load demo accounts:", err);
+      }
+    })();
+  }, []);
 
   const handleSignIn = async (
     username: string,
@@ -193,34 +226,68 @@ export const LoginForm = () => {
                 </div>
               </div>
 
-              <div className="space-y-2">
-                {DEMO_ACCOUNTS.map((account) => (
-                  <div key={account.username} className="bg-gray-50 rounded-lg p-3 border border-gray-100">
-                    <div className="flex items-center justify-between mb-2">
-                      <div className="flex items-center gap-2">
-                        <User className="w-3 h-3 text-gray-600" />
-                        <span className="font-bold text-gray-800 text-sm">{account.role}</span>
-                      </div>
-                      <span className="text-[10px] text-gray-500">{account.description}</span>
-                    </div>
-                    <div className="flex items-center gap-2 text-xs mb-2">
-                      <span className="text-gray-600">Username:</span>
-                      <code className="bg-white px-1.5 py-0.5 rounded font-mono text-gray-700 border border-gray-200">{account.username}</code>
-                      <span className="text-gray-600">Pass:</span>
-                      <code className="bg-white px-1.5 py-0.5 rounded font-mono text-gray-700 border border-gray-200">demo123</code>
-                    </div>
-                    <Button
-                      type="button"
-                      onClick={() =>
-                        handleSignIn(account.username, "demo123", account.role)
-                      }
-                      className={`w-full h-8 text-white text-xs font-medium ${account.color}`}
-                      disabled={loading}
-                    >
-                      Sign In
-                    </Button>
+              <div className="space-y-2 max-h-96 overflow-y-auto pr-1">
+                {staffAccounts.length === 0 ? (
+                  <div className="text-center py-4 text-gray-500 text-sm">
+                    Loading demo accounts...
                   </div>
-                ))}
+                ) : (
+                  <>
+                    {Array.from(new Set(staffAccounts.map((a) => a.schoolName))).map(
+                      (schoolName) => (
+                        <div key={schoolName} className="border-t border-gray-200 pt-3 first:border-t-0 first:pt-0">
+                          <h4 className="text-xs font-bold text-gray-600 mb-2 flex items-center gap-1">
+                            <BookOpen className="w-3 h-3" />
+                            {staffAccounts.find((a) => a.schoolName === schoolName)?.schoolCode || "?"} - {schoolName}
+                          </h4>
+                          <div className="space-y-1.5">
+                            {staffAccounts
+                              .filter((a) => a.schoolName === schoolName)
+                              .map((account) => (
+                                <div
+                                  key={`${account.username}`}
+                                  className="bg-gray-50 rounded p-2 border border-gray-100 text-xs"
+                                >
+                                  <div className="flex items-start justify-between mb-1">
+                                    <div className="flex items-center gap-1">
+                                      <User className="w-3 h-3 text-gray-600 flex-shrink-0" />
+                                      <span className="font-bold text-gray-800">
+                                        {account.role.replace(/_/g, " ")}
+                                      </span>
+                                    </div>
+                                    <span className="text-gray-500 text-[9px]">{account.name}</span>
+                                  </div>
+                                  <div className="flex items-center gap-1 mb-1 text-gray-600 flex-wrap">
+                                    <code className="bg-white px-1 py-0.5 rounded font-mono text-gray-700 border border-gray-200">
+                                      {account.username}
+                                    </code>
+                                    <span>/</span>
+                                    <code className="bg-white px-1 py-0.5 rounded font-mono text-gray-700 border border-gray-200">
+                                      demo123
+                                    </code>
+                                  </div>
+                                  <Button
+                                    type="button"
+                                    onClick={() =>
+                                      handleSignIn(
+                                        account.username,
+                                        "demo123",
+                                        account.role.replace(/_/g, " ")
+                                      )
+                                    }
+                                    className={`w-full h-6 text-white text-[10px] font-medium ${account.color}`}
+                                    disabled={loading}
+                                  >
+                                    Log In
+                                  </Button>
+                                </div>
+                              ))}
+                          </div>
+                        </div>
+                      )
+                    )}
+                  </>
+                )}
               </div>
 
               <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 text-xs text-amber-800 text-center">
