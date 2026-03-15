@@ -1,37 +1,73 @@
-import { useState } from 'react';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
-import { Link, useLocation } from 'wouter';
-import { signIn, getUserProfile } from '@/lib/auth';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { useToast } from '@/hooks/use-toast';
-import { Card, CardContent, CardHeader } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { GraduationCap, User, ArrowLeft, Shield } from 'lucide-react';
+import { useState } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
+import { Link, useLocation } from "wouter";
+import { signIn, getUserProfile } from "@/lib/auth";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { useToast } from "@/hooks/use-toast";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { GraduationCap, User, ArrowLeft, Shield } from "lucide-react";
 
 const loginSchema = z.object({
-  email: z.string().email('Please enter a valid email address'),
-  password: z.string().min(1, 'Password is required'),
+  email: z.string().email("Please enter a valid email address"),
+  password: z.string().min(1, "Password is required"),
 });
 
 type LoginFormData = z.infer<typeof loginSchema>;
 
 const DEMO_ACCOUNTS = [
-  { email: 'admin@demo.com',          role: 'Admin',          color: 'bg-red-600 hover:bg-red-700',       description: 'Full system access' },
-  { email: 'director@demo.com',       role: 'Director',       color: 'bg-orange-600 hover:bg-orange-700', description: 'School-level management' },
-  { email: 'headteacher@demo.com',    role: 'Head Teacher',   color: 'bg-blue-600 hover:bg-blue-700',     description: 'Academic oversight' },
-  { email: 'classteacher@demo.com',   role: 'Class Teacher',  color: 'bg-green-600 hover:bg-green-700',   description: 'Class management' },
-  { email: 'subjectteacher@demo.com', role: 'Subject Teacher',color: 'bg-purple-600 hover:bg-purple-700', description: 'Marks management' },
-  { email: 'bursar@demo.com',         role: 'Bursar',         color: 'bg-teal-600 hover:bg-teal-700',     description: 'Fee collection' },
+  {
+    email: "admin@demo.com",
+    role: "Admin",
+    color: "bg-red-600 hover:bg-red-700",
+    description: "Full system access",
+  },
+  {
+    email: "director@demo.com",
+    role: "Director",
+    color: "bg-orange-600 hover:bg-orange-700",
+    description: "School-level management",
+  },
+  {
+    email: "headteacher@demo.com",
+    role: "Head Teacher",
+    color: "bg-blue-600 hover:bg-blue-700",
+    description: "Academic oversight",
+  },
+  {
+    email: "classteacher@demo.com",
+    role: "Class Teacher",
+    color: "bg-green-600 hover:bg-green-700",
+    description: "Class management",
+  },
+  {
+    email: "subjectteacher@demo.com",
+    role: "Subject Teacher",
+    color: "bg-purple-600 hover:bg-purple-700",
+    description: "Marks management",
+  },
+  {
+    email: "bursar@demo.com",
+    role: "Bursar",
+    color: "bg-teal-600 hover:bg-teal-700",
+    description: "Fee collection",
+  },
 ];
 
 const redirectForRole = (role: string) => {
-  if (role === 'super_admin') return '/admin';
-  if (role === 'director') return '/director';
-  return '/dashboard';
+  switch (role) {
+    case "super_admin": return "/admin";
+    case "director":    return "/director";
+    case "head_teacher": return "/headteacher";
+    case "class_teacher": return "/classteacher";
+    case "bursar":      return "/bursar";
+    case "subject_teacher": return "/dashboard";
+    default:            return "/dashboard";
+  }
 };
 
 export const LoginForm = () => {
@@ -41,22 +77,33 @@ export const LoginForm = () => {
 
   const form = useForm<LoginFormData>({
     resolver: zodResolver(loginSchema),
-    defaultValues: { email: '', password: '' },
+    defaultValues: { email: "", password: "" },
   });
 
-  const handleSignIn = async (email: string, password: string, roleLabel?: string) => {
+  const handleSignIn = async (
+    email: string,
+    password: string,
+    roleLabel?: string,
+  ) => {
     setLoading(true);
     try {
       const authUser = await signIn(email, password);
-      const profile = await getUserProfile(authUser.uid, authUser.email ?? undefined);
-      const dest = redirectForRole(profile?.role ?? '');
+      const profile = await getUserProfile(
+        authUser.uid,
+        authUser.email ?? undefined,
+      );
+      const dest = redirectForRole(profile?.role ?? "");
       toast({
-        title: roleLabel ? `Welcome, ${roleLabel}!` : 'Welcome back!',
-        description: 'Redirecting to your dashboard...',
+        title: roleLabel ? `Welcome, ${roleLabel}!` : "Welcome back!",
+        description: "Redirecting to your dashboard...",
       });
       setTimeout(() => navigate(dest), 200);
     } catch (error: any) {
-      toast({ variant: 'destructive', title: 'Login Failed', description: error.message });
+      toast({
+        variant: "destructive",
+        title: "Login Failed",
+        description: error.message,
+      });
     } finally {
       setLoading(false);
     }
@@ -66,7 +113,11 @@ export const LoginForm = () => {
     <div className="min-h-screen flex items-center justify-center px-4 py-12 bg-gradient-to-br from-blue-50 via-white to-indigo-50">
       <div className="w-full max-w-md space-y-4">
         <Link href="/">
-          <Button variant="ghost" size="sm" className="text-gray-500 hover:text-gray-700 mb-2">
+          <Button
+            variant="ghost"
+            size="sm"
+            className="text-gray-500 hover:text-gray-700 mb-2"
+          >
             <ArrowLeft className="w-4 h-4 mr-2" />
             Back to EduPay
           </Button>
@@ -86,20 +137,27 @@ export const LoginForm = () => {
               <p className="text-gray-500 mt-1">School Management Platform</p>
             </div>
           </CardHeader>
-          
+
           <CardContent className="pt-4">
-            <form onSubmit={form.handleSubmit(d => handleSignIn(d.email, d.password))} className="space-y-4">
+            <form
+              onSubmit={form.handleSubmit((d) =>
+                handleSignIn(d.email, d.password),
+              )}
+              className="space-y-4"
+            >
               <div className="space-y-1">
                 <Label htmlFor="email">Email Address</Label>
                 <Input
                   id="email"
                   type="email"
                   placeholder="Enter your email"
-                  {...form.register('email')}
+                  {...form.register("email")}
                   className="h-11"
                 />
                 {form.formState.errors.email && (
-                  <p className="text-sm text-red-600">{form.formState.errors.email.message}</p>
+                  <p className="text-sm text-red-600">
+                    {form.formState.errors.email.message}
+                  </p>
                 )}
               </div>
 
@@ -109,11 +167,13 @@ export const LoginForm = () => {
                   id="password"
                   type="password"
                   placeholder="Enter your password"
-                  {...form.register('password')}
+                  {...form.register("password")}
                   className="h-11"
                 />
                 {form.formState.errors.password && (
-                  <p className="text-sm text-red-600">{form.formState.errors.password.message}</p>
+                  <p className="text-sm text-red-600">
+                    {form.formState.errors.password.message}
+                  </p>
                 )}
               </div>
 
@@ -122,16 +182,20 @@ export const LoginForm = () => {
                 className="w-full h-11 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700"
                 disabled={loading}
               >
-                {loading ? 'Signing in...' : 'Sign In'}
+                {loading ? "Signing in..." : "Sign In"}
               </Button>
             </form>
 
             {/* Demo accounts */}
             <div className="mt-6 space-y-4">
               <div className="relative">
-                <div className="absolute inset-0 flex items-center"><span className="w-full border-t" /></div>
+                <div className="absolute inset-0 flex items-center">
+                  <span className="w-full border-t" />
+                </div>
                 <div className="relative flex justify-center text-xs uppercase">
-                  <span className="bg-white px-3 text-gray-400 font-medium">Demo Accounts</span>
+                  <span className="bg-white px-3 text-gray-400 font-medium">
+                    Demo Accounts
+                  </span>
                 </div>
               </div>
 
@@ -140,7 +204,9 @@ export const LoginForm = () => {
                   <Button
                     key={account.email}
                     type="button"
-                    onClick={() => handleSignIn(account.email, 'demo123', account.role)}
+                    onClick={() =>
+                      handleSignIn(account.email, "demo123", account.role)
+                    }
                     className={`h-auto py-2 px-3 text-white text-xs font-medium flex flex-col items-start gap-0.5 ${account.color}`}
                     disabled={loading}
                   >
@@ -148,7 +214,9 @@ export const LoginForm = () => {
                       <User className="w-3 h-3" />
                       <span className="font-bold">{account.role}</span>
                     </div>
-                    <span className="text-white/80 text-[10px] leading-tight text-left">{account.description}</span>
+                    <span className="text-white/80 text-[10px] leading-tight text-left">
+                      {account.description}
+                    </span>
                   </Button>
                 ))}
               </div>
@@ -156,30 +224,49 @@ export const LoginForm = () => {
               {/* Super Admin quick login */}
               <Button
                 type="button"
-                onClick={() => handleSignIn('superadmin@skyvale.com', 'Admin@2025!', 'Super Admin')}
+                onClick={() =>
+                  handleSignIn(
+                    "superadmin@skyvale.com",
+                    "Admin@2025!",
+                    "Super Admin",
+                  )
+                }
                 className="w-full h-auto py-2 px-3 bg-indigo-900 hover:bg-indigo-800 text-white text-xs font-medium flex items-center gap-2"
                 disabled={loading}
               >
                 <Shield className="w-4 h-4" />
                 <div className="text-left">
                   <p className="font-bold">SKYVALE Super Admin</p>
-                  <p className="text-indigo-300 text-[10px]">Platform owner control panel</p>
+                  <p className="text-indigo-300 text-[10px]">
+                    Platform owner control panel
+                  </p>
                 </div>
-                <Badge className="ml-auto bg-indigo-700 text-white text-[10px]">SaaS Owner</Badge>
+                <Badge className="ml-auto bg-indigo-700 text-white text-[10px]">
+                  SaaS Owner
+                </Badge>
               </Button>
 
               <div className="bg-blue-50 rounded-lg p-3 text-xs">
-                <p className="font-semibold text-blue-700 mb-1">Demo Credentials</p>
-                <p className="text-blue-600">School accounts: password <strong>demo123</strong></p>
-                <p className="text-blue-600">Super Admin: password <strong>Admin@2025!</strong></p>
+                <p className="font-semibold text-blue-700 mb-1">
+                  Demo Credentials
+                </p>
+                <p className="text-blue-600">
+                  School accounts: password <strong>demo123</strong>
+                </p>
+                <p className="text-blue-600">
+                  Super Admin: password <strong>Admin@2025!</strong>
+                </p>
               </div>
             </div>
           </CardContent>
         </Card>
 
         <p className="text-center text-sm text-gray-500">
-          Don't have an account?{' '}
-          <a href="#demo" className="text-blue-600 hover:text-blue-700 font-medium">
+          Don't have an account?{" "}
+          <a
+            href="#demo"
+            className="text-blue-600 hover:text-blue-700 font-medium"
+          >
             Request access at edupayapp.com
           </a>
         </p>

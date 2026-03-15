@@ -37,6 +37,7 @@ export const signIn = async (email: string, password: string): Promise<AuthUser>
   const data = await res.json();
   if (!res.ok) throw new Error(data.message || 'Login failed');
 
+  // Store both id AND email so we can look up by ID (avoids duplicate email issue)
   const authUser: AuthUser = { uid: data.id, email: data.email };
   saveSession(authUser);
   notify(authUser);
@@ -49,10 +50,17 @@ export const signOut = async (): Promise<void> => {
   notify(null);
 };
 
-export const getUserProfile = async (_uid: string, email?: string): Promise<User | null> => {
-  if (!email) return null;
+// Fetch profile by user ID (preferred) — falls back to email if no ID
+export const getUserProfile = async (uid: string, email?: string): Promise<User | null> => {
   try {
-    const res = await fetch(`/api/auth/user?email=${encodeURIComponent(email)}`);
+    // Always prefer lookup by ID to avoid duplicate-email issues
+    const param = uid && uid !== 'undefined'
+      ? `id=${encodeURIComponent(uid)}`
+      : email ? `email=${encodeURIComponent(email)}` : null;
+
+    if (!param) return null;
+
+    const res = await fetch(`/api/auth/user?${param}`);
     if (!res.ok) return null;
     const data = await res.json();
 

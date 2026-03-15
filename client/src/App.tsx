@@ -9,6 +9,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { Layout } from "@/components/layout/Layout";
 import { LandingOnly } from "@/pages/LandingOnly";
 import Login from "@/pages/Login";
+import OfficialLogin from "@/pages/OfficialLogin";
 import Dashboard from "@/pages/Dashboard";
 import Students from "@/pages/Students";
 import Schools from "@/pages/Schools";
@@ -87,7 +88,7 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
   }
 
   if (!isAuthenticated) {
-    return <Login />;
+    return <OfficialLogin />;
   }
 
   if (isSuperAdmin) {
@@ -133,7 +134,7 @@ function HeadTeacherRoute({ children }: { children: React.ReactNode }) {
     );
   }
 
-  if (!isAuthenticated) return <Login />;
+  if (!isAuthenticated) return <OfficialLogin />;
 
   if (profile?.role !== 'head_teacher' && profile?.role !== 'admin') {
     setTimeout(() => navigate('/dashboard'), 0);
@@ -158,7 +159,7 @@ function ClassTeacherRoute({ children }: { children: React.ReactNode }) {
     );
   }
 
-  if (!isAuthenticated) return <Login />;
+  if (!isAuthenticated) return <OfficialLogin />;
 
   if (profile?.role !== 'class_teacher' && profile?.role !== 'admin') {
     setTimeout(() => navigate('/dashboard'), 0);
@@ -183,7 +184,7 @@ function BursarRoute({ children }: { children: React.ReactNode }) {
     );
   }
 
-  if (!isAuthenticated) return <Login />;
+  if (!isAuthenticated) return <OfficialLogin />;
 
   if (profile?.role !== 'bursar' && profile?.role !== 'admin') {
     setTimeout(() => navigate('/dashboard'), 0);
@@ -209,7 +210,7 @@ function DirectorRoute({ children }: { children: React.ReactNode }) {
   }
 
   if (!isAuthenticated) {
-    return <Login />;
+    return <OfficialLogin />;
   }
 
   if (profile?.role !== 'director' && profile?.role !== 'admin') {
@@ -236,7 +237,7 @@ function AdminRoute({ children }: { children: React.ReactNode }) {
   }
 
   if (!isAuthenticated) {
-    return <Login />;
+    return <OfficialLogin />;
   }
 
   if (!isSuperAdmin) {
@@ -251,7 +252,8 @@ function Router() {
   return (
     <Switch>
       <Route path="/" component={LandingOnly} />
-      <Route path="/login" component={Login} />
+      <Route path="/login" component={OfficialLogin} />
+      <Route path="/demo-login" component={Login} />
 
       {/* ── Super Admin routes ─────────────────────────────────────── */}
       <Route path="/admin">

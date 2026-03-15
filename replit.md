@@ -10,7 +10,35 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes
 
-### March 14, 2026 (Latest)
+### March 15, 2026 (Latest)
+- **MVC Server Restructure COMPLETED**: `server/routes.ts` (1932 lines) split into 14 focused route files under `server/routes/`:
+  - `auth.ts` — login, logout, user profile, change-password
+  - `schools.ts` — CRUD for schools
+  - `users.ts` — user management (with email validation)
+  - `students.ts` — student management + defaulters list
+  - `classes.ts` — class management + teacher assignment
+  - `subjects.ts` — subject management + teacher assignment
+  - `attendance.ts` — attendance (single + bulk)
+  - `exams.ts` — exam management + status updates
+  - `marks.ts` — marks, bulk entry, lock/unlock, report cards, school stats
+  - `fees.ts` — fee structures, payments, payment records, bank statements, reconciliation
+  - `academic.ts` — sections, streams, academic years, terms, grading systems, events, parent comms
+  - `admin.ts` — super admin CRUD (schools, users, subscriptions, audit logs, settings)
+  - `signup.ts` — demo requests, trial requests, admin approval flow
+  - `upload.ts` — file upload/delete
+  - `index.ts` — bootstrap (DB schema setup + seed) + route registration
+- **Auth system fixed**:
+  - `getUserProfile` now looks up by user ID (`?id=`) instead of email — fixes duplicate email issue
+  - Login endpoint uses `ORDER BY created_at DESC LIMIT 1` for emails that appear multiple times
+  - Email regex validation on login and user creation
+- **Role redirects fixed** in `LoginForm.tsx`: `head_teacher→/headteacher`, `class_teacher→/classteacher`, `bursar→/bursar`, `subject_teacher→/dashboard`
+- **Two separate login pages**:
+  - `/login` → `OfficialLogin.tsx` — clean professional page for real school staff (no demo accounts), shows helpline
+  - `/demo-login` → `Login.tsx` (`LoginForm`) — demo accounts + super admin quick login
+  - All ProtectedRoute guards redirect unauthenticated users to `/login` (OfficialLogin)
+- **School director created on approval**: When super admin approves a signup request, a director user is created in the users table with the school's credentials
+
+### March 14, 2026
 - **Director Panel query fix**: All 9 director pages now use explicit `queryFn` with `?schoolId=` query params to correctly fetch school-scoped data (fixed `queryKey.join("/")` path-join bug)
 - **Security fix**: `GET /api/users`, `POST /api/users`, `PUT /api/users/:id` no longer expose `password_hash` in responses
 - **New `/api/stats` endpoint**: School-level statistics (totalStudents, totalStaff, totalClasses, totalRevenue, expectedRevenue, totalMarks, presentToday) — used by all role dashboards
