@@ -3,7 +3,7 @@ import { Link, useLocation } from 'wouter';
 import {
   LayoutDashboard, CalendarDays, Users, UserSquare2, ClipboardList,
   BarChart3, FileText, CreditCard, Menu, LogOut, ChevronRight,
-  GraduationCap, Bell, X
+  Bell, X
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/hooks/useAuth';
@@ -54,8 +54,8 @@ export function HTLayout({ children }: { children: ReactNode }) {
       `}>
         <div className="p-5 border-b border-emerald-700/50 flex items-center justify-between">
           <div className="flex items-center gap-3 min-w-0">
-            <div className="p-2 bg-emerald-600 rounded-xl flex-shrink-0">
-              <GraduationCap className="w-5 h-5 text-white" />
+            <div className="w-9 h-9 bg-[#0a1628] rounded-xl flex-shrink-0 overflow-hidden flex items-center justify-center">
+              <img src="/logo.png" alt="EduPay" className="w-8 h-8 object-contain" />
             </div>
             <div className="min-w-0">
               <p className="font-bold text-white text-sm leading-tight">EduPay</p>

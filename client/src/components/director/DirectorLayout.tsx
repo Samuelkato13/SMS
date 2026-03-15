@@ -2,7 +2,7 @@ import { ReactNode, useState } from 'react';
 import { Link, useLocation } from 'wouter';
 import {
   LayoutDashboard, Settings, Users, UserSquare2, BookOpen, DollarSign,
-  BarChart3, FileText, PieChart, Menu, LogOut, ChevronRight, GraduationCap, Bell
+  BarChart3, FileText, PieChart, Menu, LogOut, ChevronRight, Bell
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -63,8 +63,8 @@ export function DirectorLayout({ children }: { children: ReactNode }) {
       `}>
         {/* School brand */}
         <div className="flex items-center gap-3 px-4 py-4 border-b border-blue-700">
-          <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center flex-shrink-0">
-            <GraduationCap className="w-4 h-4 text-white" />
+          <div className="w-8 h-8 bg-[#0a1628] rounded-lg flex items-center justify-center flex-shrink-0 overflow-hidden">
+            <img src="/logo.png" alt="EduPay" className="w-7 h-7 object-contain" />
           </div>
           {!collapsed && (
             <div className="min-w-0 flex-1">

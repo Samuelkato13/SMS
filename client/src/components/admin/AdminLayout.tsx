@@ -3,7 +3,7 @@ import { Link, useLocation } from 'wouter';
 import { useQuery } from '@tanstack/react-query';
 import {
   LayoutDashboard, School, Users, CreditCard, Settings, ScrollText,
-  Menu, X, LogOut, Shield, Bell, ChevronRight, ClipboardList
+  Menu, X, LogOut, Bell, ChevronRight, ClipboardList
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -90,13 +90,13 @@ export function AdminLayout({ children }: { children: ReactNode }) {
       `}>
         {/* Logo */}
         <div className="flex items-center gap-3 px-4 py-5 border-b border-indigo-800">
-          <div className="bg-indigo-600 rounded-lg p-1.5 flex-shrink-0">
-            <Shield className="w-5 h-5 text-white" />
+          <div className="w-9 h-9 bg-[#0a1628] rounded-lg flex-shrink-0 overflow-hidden flex items-center justify-center border border-indigo-700">
+            <img src="/logo.png" alt="EduPay" className="w-8 h-8 object-contain" />
           </div>
           {!collapsed && (
             <div className="min-w-0">
-              <p className="text-white font-bold text-sm leading-tight">SKYVALE</p>
-              <p className="text-indigo-300 text-[11px]">Super Admin Panel</p>
+              <p className="text-white font-bold text-sm leading-tight">EduPay Admin</p>
+              <p className="text-indigo-300 text-[11px]">SKYVALE Technologies</p>
             </div>
           )}
           <Button

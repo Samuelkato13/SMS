@@ -74,13 +74,8 @@ export const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
         {/* Brand Header */}
         <div className="p-5 border-b border-white/10">
           <div className="flex items-center space-x-3">
-            <div
-              className="p-2 rounded-xl shrink-0"
-              style={{
-                background: `linear-gradient(135deg, var(--theme-accent-from, #3b82f6), var(--theme-accent-to, #1d4ed8))`,
-              }}
-            >
-              <GraduationCap className="w-5 h-5 text-white" />
+            <div className="w-9 h-9 rounded-xl shrink-0 bg-[#0a1628] flex items-center justify-center overflow-hidden">
+              <img src="/logo.png" alt="EduPay" className="w-8 h-8 object-contain" />
             </div>
             <div className="min-w-0">
               <h2 className="font-bold text-white text-lg leading-tight">EduPay</h2>

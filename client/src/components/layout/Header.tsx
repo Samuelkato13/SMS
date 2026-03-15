@@ -1,4 +1,4 @@
-import { Bell, Menu, Wifi, WifiOff, LogOut, GraduationCap } from 'lucide-react';
+import { Bell, Menu, Wifi, WifiOff, LogOut } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useSchool } from '@/hooks/useSchool';
 import { useAuth } from '@/hooks/useAuth';
@@ -37,13 +37,8 @@ export const Header = ({ onMenuClick }: HeaderProps) => {
 
           <div className="flex items-center gap-3">
             {/* Logo icon uses the role accent color */}
-            <div
-              className="hidden md:flex items-center justify-center p-1.5 rounded-lg"
-              style={{
-                background: `linear-gradient(135deg, var(--theme-accent-from, #3b82f6), var(--theme-accent-to, #1d4ed8))`,
-              }}
-            >
-              <GraduationCap className="w-5 h-5 text-white" />
+            <div className="hidden md:flex items-center justify-center w-9 h-9 rounded-lg bg-[#0a1628] overflow-hidden">
+              <img src="/logo.png" alt="EduPay" className="w-8 h-8 object-contain" />
             </div>
             <span className="hidden md:block font-bold text-gray-800">{schoolName || 'EduPay'}</span>
 

@@ -270,8 +270,8 @@ export const LandingOnly = () => {
       <header className="border-b bg-white/90 backdrop-blur-sm sticky top-0 z-50 shadow-sm">
         <div className="container mx-auto px-4 py-4 flex justify-between items-center">
           <div className="flex items-center space-x-2">
-            <div className="bg-gradient-to-r from-blue-600 to-indigo-600 p-2 rounded-xl">
-              <GraduationCap className="w-6 h-6 text-white" />
+            <div className="bg-[#0a1628] p-1.5 rounded-xl overflow-hidden">
+              <img src="/logo.png" alt="EduPay" className="w-8 h-8 object-contain" />
             </div>
             <span className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
               EduPay
@@ -745,8 +745,8 @@ export const LandingOnly = () => {
           <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-12">
             <div>
               <div className="flex items-center space-x-2 mb-4">
-                <div className="bg-gradient-to-r from-blue-500 to-indigo-500 p-2 rounded-xl">
-                  <GraduationCap className="w-5 h-5 text-white" />
+                <div className="bg-[#0a1628] p-1.5 rounded-xl overflow-hidden">
+                  <img src="/logo.png" alt="EduPay" className="w-7 h-7 object-contain" />
                 </div>
                 <span className="text-2xl font-bold">EduPay</span>
               </div>
