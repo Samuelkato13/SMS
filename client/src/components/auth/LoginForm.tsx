@@ -303,8 +303,39 @@ export const LoginForm = () => {
                   })}
                 </div>
 
-                <div className="mt-4 p-4 bg-amber-50 border border-amber-200 rounded-2xl text-sm text-amber-800 text-center">
-                  <strong>Super Admin</strong> credentials are managed privately by SKYVALE Technologies.
+                {/* Super Admin card */}
+                <div className="mt-6 rounded-2xl border border-purple-200 bg-purple-50/60 p-4 flex flex-col gap-3">
+                  <div className="flex items-start justify-between gap-2">
+                    <span className="text-xs font-bold px-2.5 py-1 rounded-full bg-purple-200 text-purple-800">
+                      Super Admin
+                    </span>
+                    <span className="text-xs text-gray-400 text-right leading-tight">SKYVALE Admin</span>
+                  </div>
+                  <div className="space-y-1.5">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs text-gray-500">Username</span>
+                      <code className="text-xs bg-white border border-purple-200 px-2 py-0.5 rounded font-mono text-gray-800">
+                        super_admin
+                      </code>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs text-gray-500">Password</span>
+                      <code className="text-xs bg-white border border-purple-200 px-2 py-0.5 rounded font-mono text-gray-800">
+                        Admin@2025!
+                      </code>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => handleSignIn("super_admin", "Admin@2025!", "Super Admin")}
+                    disabled={loading}
+                    className="mt-auto w-full h-9 rounded-xl bg-purple-600 hover:bg-purple-700 text-white text-sm font-semibold flex items-center justify-center gap-1.5 transition-all disabled:opacity-60"
+                  >
+                    {activeUsername === "super_admin" ? (
+                      <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Signing in...</>
+                    ) : (
+                      <>Log In <ArrowRight className="w-3.5 h-3.5" /></>
+                    )}
+                  </button>
                 </div>
               </>
             )}
