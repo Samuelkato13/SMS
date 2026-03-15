@@ -8,7 +8,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { Phone, Lock, User } from "lucide-react";
+import { EduPayLogo } from "@/components/ui/EduPayLogo";
+import { Lock, User, Phone, ArrowRight } from "lucide-react";
 
 const loginSchema = z.object({
   username: z.string().min(1, "Username is required"),
@@ -44,7 +45,7 @@ export default function OfficialLogin() {
       const authUser = await signIn(username, password);
       const profile = await getUserProfile(authUser.uid);
       if (!profile) throw new Error("Account not found. Please contact your administrator.");
-      toast({ title: `Welcome back, ${profile.firstName}!`, description: "Redirecting to your dashboard..." });
+      toast({ title: `Welcome, ${profile.firstName}!`, description: "Loading your dashboard..." });
       setTimeout(() => navigate(redirectForRole(profile.role ?? "")), 300);
     } catch (error: any) {
       toast({ variant: "destructive", title: "Login Failed", description: error.message });
@@ -54,118 +55,149 @@ export default function OfficialLogin() {
   };
 
   return (
-    <div className="min-h-screen flex">
-      {/* Left Panel — Brand */}
-      <div className="hidden lg:flex lg:w-1/2 bg-[#0a1628] flex-col items-center justify-center p-12 relative overflow-hidden">
-        {/* Background decoration */}
-        <div className="absolute top-0 left-0 w-full h-full opacity-10">
-          <div className="absolute top-20 left-20 w-64 h-64 rounded-full bg-blue-500 blur-3xl" />
-          <div className="absolute bottom-20 right-20 w-64 h-64 rounded-full bg-indigo-500 blur-3xl" />
-        </div>
+    <div className="min-h-screen flex bg-slate-50">
+      {/* ── Left Brand Panel ── */}
+      <div className="hidden lg:flex lg:w-[480px] flex-col relative overflow-hidden bg-gradient-to-br from-blue-900 via-blue-800 to-slate-900">
+        {/* Decorative circles */}
+        <div className="absolute -top-24 -left-24 w-96 h-96 rounded-full bg-blue-600/20 blur-3xl" />
+        <div className="absolute -bottom-24 -right-24 w-96 h-96 rounded-full bg-sky-400/10 blur-3xl" />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 rounded-full bg-blue-500/5 blur-2xl" />
 
-        <div className="relative z-10 text-center">
-          <img src="/logo.png" alt="EduPay" className="h-32 mx-auto mb-8" />
-          <h1 className="text-4xl font-bold text-white mb-3">EduPay</h1>
-          <p className="text-blue-300 text-lg mb-8">School Management System</p>
-          <div className="space-y-4 text-left">
-            {[
-              "Multi-school management",
-              "Fees & mobile money payments",
-              "Marks, exams & report cards",
-              "Attendance tracking",
-              "Works offline too",
-            ].map((feature) => (
-              <div key={feature} className="flex items-center gap-3 text-gray-300">
-                <div className="w-2 h-2 rounded-full bg-blue-400 flex-shrink-0" />
-                <span className="text-sm">{feature}</span>
-              </div>
-            ))}
+        <div className="relative z-10 flex flex-col h-full p-12">
+          {/* Logo */}
+          <div className="flex items-center gap-3">
+            <EduPayLogo size={44} />
+            <span className="text-white font-extrabold text-2xl tracking-tight">EduPay</span>
           </div>
-        </div>
 
-        <div className="relative z-10 mt-12 text-center">
-          <p className="text-gray-500 text-xs">Powered by SKYVALE Technologies Uganda Limited</p>
+          {/* Main content */}
+          <div className="flex-1 flex flex-col justify-center">
+            <h1 className="text-4xl font-bold text-white leading-tight mb-4">
+              School Management<br />
+              <span className="text-sky-300">Made Simple</span>
+            </h1>
+            <p className="text-blue-200 text-base leading-relaxed mb-10">
+              The all-in-one platform built for Ugandan schools — manage fees, marks, attendance and more.
+            </p>
+
+            <div className="space-y-4">
+              {[
+                { icon: "💳", label: "Mobile money fee collection" },
+                { icon: "📊", label: "Marks & report card generation" },
+                { icon: "📋", label: "Attendance tracking" },
+                { icon: "🏫", label: "Multi-school management" },
+                { icon: "📶", label: "Works offline too" },
+              ].map(({ icon, label }) => (
+                <div key={label} className="flex items-center gap-3">
+                  <span className="text-lg">{icon}</span>
+                  <span className="text-blue-100 text-sm">{label}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Footer */}
+          <div className="text-blue-400 text-xs">
+            <p>SKYVALE Technologies Uganda Limited</p>
+            <p className="mt-1">edupayapp.com</p>
+          </div>
         </div>
       </div>
 
-      {/* Right Panel — Login Form */}
-      <div className="w-full lg:w-1/2 flex flex-col items-center justify-center px-6 py-12 bg-gray-50">
+      {/* ── Right Login Panel ── */}
+      <div className="flex-1 flex flex-col items-center justify-center px-6 py-12">
         {/* Mobile logo */}
-        <div className="lg:hidden mb-8 text-center">
-          <div className="bg-[#0a1628] rounded-2xl p-4 inline-block mb-3">
-            <img src="/logo.png" alt="EduPay" className="h-16 mx-auto" />
-          </div>
-          <h1 className="text-2xl font-bold text-gray-900">EduPay</h1>
+        <div className="lg:hidden mb-10 flex items-center gap-3">
+          <EduPayLogo size={40} />
+          <span className="font-extrabold text-2xl text-gray-900">EduPay</span>
         </div>
 
-        <div className="w-full max-w-md">
+        <div className="w-full max-w-[420px]">
           <div className="mb-8">
-            <h2 className="text-2xl font-bold text-gray-900">Welcome back</h2>
-            <p className="text-gray-500 mt-1 text-sm">Sign in to access your school dashboard</p>
+            <h2 className="text-3xl font-bold text-gray-900 mb-1">Welcome back</h2>
+            <p className="text-gray-500 text-sm">Sign in to your school dashboard</p>
           </div>
 
-          <form onSubmit={form.handleSubmit((d) => handleSignIn(d.username, d.password))} className="space-y-5">
-            <div className="space-y-1.5">
-              <Label htmlFor="username" className="text-sm font-medium text-gray-700">
+          <form
+            onSubmit={form.handleSubmit((d) => handleSignIn(d.username, d.password))}
+            className="space-y-5"
+          >
+            <div>
+              <Label htmlFor="username" className="text-sm font-semibold text-gray-700 mb-1.5 block">
                 Username
               </Label>
               <div className="relative">
-                <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                <User className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                 <Input
                   id="username"
                   type="text"
                   placeholder="e.g., dr-eds, ht-hs"
                   {...form.register("username")}
-                  className="h-12 pl-10 bg-white border-gray-300 focus:border-blue-500 font-mono text-sm"
+                  className="h-12 pl-11 font-mono text-sm bg-white border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 rounded-xl"
                   autoFocus
                 />
               </div>
               {form.formState.errors.username && (
-                <p className="text-xs text-red-600">{form.formState.errors.username.message}</p>
+                <p className="text-xs text-red-500 mt-1">{form.formState.errors.username.message}</p>
               )}
+              <p className="text-xs text-gray-400 mt-1.5">
+                Format: <code className="bg-gray-100 px-1 rounded">role-schoolcode</code> — e.g., dr-eds (Director of EDS)
+              </p>
             </div>
 
-            <div className="space-y-1.5">
-              <Label htmlFor="password" className="text-sm font-medium text-gray-700">
+            <div>
+              <Label htmlFor="password" className="text-sm font-semibold text-gray-700 mb-1.5 block">
                 Password
               </Label>
               <div className="relative">
-                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                 <Input
                   id="password"
                   type="password"
                   placeholder="Enter your password"
                   {...form.register("password")}
-                  className="h-12 pl-10 bg-white border-gray-300 focus:border-blue-500"
+                  className="h-12 pl-11 bg-white border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 rounded-xl"
                 />
               </div>
               {form.formState.errors.password && (
-                <p className="text-xs text-red-600">{form.formState.errors.password.message}</p>
+                <p className="text-xs text-red-500 mt-1">{form.formState.errors.password.message}</p>
               )}
             </div>
 
             <Button
               type="submit"
-              className="w-full h-12 bg-blue-600 hover:bg-blue-700 text-white font-semibold text-base rounded-lg"
               disabled={loading}
+              className="w-full h-12 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-semibold text-base shadow-md shadow-blue-500/20 transition-all"
             >
-              {loading ? "Signing in..." : "Sign In"}
+              {loading ? (
+                <span className="flex items-center gap-2">
+                  <span className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />
+                  Signing in...
+                </span>
+              ) : (
+                <span className="flex items-center gap-2">
+                  Sign In
+                  <ArrowRight className="w-4 h-4" />
+                </span>
+              )}
             </Button>
           </form>
 
-          <div className="mt-6 text-center">
-            <p className="text-sm text-gray-500">
-              Want to explore first?{" "}
-              <Link href="/demo-login" className="text-blue-600 hover:text-blue-700 font-medium">
-                View demo accounts →
-              </Link>
-            </p>
+          {/* Demo link */}
+          <div className="mt-6 p-4 bg-blue-50 border border-blue-100 rounded-xl">
+            <p className="text-sm text-blue-700 font-medium mb-2">Exploring EduPay?</p>
+            <Link href="/demo-login">
+              <button className="text-sm text-blue-600 hover:text-blue-800 font-semibold flex items-center gap-1 underline underline-offset-2">
+                View demo accounts for all roles
+                <ArrowRight className="w-3.5 h-3.5" />
+              </button>
+            </Link>
           </div>
 
-          <div className="mt-8 pt-6 border-t border-gray-200 text-center">
+          <div className="mt-6 text-center">
             <p className="text-xs text-gray-400 flex items-center justify-center gap-1.5">
               <Phone className="w-3 h-3" />
-              Need help? Call 0742 751 956
+              Need help? Call <span className="font-medium text-gray-500">0742 751 956</span>
             </p>
           </div>
         </div>

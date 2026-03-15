@@ -1,5 +1,6 @@
 import { ReactNode, useState } from 'react';
 import { Link, useLocation } from 'wouter';
+import { EduPayLogo } from '@/components/ui/EduPayLogo';
 import { useQuery } from '@tanstack/react-query';
 import {
   LayoutDashboard, School, Users, CreditCard, Settings, ScrollText,
@@ -90,9 +91,7 @@ export function AdminLayout({ children }: { children: ReactNode }) {
       `}>
         {/* Logo */}
         <div className="flex items-center gap-3 px-4 py-5 border-b border-indigo-800">
-          <div className="w-9 h-9 bg-[#0a1628] rounded-lg flex-shrink-0 overflow-hidden flex items-center justify-center border border-indigo-700">
-            <img src="/logo.png" alt="EduPay" className="w-8 h-8 object-contain" />
-          </div>
+          <EduPayLogo size={36} className="flex-shrink-0" />
           {!collapsed && (
             <div className="min-w-0">
               <p className="text-white font-bold text-sm leading-tight">EduPay Admin</p>

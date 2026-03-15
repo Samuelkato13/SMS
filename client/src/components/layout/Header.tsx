@@ -1,4 +1,5 @@
 import { Bell, Menu, Wifi, WifiOff, LogOut } from 'lucide-react';
+import { EduPayLogo } from '@/components/ui/EduPayLogo';
 import { Button } from '@/components/ui/button';
 import { useSchool } from '@/hooks/useSchool';
 import { useAuth } from '@/hooks/useAuth';
@@ -37,9 +38,7 @@ export const Header = ({ onMenuClick }: HeaderProps) => {
 
           <div className="flex items-center gap-3">
             {/* Logo icon uses the role accent color */}
-            <div className="hidden md:flex items-center justify-center w-9 h-9 rounded-lg bg-[#0a1628] overflow-hidden">
-              <img src="/logo.png" alt="EduPay" className="w-8 h-8 object-contain" />
-            </div>
+            <EduPayLogo size={34} className="hidden md:block" />
             <span className="hidden md:block font-bold text-gray-800">{schoolName || 'EduPay'}</span>
 
             {/* Role badge */}

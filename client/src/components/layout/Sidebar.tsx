@@ -1,4 +1,5 @@
 import { Link, useLocation } from 'wouter';
+import { EduPayLogo } from '@/components/ui/EduPayLogo';
 import { cn } from '@/lib/utils';
 import { useSchool } from '@/hooks/useSchool';
 import { useAuth } from '@/hooks/useAuth';
@@ -74,9 +75,7 @@ export const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
         {/* Brand Header */}
         <div className="p-5 border-b border-white/10">
           <div className="flex items-center space-x-3">
-            <div className="w-9 h-9 rounded-xl shrink-0 bg-[#0a1628] flex items-center justify-center overflow-hidden">
-              <img src="/logo.png" alt="EduPay" className="w-8 h-8 object-contain" />
-            </div>
+            <EduPayLogo size={36} className="shrink-0" />
             <div className="min-w-0">
               <h2 className="font-bold text-white text-lg leading-tight">EduPay</h2>
               <p className="text-white/50 text-xs truncate">
