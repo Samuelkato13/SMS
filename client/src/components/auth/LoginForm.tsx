@@ -10,10 +10,10 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { GraduationCap, User, ArrowLeft, Shield } from "lucide-react";
+import { GraduationCap, User, ArrowLeft } from "lucide-react";
 
 const loginSchema = z.object({
-  email: z.string().email("Please enter a valid email address"),
+  username: z.string().min(1, "Username is required"),
   password: z.string().min(1, "Password is required"),
 });
 
@@ -21,37 +21,31 @@ type LoginFormData = z.infer<typeof loginSchema>;
 
 const DEMO_ACCOUNTS = [
   {
-    email: "admin@demo.com",
-    role: "Admin",
-    color: "bg-red-600 hover:bg-red-700",
-    description: "Full system access",
-  },
-  {
-    email: "director@demo.com",
+    username: "dr-eds",
     role: "Director",
     color: "bg-orange-600 hover:bg-orange-700",
     description: "School-level management",
   },
   {
-    email: "headteacher@demo.com",
+    username: "ht-eds",
     role: "Head Teacher",
     color: "bg-blue-600 hover:bg-blue-700",
     description: "Academic oversight",
   },
   {
-    email: "classteacher@demo.com",
+    username: "ct-eds",
     role: "Class Teacher",
     color: "bg-green-600 hover:bg-green-700",
     description: "Class management",
   },
   {
-    email: "subjectteacher@demo.com",
+    username: "st-eds",
     role: "Subject Teacher",
     color: "bg-purple-600 hover:bg-purple-700",
     description: "Marks management",
   },
   {
-    email: "bursar@demo.com",
+    username: "bsr-eds",
     role: "Bursar",
     color: "bg-teal-600 hover:bg-teal-700",
     description: "Fee collection",
@@ -77,17 +71,17 @@ export const LoginForm = () => {
 
   const form = useForm<LoginFormData>({
     resolver: zodResolver(loginSchema),
-    defaultValues: { email: "", password: "" },
+    defaultValues: { username: "", password: "" },
   });
 
   const handleSignIn = async (
-    email: string,
+    username: string,
     password: string,
     roleLabel?: string,
   ) => {
     setLoading(true);
     try {
-      const authUser = await signIn(email, password);
+      const authUser = await signIn(username, password);
       const profile = await getUserProfile(
         authUser.uid,
         authUser.email ?? undefined,
@@ -141,22 +135,22 @@ export const LoginForm = () => {
           <CardContent className="pt-4">
             <form
               onSubmit={form.handleSubmit((d) =>
-                handleSignIn(d.email, d.password),
+                handleSignIn(d.username, d.password),
               )}
               className="space-y-4"
             >
               <div className="space-y-1">
-                <Label htmlFor="email">Email Address</Label>
+                <Label htmlFor="username">Username</Label>
                 <Input
-                  id="email"
-                  type="email"
-                  placeholder="Enter your email"
-                  {...form.register("email")}
+                  id="username"
+                  type="text"
+                  placeholder="e.g., dr-eds"
+                  {...form.register("username")}
                   className="h-11"
                 />
-                {form.formState.errors.email && (
+                {form.formState.errors.username && (
                   <p className="text-sm text-red-600">
-                    {form.formState.errors.email.message}
+                    {form.formState.errors.username.message}
                   </p>
                 )}
               </div>
@@ -199,63 +193,49 @@ export const LoginForm = () => {
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-2">
+              <div className="space-y-2">
                 {DEMO_ACCOUNTS.map((account) => (
-                  <Button
-                    key={account.email}
-                    type="button"
-                    onClick={() =>
-                      handleSignIn(account.email, "demo123", account.role)
-                    }
-                    className={`h-auto py-2 px-3 text-white text-xs font-medium flex flex-col items-start gap-0.5 ${account.color}`}
-                    disabled={loading}
-                  >
-                    <div className="flex items-center gap-1">
-                      <User className="w-3 h-3" />
-                      <span className="font-bold">{account.role}</span>
+                  <div key={account.username} className="bg-gray-50 rounded-lg p-3 border border-gray-100">
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center gap-2">
+                        <User className="w-3 h-3 text-gray-600" />
+                        <span className="font-bold text-gray-800 text-sm">{account.role}</span>
+                      </div>
+                      <span className="text-[10px] text-gray-500">{account.description}</span>
                     </div>
-                    <span className="text-white/80 text-[10px] leading-tight text-left">
-                      {account.description}
-                    </span>
-                  </Button>
+                    <div className="flex items-center gap-2 text-xs mb-2">
+                      <span className="text-gray-600">Username:</span>
+                      <code className="bg-white px-1.5 py-0.5 rounded font-mono text-gray-700 border border-gray-200">{account.username}</code>
+                      <span className="text-gray-600">Pass:</span>
+                      <code className="bg-white px-1.5 py-0.5 rounded font-mono text-gray-700 border border-gray-200">demo123</code>
+                    </div>
+                    <Button
+                      type="button"
+                      onClick={() =>
+                        handleSignIn(account.username, "demo123", account.role)
+                      }
+                      className={`w-full h-8 text-white text-xs font-medium ${account.color}`}
+                      disabled={loading}
+                    >
+                      Sign In
+                    </Button>
+                  </div>
                 ))}
               </div>
 
-              {/* Super Admin quick login */}
-              <Button
-                type="button"
-                onClick={() =>
-                  handleSignIn(
-                    "superadmin@skyvale.com",
-                    "Admin@2025!",
-                    "Super Admin",
-                  )
-                }
-                className="w-full h-auto py-2 px-3 bg-indigo-900 hover:bg-indigo-800 text-white text-xs font-medium flex items-center gap-2"
-                disabled={loading}
-              >
-                <Shield className="w-4 h-4" />
-                <div className="text-left">
-                  <p className="font-bold">SKYVALE Super Admin</p>
-                  <p className="text-indigo-300 text-[10px]">
-                    Platform owner control panel
-                  </p>
-                </div>
-                <Badge className="ml-auto bg-indigo-700 text-white text-[10px]">
-                  SaaS Owner
-                </Badge>
-              </Button>
+              <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 text-xs text-amber-800 text-center">
+                <p className="font-semibold">Super Admin login managed separately</p>
+              </div>
 
-              <div className="bg-blue-50 rounded-lg p-3 text-xs">
-                <p className="font-semibold text-blue-700 mb-1">
-                  Demo Credentials
+              <div className="bg-green-50 rounded-lg p-3 text-xs border border-green-200">
+                <p className="font-semibold text-green-700 mb-2">
+                  How to use demo accounts:
                 </p>
-                <p className="text-blue-600">
-                  School accounts: password <strong>demo123</strong>
-                </p>
-                <p className="text-blue-600">
-                  Super Admin: password <strong>Admin@2025!</strong>
-                </p>
+                <ul className="text-green-600 space-y-1">
+                  <li>✓ Use username format: <code className="bg-white px-1 rounded">role-code</code></li>
+                  <li>✓ Password for all: <code className="bg-white px-1 rounded">demo123</code></li>
+                  <li>✓ Or click any "Sign In" button above</li>
+                </ul>
               </div>
             </div>
           </CardContent>

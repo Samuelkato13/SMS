@@ -38,16 +38,19 @@ async function bootstrap() {
       `);
     } catch (_) {}
 
-    // Seed demo passwords (demo123 for all demo accounts)
+    // Seed demo passwords and update usernames (demo123 for all demo accounts)
     const demoHash = await bcrypt.hash("demo123", 10);
-    const demoEmails = [
-      "admin@demo.com", "director@demo.com", "headteacher@demo.com",
-      "classteacher@demo.com", "subjectteacher@demo.com", "bursar@demo.com",
-    ];
-    for (const email of demoEmails) {
+    const demoUsernamesMap: Record<string, string> = {
+      "director@demo.com": "dr-eds",
+      "headteacher@demo.com": "ht-eds",
+      "classteacher@demo.com": "ct-eds",
+      "subjectteacher@demo.com": "st-eds",
+      "bursar@demo.com": "bsr-eds",
+    };
+    for (const [email, username] of Object.entries(demoUsernamesMap)) {
       await pool.query(
-        `UPDATE users SET password_hash=$1 WHERE LOWER(email)=$2 AND (password_hash IS NULL OR password_hash='')`,
-        [demoHash, email]
+        `UPDATE users SET password_hash=$1, username=$2 WHERE LOWER(email)=$3`,
+        [demoHash, username, email]
       );
     }
 

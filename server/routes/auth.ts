@@ -3,10 +3,10 @@ import pool from "../db";
 import bcrypt from "bcryptjs";
 
 export function registerAuthRoutes(app: Express) {
-  // GET /api/auth/user — fetch full profile by user ID or email
+  // GET /api/auth/user — fetch full profile by user ID or username
   app.get("/api/auth/user", async (req, res) => {
     try {
-      const { id, email } = req.query;
+      const { id, username } = req.query;
 
       let result;
       if (id) {
@@ -16,16 +16,15 @@ export function registerAuthRoutes(app: Express) {
            WHERE u.id = $1 AND u.is_active = true`,
           [id]
         );
-      } else if (email) {
+      } else if (username) {
         result = await pool.query(
           `SELECT u.*, s.name as school_name, s.abbreviation as school_abbreviation
            FROM users u LEFT JOIN schools s ON u.school_id = s.id
-           WHERE u.email = $1 AND u.is_active = true
-           ORDER BY u.created_at DESC LIMIT 1`,
-          [email]
+           WHERE LOWER(u.username) = LOWER($1) AND u.is_active = true`,
+          [username]
         );
       } else {
-        return res.status(400).json({ message: "id or email required" });
+        return res.status(400).json({ message: "id or username required" });
       }
 
       if (result.rows.length === 0) {
@@ -39,28 +38,41 @@ export function registerAuthRoutes(app: Express) {
     }
   });
 
-  // POST /api/auth/login — verify credentials, return user profile
+  // POST /api/auth/login — login by username or email, return user profile
   app.post("/api/auth/login", async (req, res) => {
     try {
-      const { email, password } = req.body;
-      if (!email || !password) {
-        return res.status(400).json({ message: "Email and password are required" });
+      const { username, email, password } = req.body;
+      if (!password) {
+        return res.status(400).json({ message: "Password is required" });
       }
 
-      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-        return res.status(400).json({ message: "Please enter a valid email address" });
+      const loginId = username || email;
+      if (!loginId) {
+        return res.status(400).json({ message: "Username or email is required" });
       }
 
-      const result = await pool.query(
+      // Try username first (preferred), then fall back to email for backward compatibility
+      let result = await pool.query(
         `SELECT u.*, s.name as school_name, s.abbreviation as school_abbreviation
          FROM users u LEFT JOIN schools s ON u.school_id = s.id
-         WHERE LOWER(u.email) = LOWER($1) AND u.is_active = true
-         ORDER BY u.created_at DESC LIMIT 1`,
-        [email.trim()]
+         WHERE LOWER(u.username) = LOWER($1) AND u.is_active = true
+         LIMIT 1`,
+        [loginId]
       );
 
       if (result.rows.length === 0) {
-        return res.status(401).json({ message: "No account found with that email address" });
+        // Fall back to email login for backward compatibility
+        result = await pool.query(
+          `SELECT u.*, s.name as school_name, s.abbreviation as school_abbreviation
+           FROM users u LEFT JOIN schools s ON u.school_id = s.id
+           WHERE LOWER(u.email) = LOWER($1) AND u.is_active = true
+           ORDER BY u.created_at DESC LIMIT 1`,
+          [loginId]
+        );
+      }
+
+      if (result.rows.length === 0) {
+        return res.status(401).json({ message: "No account found. Please check your username or email." });
       }
 
       const user = result.rows[0];
