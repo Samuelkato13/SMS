@@ -3,6 +3,7 @@ import { createServer, type Server } from "http";
 import pool from "../db";
 import bcrypt from "bcryptjs";
 import { registerAuthRoutes } from "./auth";
+import { registerReplitAuthRoutes } from "../replit_integrations/auth";
 import { registerSchoolRoutes } from "./schools";
 import { registerUserRoutes } from "./users";
 import { registerStudentRoutes } from "./students";
@@ -304,6 +305,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   registerAcademicRoutes(app);
   registerAdminRoutes(app);
   registerSignupRoutes(app);
+  registerReplitAuthRoutes(app);
 
   return createServer(app);
 }
