@@ -22,7 +22,6 @@ interface StaffAccount {
   role: string;
   name: string;
   schoolCode: string;
-  schoolName: string;
 }
 
 const ROLE_LABELS: Record<string, string> = {
@@ -31,14 +30,23 @@ const ROLE_LABELS: Record<string, string> = {
   class_teacher:   "Class Teacher",
   subject_teacher: "Subject Teacher",
   bursar:          "Bursar",
+  super_admin:     "Super Admin",
 };
 
-const ROLE_STYLE: Record<string, { pill: string; btn: string; card: string }> = {
-  director:        { pill: "bg-orange-100 text-orange-700",  btn: "bg-orange-500 hover:bg-orange-600",  card: "border-orange-100 bg-orange-50/40"  },
-  head_teacher:    { pill: "bg-blue-100 text-blue-700",      btn: "bg-blue-500 hover:bg-blue-600",      card: "border-blue-100 bg-blue-50/40"      },
-  class_teacher:   { pill: "bg-emerald-100 text-emerald-700",btn: "bg-emerald-500 hover:bg-emerald-600",card: "border-emerald-100 bg-emerald-50/40"},
-  subject_teacher: { pill: "bg-purple-100 text-purple-700",  btn: "bg-purple-500 hover:bg-purple-600",  card: "border-purple-100 bg-purple-50/40"  },
-  bursar:          { pill: "bg-teal-100 text-teal-700",      btn: "bg-teal-500 hover:bg-teal-600",      card: "border-teal-100 bg-teal-50/40"      },
+const ROLE_STYLE: Record<string, { pill: string; btn: string; card: string; icon: string }> = {
+  director:        { pill: "bg-orange-100 text-orange-700",   btn: "bg-orange-500 hover:bg-orange-600 text-white",   card: "border-orange-200 bg-orange-50",   icon: "🏫" },
+  head_teacher:    { pill: "bg-blue-100 text-blue-700",       btn: "bg-blue-500 hover:bg-blue-600 text-white",       card: "border-blue-200 bg-blue-50",       icon: "📚" },
+  class_teacher:   { pill: "bg-emerald-100 text-emerald-700", btn: "bg-emerald-500 hover:bg-emerald-600 text-white", card: "border-emerald-200 bg-emerald-50", icon: "🎓" },
+  subject_teacher: { pill: "bg-purple-100 text-purple-700",   btn: "bg-purple-500 hover:bg-purple-600 text-white",   card: "border-purple-200 bg-purple-50",   icon: "📝" },
+  bursar:          { pill: "bg-teal-100 text-teal-700",       btn: "bg-teal-500 hover:bg-teal-600 text-white",       card: "border-teal-200 bg-teal-50",       icon: "💰" },
+  super_admin:     { pill: "bg-slate-700 text-white",         btn: "bg-slate-700 hover:bg-slate-800 text-white",     card: "border-slate-300 bg-slate-50",     icon: "⚙️" },
+};
+
+const STATIC_SUPER_ADMIN: StaffAccount = {
+  username: "super_admin",
+  role: "super_admin",
+  name: "SKYVALE Admin",
+  schoolCode: "SYS",
 };
 
 const redirectForRole = (role: string) => {
@@ -53,10 +61,13 @@ const redirectForRole = (role: string) => {
   }
 };
 
+const getPassword = (role: string) => role === "super_admin" ? "Admin@2025!" : "demo123";
+
 export const LoginForm = () => {
   const [loading, setLoading] = useState(false);
   const [activeUsername, setActiveUsername] = useState<string | null>(null);
-  const [staffAccounts, setStaffAccounts] = useState<StaffAccount[]>([]);
+  const [accounts, setAccounts] = useState<StaffAccount[]>([]);
+  const [fetchError, setFetchError] = useState(false);
   const { toast } = useToast();
   const [, navigate] = useLocation();
 
@@ -68,31 +79,49 @@ export const LoginForm = () => {
   useEffect(() => {
     (async () => {
       try {
-        const [ur, sr] = await Promise.all([fetch("/api/users"), fetch("/api/schools")]);
-        const users = await ur.json();
-        const schools = await sr.json();
-        const sm: Record<string, { name: string; abbr: string }> = Object.fromEntries(
-          schools.map((s: any) => [s.id, { name: s.name, abbr: s.abbreviation }])
+        const [ur, sr] = await Promise.all([
+          fetch("/api/users"),
+          fetch("/api/schools"),
+        ]);
+        if (!ur.ok || !sr.ok) throw new Error("Failed to load");
+        const users: any[] = await ur.json();
+        const schools: any[] = await sr.json();
+
+        const schoolMap: Record<string, string> = Object.fromEntries(
+          schools.map((s) => [s.id, s.abbreviation])
         );
+
         const roleOrder = ["director", "head_teacher", "class_teacher", "subject_teacher", "bursar"];
         const seen = new Set<string>();
-        const onePerRole: StaffAccount[] = [];
+        const list: StaffAccount[] = [];
+
         for (const role of roleOrder) {
-          const match = users.find((u: any) => u.role === role);
-          if (match && !seen.has(role)) {
+          const u = users.find((x) => x.role === role && x.username);
+          if (u && !seen.has(role)) {
             seen.add(role);
-            onePerRole.push({
-              username: match.username,
-              role: match.role,
-              name: `${match.first_name} ${match.last_name}`,
-              schoolCode: sm[match.school_id]?.abbr || "?",
-              schoolName: sm[match.school_id]?.name || "Unknown School",
+            list.push({
+              username: u.username,
+              role: u.role,
+              name: `${u.first_name ?? ""} ${u.last_name ?? ""}`.trim(),
+              schoolCode: schoolMap[u.school_id] ?? "?",
             });
           }
         }
-        setStaffAccounts(onePerRole);
+
+        list.push(STATIC_SUPER_ADMIN);
+        setAccounts(list);
       } catch (e) {
-        console.error(e);
+        console.error("Demo accounts fetch error:", e);
+        setFetchError(true);
+        // fallback: show hardcoded demo accounts
+        setAccounts([
+          { username: "dr-eds",  role: "director",        name: "Sarah Director",    schoolCode: "EDS" },
+          { username: "ht-eds",  role: "head_teacher",    name: "James Okello",      schoolCode: "EDS" },
+          { username: "ct-eds",  role: "class_teacher",   name: "Grace Nakato",      schoolCode: "EDS" },
+          { username: "st-eds",  role: "subject_teacher", name: "David Mugisha",     schoolCode: "EDS" },
+          { username: "bsr-eds", role: "bursar",          name: "Christine Nabukeera", schoolCode: "EDS" },
+          STATIC_SUPER_ADMIN,
+        ]);
       }
     })();
   }, []);
@@ -114,37 +143,39 @@ export const LoginForm = () => {
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-slate-50">
-      {/* ── Top bar ── */}
-      <header className="bg-gradient-to-r from-blue-900 to-slate-900 px-6 py-3.5 flex items-center justify-between shadow-md">
+    <div className="min-h-screen bg-slate-50">
+      {/* ── Header ── */}
+      <header className="bg-gradient-to-r from-blue-900 to-slate-900 px-6 py-4 flex items-center justify-between shadow-lg">
         <div className="flex items-center gap-3">
-          <EduPayLogo size={36} />
-          <div>
-            <span className="text-white font-extrabold text-lg tracking-tight">EduPay</span>
-            <span className="ml-2 text-xs text-blue-300 font-medium border border-blue-500/40 rounded px-1.5 py-0.5">
+          <EduPayLogo size={38} />
+          <div className="flex items-center gap-2">
+            <span className="text-white font-extrabold text-xl tracking-tight">EduPay</span>
+            <span className="text-xs text-blue-300 border border-blue-500/40 rounded px-2 py-0.5 font-medium">
               Demo Portal
             </span>
           </div>
         </div>
         <Link href="/login">
-          <Button size="sm" variant="outline" className="border-blue-500/50 text-blue-200 hover:bg-blue-800 hover:text-white bg-transparent text-xs h-8">
-            Staff Login →
+          <Button size="sm" variant="outline"
+            className="border-white/30 text-white hover:bg-white/10 bg-transparent text-xs h-8">
+            ← Staff Login
           </Button>
         </Link>
       </header>
 
-      <div className="flex flex-1 overflow-hidden">
-        {/* ── Left: Login form ── */}
-        <aside className="w-full lg:w-[360px] xl:w-[400px] flex-shrink-0 bg-white border-r border-gray-100 flex flex-col shadow-sm">
-          <div className="flex-1 p-8 xl:p-10">
-            <div className="mb-8">
-              <h2 className="text-2xl font-bold text-gray-900">Sign In</h2>
-              <p className="text-gray-500 text-sm mt-1">Enter your username and password</p>
-            </div>
+      <div className="max-w-5xl mx-auto px-4 py-8 space-y-8">
+
+        {/* ── Login Form ── */}
+        <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6 md:p-8">
+          <div className="max-w-md mx-auto">
+            <h2 className="text-2xl font-bold text-gray-900 mb-1">Sign In</h2>
+            <p className="text-gray-500 text-sm mb-6">
+              Enter credentials manually, or click <strong>Log In</strong> on a demo card below
+            </p>
 
             <form
               onSubmit={form.handleSubmit((d) => handleSignIn(d.username, d.password))}
-              className="space-y-5"
+              className="space-y-4"
             >
               <div>
                 <Label htmlFor="username" className="text-sm font-semibold text-gray-700 mb-1.5 block">
@@ -157,8 +188,7 @@ export const LoginForm = () => {
                     type="text"
                     placeholder="e.g., dr-eds"
                     {...form.register("username")}
-                    className="h-11 pl-10 font-mono text-sm border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 rounded-lg"
-                    autoFocus
+                    className="h-11 pl-10 font-mono text-sm border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 rounded-xl"
                   />
                 </div>
                 {form.formState.errors.username && (
@@ -177,7 +207,7 @@ export const LoginForm = () => {
                     type="password"
                     placeholder="Enter password"
                     {...form.register("password")}
-                    className="h-11 pl-10 border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 rounded-lg"
+                    className="h-11 pl-10 border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 rounded-xl"
                   />
                 </div>
                 {form.formState.errors.password && (
@@ -188,7 +218,7 @@ export const LoginForm = () => {
               <Button
                 type="submit"
                 disabled={loading}
-                className="w-full h-11 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-semibold shadow-md shadow-blue-500/20"
+                className="w-full h-11 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-semibold shadow-sm"
               >
                 {loading && !activeUsername ? (
                   <span className="flex items-center gap-2">
@@ -199,148 +229,97 @@ export const LoginForm = () => {
                 )}
               </Button>
             </form>
+          </div>
+        </div>
 
-            {/* Username guide */}
-            <div className="mt-6 p-4 bg-slate-50 rounded-xl border border-slate-200">
-              <p className="text-xs font-bold text-slate-700 mb-2 uppercase tracking-wide">Username Format</p>
-              <div className="grid grid-cols-2 gap-x-3 gap-y-1.5 text-xs text-slate-600">
-                {Object.entries({ dr: "Director", ht: "Head Teacher", ct: "Class Teacher", st: "Subj. Teacher", bsr: "Bursar" }).map(
-                  ([code, label]) => (
-                    <div key={code} className="flex items-center gap-1.5">
-                      <code className="bg-white border border-slate-200 px-1.5 py-0.5 rounded font-mono text-blue-700">{code}</code>
-                      <span className="text-slate-500">→ {label}</span>
-                    </div>
-                  )
-                )}
-              </div>
-              <p className="mt-2.5 text-xs text-slate-500 border-t border-slate-200 pt-2">
-                Example: <code className="bg-white px-1 rounded text-blue-600">dr-eds</code> = Director, EDS school
-              </p>
-            </div>
+        {/* ── Demo Accounts Grid ── */}
+        <div>
+          <div className="flex items-center gap-3 mb-4">
+            <h3 className="text-lg font-bold text-gray-900">Demo Accounts</h3>
+            <div className="flex-1 h-px bg-gray-200" />
+            <span className="text-xs text-gray-500">
+              Password:{" "}
+              <code className="bg-white border border-gray-200 px-2 py-0.5 rounded font-mono">demo123</code>
+              {" "}(admin: <code className="bg-white border border-gray-200 px-2 py-0.5 rounded font-mono">Admin@2025!</code>)
+            </span>
           </div>
 
-          <div className="px-8 xl:px-10 py-5 border-t border-gray-100">
-            <p className="text-xs text-gray-400 flex items-center gap-1.5">
-              <Phone className="w-3 h-3" />
-              Support: <span className="font-medium text-gray-500">0742 751 956</span>
-            </p>
-          </div>
-        </aside>
-
-        {/* ── Right: Demo accounts ── */}
-        <main className="flex-1 overflow-y-auto p-6 xl:p-8">
-          <div className="max-w-4xl mx-auto">
-            <div className="mb-6 flex items-start justify-between">
-              <div>
-                <h3 className="text-xl font-bold text-gray-900">Demo Accounts</h3>
-                <p className="text-sm text-gray-500 mt-1">
-                  Click <strong>Log In</strong> on any card to access instantly — password for all demos is{" "}
-                  <code className="bg-gray-100 border border-gray-200 px-1.5 py-0.5 rounded text-xs font-mono">demo123</code>
-                </p>
-              </div>
+          {accounts.length === 0 ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {[...Array(6)].map((_, i) => (
+                <div key={i} className="h-40 rounded-2xl bg-gray-100 animate-pulse" />
+              ))}
             </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {accounts.map((acc) => {
+                const style = ROLE_STYLE[acc.role] ?? ROLE_STYLE.subject_teacher;
+                const isActive = activeUsername === acc.username;
+                const pwd = getPassword(acc.role);
 
-            {staffAccounts.length === 0 ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
-                {[...Array(5)].map((_, i) => (
-                  <div key={i} className="h-36 rounded-2xl bg-gray-100 animate-pulse" />
-                ))}
-              </div>
-            ) : (
-              <>
-                <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
-                  {staffAccounts.map((acc) => {
-                    const style = ROLE_STYLE[acc.role] || {
-                      pill: "bg-gray-100 text-gray-700",
-                      btn: "bg-gray-500 hover:bg-gray-600",
-                      card: "border-gray-100 bg-gray-50/40",
-                    };
-                    const isActive = activeUsername === acc.username;
-
-                    return (
-                      <div
-                        key={acc.username}
-                        className={`rounded-2xl border p-4 flex flex-col gap-3 hover:shadow-md transition-shadow ${style.card}`}
-                      >
-                        {/* Role pill + name */}
-                        <div className="flex items-start justify-between gap-2">
-                          <span className={`text-xs font-bold px-2.5 py-1 rounded-full ${style.pill}`}>
-                            {ROLE_LABELS[acc.role] || acc.role}
-                          </span>
-                          <span className="text-xs text-gray-400 text-right leading-tight">{acc.name}</span>
-                        </div>
-
-                        {/* Credential rows */}
-                        <div className="space-y-1.5">
-                          <div className="flex items-center justify-between">
-                            <span className="text-xs text-gray-500">Username</span>
-                            <code className="text-xs bg-white border border-gray-200 px-2 py-0.5 rounded font-mono text-gray-800">
-                              {acc.username}
-                            </code>
-                          </div>
-                          <div className="flex items-center justify-between">
-                            <span className="text-xs text-gray-500">Password</span>
-                            <code className="text-xs bg-white border border-gray-200 px-2 py-0.5 rounded font-mono text-gray-800">
-                              demo123
-                            </code>
-                          </div>
-                        </div>
-
-                        {/* Login button */}
-                        <button
-                          onClick={() => handleSignIn(acc.username, "demo123", ROLE_LABELS[acc.role])}
-                          disabled={loading}
-                          className={`mt-auto w-full h-9 rounded-xl text-white text-sm font-semibold flex items-center justify-center gap-1.5 transition-all ${style.btn} disabled:opacity-60`}
-                        >
-                          {isActive ? (
-                            <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Signing in...</>
-                          ) : (
-                            <>Log In <ArrowRight className="w-3.5 h-3.5" /></>
-                          )}
-                        </button>
-                      </div>
-                    );
-                  })}
-                </div>
-
-                {/* Super Admin card */}
-                <div className="mt-6 rounded-2xl border border-purple-200 bg-purple-50/60 p-4 flex flex-col gap-3">
-                  <div className="flex items-start justify-between gap-2">
-                    <span className="text-xs font-bold px-2.5 py-1 rounded-full bg-purple-200 text-purple-800">
-                      Super Admin
-                    </span>
-                    <span className="text-xs text-gray-400 text-right leading-tight">SKYVALE Admin</span>
-                  </div>
-                  <div className="space-y-1.5">
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs text-gray-500">Username</span>
-                      <code className="text-xs bg-white border border-purple-200 px-2 py-0.5 rounded font-mono text-gray-800">
-                        super_admin
-                      </code>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs text-gray-500">Password</span>
-                      <code className="text-xs bg-white border border-purple-200 px-2 py-0.5 rounded font-mono text-gray-800">
-                        Admin@2025!
-                      </code>
-                    </div>
-                  </div>
-                  <button
-                    onClick={() => handleSignIn("super_admin", "Admin@2025!", "Super Admin")}
-                    disabled={loading}
-                    className="mt-auto w-full h-9 rounded-xl bg-purple-600 hover:bg-purple-700 text-white text-sm font-semibold flex items-center justify-center gap-1.5 transition-all disabled:opacity-60"
+                return (
+                  <div
+                    key={acc.username}
+                    className={`rounded-2xl border-2 p-5 flex flex-col gap-4 shadow-sm hover:shadow-md transition-all ${style.card}`}
                   >
-                    {activeUsername === "super_admin" ? (
-                      <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Signing in...</>
-                    ) : (
-                      <>Log In <ArrowRight className="w-3.5 h-3.5" /></>
-                    )}
-                  </button>
-                </div>
-              </>
-            )}
-          </div>
-        </main>
+                    {/* Header row */}
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <span className="text-xl">{style.icon}</span>
+                        <span className={`text-xs font-bold px-2.5 py-1 rounded-full ${style.pill}`}>
+                          {ROLE_LABELS[acc.role]}
+                        </span>
+                      </div>
+                      <span className="text-xs text-gray-400 font-mono">{acc.schoolCode}</span>
+                    </div>
+
+                    {/* Name */}
+                    <p className="text-sm font-semibold text-gray-800 -mt-1">{acc.name || "—"}</p>
+
+                    {/* Credentials */}
+                    <div className="bg-white/70 rounded-xl border border-white p-3 space-y-2">
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="text-xs text-gray-500 shrink-0">Username</span>
+                        <code className="text-xs font-mono text-gray-900 bg-white border border-gray-200 px-2 py-0.5 rounded truncate">
+                          {acc.username}
+                        </code>
+                      </div>
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="text-xs text-gray-500 shrink-0">Password</span>
+                        <code className="text-xs font-mono text-gray-900 bg-white border border-gray-200 px-2 py-0.5 rounded">
+                          {pwd}
+                        </code>
+                      </div>
+                    </div>
+
+                    {/* Login button */}
+                    <button
+                      onClick={() => handleSignIn(acc.username, pwd, ROLE_LABELS[acc.role])}
+                      disabled={loading}
+                      className={`w-full h-10 rounded-xl text-sm font-bold flex items-center justify-center gap-2 transition-all disabled:opacity-50 ${style.btn}`}
+                    >
+                      {isActive ? (
+                        <><Loader2 className="w-4 h-4 animate-spin" /> Signing in...</>
+                      ) : (
+                        <>Log In as {ROLE_LABELS[acc.role]} <ArrowRight className="w-3.5 h-3.5" /></>
+                      )}
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+
+        {/* Footer */}
+        <div className="text-center pb-4">
+          <p className="text-xs text-gray-400 flex items-center justify-center gap-1.5">
+            <Phone className="w-3 h-3" />
+            Support: <span className="font-medium text-gray-500">0742 751 956</span>
+            <span className="mx-2">·</span>
+            <span>SKYVALE Technologies Uganda Limited</span>
+          </p>
+        </div>
       </div>
     </div>
   );
