@@ -76,6 +76,15 @@ export const LoginForm = () => {
     defaultValues: { username: "", password: "" },
   });
 
+  const HARDCODED_ACCOUNTS: StaffAccount[] = [
+    { username: "dr-eds",  role: "director",        name: "Sarah Director",      schoolCode: "EDS" },
+    { username: "ht-eds",  role: "head_teacher",    name: "Samuel Kato",         schoolCode: "EDS" },
+    { username: "ct-eds",  role: "class_teacher",   name: "Grace Nakato",        schoolCode: "EDS" },
+    { username: "st-eds",  role: "subject_teacher", name: "David Mugisha",       schoolCode: "EDS" },
+    { username: "bsr-eds", role: "bursar",          name: "Christine Nabukeera", schoolCode: "EDS" },
+    STATIC_SUPER_ADMIN,
+  ];
+
   useEffect(() => {
     (async () => {
       try {
@@ -103,25 +112,22 @@ export const LoginForm = () => {
               username: u.username,
               role: u.role,
               name: `${u.first_name ?? ""} ${u.last_name ?? ""}`.trim(),
-              schoolCode: schoolMap[u.school_id] ?? "?",
+              schoolCode: schoolMap[u.school_id] ?? "EDS",
             });
           }
         }
 
-        list.push(STATIC_SUPER_ADMIN);
-        setAccounts(list);
+        // If DB returned no school users, use hardcoded fallback (e.g. fresh production DB)
+        if (list.length === 0) {
+          setAccounts(HARDCODED_ACCOUNTS);
+        } else {
+          list.push(STATIC_SUPER_ADMIN);
+          setAccounts(list);
+        }
       } catch (e) {
         console.error("Demo accounts fetch error:", e);
         setFetchError(true);
-        // fallback: show hardcoded demo accounts
-        setAccounts([
-          { username: "dr-eds",  role: "director",        name: "Sarah Director",    schoolCode: "EDS" },
-          { username: "ht-eds",  role: "head_teacher",    name: "James Okello",      schoolCode: "EDS" },
-          { username: "ct-eds",  role: "class_teacher",   name: "Grace Nakato",      schoolCode: "EDS" },
-          { username: "st-eds",  role: "subject_teacher", name: "David Mugisha",     schoolCode: "EDS" },
-          { username: "bsr-eds", role: "bursar",          name: "Christine Nabukeera", schoolCode: "EDS" },
-          STATIC_SUPER_ADMIN,
-        ]);
+        setAccounts(HARDCODED_ACCOUNTS);
       }
     })();
   }, []);

@@ -39,30 +39,45 @@ async function bootstrap() {
       `);
     } catch (_) {}
 
-    // Seed demo passwords and update usernames (demo123 for all demo accounts)
+    // ── Seed demo school (MUST come before any user inserts due to FK) ──────────
+    await pool.query(`
+      INSERT INTO schools (id, name, abbreviation, email, phone, address, subscription_plan, is_active, status)
+      SELECT 'a0000000-0000-0000-0000-000000000001',
+             'EduPay Demo School','EDS','admin@edupay.com',
+             '+256 700 123456','Plot 45, Kampala Road, Kampala, Uganda',
+             'professional',true,'active'
+      WHERE NOT EXISTS (SELECT 1 FROM schools WHERE id='a0000000-0000-0000-0000-000000000001')
+    `);
+
+    // ── Seed all demo users ──────────────────────────────────────────────────
     const demoHash = await bcrypt.hash("demo123", 10);
-    const demoUsernamesMap: Record<string, string> = {
-      "director@demo.com": "dr-eds",
-      "headteacher@demo.com": "ht-eds",
-      "classteacher@demo.com": "ct-eds",
-      "subjectteacher@demo.com": "st-eds",
-      "bursar@demo.com": "bsr-eds",
-    };
-    for (const [email, username] of Object.entries(demoUsernamesMap)) {
-      await pool.query(
-        `UPDATE users SET password_hash=$1, username=$2 WHERE LOWER(email)=$3`,
-        [demoHash, username, email]
-      );
+    const superHash = await bcrypt.hash("Admin@2025!", 10);
+
+    const demoUsers = [
+      { id: 'f0000000-0000-0000-0000-000000000001', username: 'super_admin', email: 'superadmin@skyvale.com', role: 'super_admin',     first: 'SKYVALE',    last: 'Admin',     hash: superHash },
+      { id: 'c0000000-0000-0000-0000-000000000002', username: 'dr-eds',      email: 'director@demo.com',      role: 'director',        first: 'Sarah',      last: 'Director',  hash: demoHash  },
+      { id: 'c0000000-0000-0000-0000-000000000003', username: 'ht-eds',      email: 'headteacher@demo.com',   role: 'head_teacher',    first: 'Samuel',     last: 'Kato',      hash: demoHash  },
+      { id: 'c0000000-0000-0000-0000-000000000004', username: 'ct-eds',      email: 'classteacher@demo.com',  role: 'class_teacher',   first: 'Grace',      last: 'Nakato',    hash: demoHash  },
+      { id: 'c0000000-0000-0000-0000-000000000005', username: 'st-eds',      email: 'subjectteacher@demo.com',role: 'subject_teacher', first: 'David',      last: 'Mugisha',   hash: demoHash  },
+      { id: 'c0000000-0000-0000-0000-000000000006', username: 'bsr-eds',     email: 'bursar@demo.com',        role: 'bursar',          first: 'Christine',  last: 'Nabukeera', hash: demoHash  },
+    ];
+
+    for (const u of demoUsers) {
+      // Remove any stale rows that share this email or username (but different ID)
+      await pool.query(`DELETE FROM users WHERE LOWER(email)=$1 AND id!=$2`, [u.email.toLowerCase(), u.id]);
+      await pool.query(`DELETE FROM users WHERE username=$1 AND id!=$2`, [u.username, u.id]);
+      await pool.query(`
+        INSERT INTO users (id, username, email, role, school_id, first_name, last_name, is_active, password_hash)
+        VALUES ($1,$2,$3,$4,'a0000000-0000-0000-0000-000000000001',$5,$6,true,$7)
+        ON CONFLICT (id) DO UPDATE SET
+          username=EXCLUDED.username,
+          email=EXCLUDED.email,
+          password_hash=EXCLUDED.password_hash,
+          role=EXCLUDED.role,
+          is_active=true
+      `, [u.id, u.username, u.email, u.role, u.first, u.last, u.hash]);
     }
 
-    // Seed super admin (SKYVALE)
-    const superHash = await bcrypt.hash("Admin@2025!", 10);
-    await pool.query(`
-      INSERT INTO users (id, username, email, role, school_id, first_name, last_name, is_active, password_hash)
-      SELECT 'f0000000-0000-0000-0000-000000000001','super_admin','superadmin@skyvale.com',
-             'super_admin','a0000000-0000-0000-0000-000000000001','SKYVALE','Admin',true,$1
-      WHERE NOT EXISTS (SELECT 1 FROM users WHERE email='superadmin@skyvale.com')
-    `, [superHash]);
 
     // SaaS tables
     await pool.query(`

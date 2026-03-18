@@ -183,26 +183,6 @@ export default function OfficialLogin() {
             </Button>
           </form>
 
-          <div className="mt-4 flex items-center gap-3">
-            <div className="flex-1 h-px bg-gray-200" />
-            <span className="text-xs text-gray-400 font-medium">or</span>
-            <div className="flex-1 h-px bg-gray-200" />
-          </div>
-
-          <a href="/api/login/replit" className="block mt-4">
-            <button className="w-full h-12 rounded-xl border-2 border-gray-200 hover:border-orange-400 bg-white hover:bg-orange-50 text-gray-700 font-semibold text-sm flex items-center justify-center gap-2.5 transition-all group">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M3 3h8v6H3z" fill="#F26207"/>
-                <path d="M11 3h10v6H11z" fill="#F26207" opacity="0.6"/>
-                <path d="M3 9h8v6H3z" fill="#F26207" opacity="0.8"/>
-                <path d="M11 9h10v6H11z" fill="#F26207"/>
-                <path d="M3 15h8v6H3z" fill="#F26207" opacity="0.6"/>
-                <path d="M11 15h10v6H11z" fill="#F26207" opacity="0.4"/>
-              </svg>
-              <span className="group-hover:text-orange-700">Continue with Replit</span>
-            </button>
-          </a>
-
           {/* Demo link */}
           <div className="mt-6 p-4 bg-blue-50 border border-blue-100 rounded-xl">
             <p className="text-sm text-blue-700 font-medium mb-2">Exploring EduPay?</p>
