@@ -40,3 +40,10 @@ waitForPort = 5000
 
 [agent]
 integrations = ["javascript_log_in_with_replit:2.0.0"]
+
+[userenv]
+
+[userenv.shared]
+SUPABASE_URL = "https://ffemnzfveebrchybjtel.supabase.co"
+SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZmZW1uemZ2ZWVicmNoeWJqdGVsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM2NjQyNzYsImV4cCI6MjA4OTI0MDI3Nn0.RKEwHrrLWYluqU2cgY6WkEsTLRnSYyMif7-o7bHMGGE"
+SUPABASE_SERVICE_ROLE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZmZW1uemZ2ZWVicmNoeWJqdGVsIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3MzY2NDI3NiwiZXhwIjoyMDg5MjQwMjc2fQ.UlnVpqUwsQmLAUA5_liKIhoekFaAlXApf-DKQqesIk0"
