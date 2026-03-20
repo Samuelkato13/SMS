@@ -11,7 +11,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { useToast } from '@/hooks/use-toast';
-import { Plus, Search, Pencil, Ban, Trash2, ChevronLeft, ChevronRight, School, MoreHorizontal } from 'lucide-react';
+import { Plus, Search, Pencil, Ban, Trash2, ChevronLeft, ChevronRight, School, MoreHorizontal, Landmark, Image } from 'lucide-react';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 
 const STATUS_COLORS: Record<string, string> = {
@@ -29,7 +30,20 @@ const PLAN_COLORS: Record<string, string> = {
 
 const PAGE_SIZE = 10;
 
-const emptyForm = { name: '', abbreviation: '', subdomain: '', email: '', phone: '', address: '', status: 'trial' };
+const SCHOOL_TYPES = [
+  { value: 'nursery',          label: 'Nursery Only' },
+  { value: 'primary',          label: 'Primary Only' },
+  { value: 'secondary',        label: 'Secondary Only' },
+  { value: 'nursery_primary',  label: 'Nursery & Primary' },
+  { value: 'primary_secondary',label: 'Primary & Secondary' },
+  { value: 'all',              label: 'Nursery, Primary & Secondary' },
+];
+
+const emptyForm = {
+  name: '', abbreviation: '', subdomain: '', email: '', phone: '', address: '',
+  status: 'trial', motto: '', schoolType: '', logoUrl: '',
+  bankName: '', bankAccountTitle: '', bankAccountType: '', bankAccountNumber: '',
+};
 
 export default function AdminSchools() {
   const { toast } = useToast();
@@ -97,7 +111,13 @@ export default function AdminSchools() {
   const openAdd = () => { setEditing(null); setForm(emptyForm); setShowForm(true); };
   const openEdit = (s: any) => {
     setEditing(s);
-    setForm({ name: s.name ?? '', abbreviation: s.abbreviation ?? '', subdomain: s.subdomain ?? '', email: s.email ?? '', phone: s.phone ?? '', address: s.address ?? '', status: s.status ?? 'active' });
+    setForm({
+      name: s.name ?? '', abbreviation: s.abbreviation ?? '', subdomain: s.subdomain ?? '',
+      email: s.email ?? '', phone: s.phone ?? '', address: s.address ?? '', status: s.status ?? 'active',
+      motto: s.motto ?? '', schoolType: s.school_type ?? '', logoUrl: s.logo_url ?? '',
+      bankName: s.bank_name ?? '', bankAccountTitle: s.bank_account_title ?? '',
+      bankAccountType: s.bank_account_type ?? '', bankAccountNumber: s.bank_account_number ?? '',
+    });
     setShowForm(true);
   };
 
@@ -234,51 +254,123 @@ export default function AdminSchools() {
 
       {/* Add/Edit dialog */}
       <Dialog open={showForm} onOpenChange={setShowForm}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>{editing ? 'Edit School' : 'Add New School'}</DialogTitle>
           </DialogHeader>
-          <div className="grid gap-3 py-2">
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1">
-                <Label>School Name *</Label>
-                <Input value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} placeholder="St. Mary's School" />
+          <Tabs defaultValue="general">
+            <TabsList className="w-full grid grid-cols-3 mb-3">
+              <TabsTrigger value="general" className="text-xs gap-1"><School className="w-3 h-3" />General</TabsTrigger>
+              <TabsTrigger value="identity" className="text-xs gap-1"><Image className="w-3 h-3" />Identity</TabsTrigger>
+              <TabsTrigger value="bank" className="text-xs gap-1"><Landmark className="w-3 h-3" />Bank</TabsTrigger>
+            </TabsList>
+
+            {/* General Tab */}
+            <TabsContent value="general" className="space-y-3 mt-0">
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <Label>School Name *</Label>
+                  <Input value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} placeholder="St. Mary's School" />
+                </div>
+                <div className="space-y-1">
+                  <Label>Abbreviation</Label>
+                  <Input value={form.abbreviation} onChange={e => setForm(f => ({ ...f, abbreviation: e.target.value }))} placeholder="SMS" />
+                </div>
               </div>
               <div className="space-y-1">
-                <Label>Abbreviation</Label>
-                <Input value={form.abbreviation} onChange={e => setForm(f => ({ ...f, abbreviation: e.target.value }))} placeholder="SMS" />
+                <Label>School Type</Label>
+                <Select value={form.schoolType} onValueChange={v => setForm(f => ({ ...f, schoolType: v }))}>
+                  <SelectTrigger><SelectValue placeholder="Select school type..." /></SelectTrigger>
+                  <SelectContent>
+                    {SCHOOL_TYPES.map(t => <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>)}
+                  </SelectContent>
+                </Select>
               </div>
-            </div>
-            <div className="space-y-1">
-              <Label>Subdomain</Label>
-              <Input value={form.subdomain} onChange={e => setForm(f => ({ ...f, subdomain: e.target.value }))} placeholder="stmarys" />
-            </div>
-            <div className="space-y-1">
-              <Label>Email *</Label>
-              <Input type="email" value={form.email} onChange={e => setForm(f => ({ ...f, email: e.target.value }))} placeholder="admin@school.com" />
-            </div>
-            <div className="space-y-1">
-              <Label>Phone</Label>
-              <Input value={form.phone} onChange={e => setForm(f => ({ ...f, phone: e.target.value }))} placeholder="+256 700 000000" />
-            </div>
-            <div className="space-y-1">
-              <Label>Address</Label>
-              <Input value={form.address} onChange={e => setForm(f => ({ ...f, address: e.target.value }))} placeholder="Kampala, Uganda" />
-            </div>
-            <div className="space-y-1">
-              <Label>Status</Label>
-              <Select value={form.status} onValueChange={v => setForm(f => ({ ...f, status: v }))}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="active">Active</SelectItem>
-                  <SelectItem value="trial">Trial</SelectItem>
-                  <SelectItem value="suspended">Suspended</SelectItem>
-                  <SelectItem value="expired">Expired</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-          <DialogFooter>
+              <div className="space-y-1">
+                <Label>Subdomain</Label>
+                <Input value={form.subdomain} onChange={e => setForm(f => ({ ...f, subdomain: e.target.value }))} placeholder="stmarys" />
+              </div>
+              <div className="space-y-1">
+                <Label>Email *</Label>
+                <Input type="email" value={form.email} onChange={e => setForm(f => ({ ...f, email: e.target.value }))} placeholder="admin@school.com" />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <Label>Phone</Label>
+                  <Input value={form.phone} onChange={e => setForm(f => ({ ...f, phone: e.target.value }))} placeholder="+256 700 000000" />
+                </div>
+                <div className="space-y-1">
+                  <Label>Status</Label>
+                  <Select value={form.status} onValueChange={v => setForm(f => ({ ...f, status: v }))}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="active">Active</SelectItem>
+                      <SelectItem value="trial">Trial</SelectItem>
+                      <SelectItem value="suspended">Suspended</SelectItem>
+                      <SelectItem value="expired">Expired</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <div className="space-y-1">
+                <Label>Address</Label>
+                <Input value={form.address} onChange={e => setForm(f => ({ ...f, address: e.target.value }))} placeholder="Kampala, Uganda" />
+              </div>
+            </TabsContent>
+
+            {/* Identity Tab */}
+            <TabsContent value="identity" className="space-y-3 mt-0">
+              <div className="space-y-1">
+                <Label>School Motto</Label>
+                <Input value={form.motto} onChange={e => setForm(f => ({ ...f, motto: e.target.value }))} placeholder="e.g. Excellence in Education" />
+              </div>
+              <div className="space-y-1">
+                <Label>Logo URL</Label>
+                <Input value={form.logoUrl} onChange={e => setForm(f => ({ ...f, logoUrl: e.target.value }))} placeholder="https://school.com/logo.png" />
+                <p className="text-xs text-gray-400">Paste a direct image URL (JPEG or PNG). Used in printouts and reports.</p>
+              </div>
+              {form.logoUrl && (
+                <div className="p-3 border rounded-lg bg-gray-50 flex items-center gap-3">
+                  <img src={form.logoUrl} alt="Logo preview" className="w-14 h-14 object-contain rounded border bg-white" onError={e => { (e.target as HTMLImageElement).src = ''; }} />
+                  <span className="text-xs text-gray-500">Logo preview</span>
+                </div>
+              )}
+            </TabsContent>
+
+            {/* Bank Tab */}
+            <TabsContent value="bank" className="space-y-3 mt-0">
+              <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded p-2">
+                Bank details are used on fee receipts, report cards, and payment instructions printed for parents.
+              </p>
+              <div className="space-y-1">
+                <Label>Bank Name</Label>
+                <Input value={form.bankName} onChange={e => setForm(f => ({ ...f, bankName: e.target.value }))} placeholder="e.g. Stanbic Bank Uganda" />
+              </div>
+              <div className="space-y-1">
+                <Label>Account Title (Name)</Label>
+                <Input value={form.bankAccountTitle} onChange={e => setForm(f => ({ ...f, bankAccountTitle: e.target.value }))} placeholder="e.g. St. Mary's Primary School" />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <Label>Account Type</Label>
+                  <Select value={form.bankAccountType} onValueChange={v => setForm(f => ({ ...f, bankAccountType: v }))}>
+                    <SelectTrigger><SelectValue placeholder="Select..." /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="current">Current Account</SelectItem>
+                      <SelectItem value="savings">Savings Account</SelectItem>
+                      <SelectItem value="fixed_deposit">Fixed Deposit</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-1">
+                  <Label>Account Number</Label>
+                  <Input value={form.bankAccountNumber} onChange={e => setForm(f => ({ ...f, bankAccountNumber: e.target.value }))} placeholder="9030012345678" />
+                </div>
+              </div>
+            </TabsContent>
+          </Tabs>
+
+          <DialogFooter className="mt-4">
             <Button variant="outline" onClick={() => setShowForm(false)}>Cancel</Button>
             <Button onClick={handleSave} disabled={isPending} className="bg-indigo-600 hover:bg-indigo-700">
               {isPending ? 'Saving...' : editing ? 'Save Changes' : 'Create School'}

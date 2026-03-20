@@ -29,6 +29,12 @@ async function bootstrap() {
     await pool.query(`ALTER TABLE schools ADD COLUMN IF NOT EXISTS status VARCHAR(20) DEFAULT 'active'`);
     await pool.query(`ALTER TABLE schools ADD COLUMN IF NOT EXISTS subdomain VARCHAR(100)`);
     await pool.query(`ALTER TABLE schools ADD COLUMN IF NOT EXISTS motto VARCHAR(255)`);
+    await pool.query(`ALTER TABLE schools ADD COLUMN IF NOT EXISTS school_type VARCHAR(30)`);
+    await pool.query(`ALTER TABLE schools ADD COLUMN IF NOT EXISTS bank_account_title VARCHAR(255)`);
+    await pool.query(`ALTER TABLE schools ADD COLUMN IF NOT EXISTS bank_account_type VARCHAR(50)`);
+    await pool.query(`ALTER TABLE schools ADD COLUMN IF NOT EXISTS bank_account_number VARCHAR(100)`);
+    await pool.query(`ALTER TABLE schools ADD COLUMN IF NOT EXISTS bank_name VARCHAR(255)`);
+    await pool.query(`ALTER TABLE schools ADD COLUMN IF NOT EXISTS logo_url TEXT`);
 
     // Fix role constraint to include super_admin
     try {

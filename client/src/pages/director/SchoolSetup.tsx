@@ -12,7 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/hooks/use-toast';
-import { Plus, Pencil, Trash2, CheckCircle2, School, CalendarDays, BookOpen, Layers, Users2, GitBranch } from 'lucide-react';
+import { Plus, Pencil, Trash2, CheckCircle2, School, CalendarDays, BookOpen, Layers, Users2, GitBranch, Upload, Landmark } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useSchoolContext } from '@/contexts/SchoolContext';
 
@@ -27,7 +27,10 @@ export default function SchoolSetup() {
   const { school } = useSchoolContext();
   const schoolId = profile?.schoolId;
 
-  const [schoolForm, setSchoolForm] = useState({ name: school?.name ?? '', address: school?.address ?? '', phone: school?.phone ?? '', email: school?.email ?? '', motto: school?.motto ?? '' });
+  const { data: schoolData } = useQuery<any>({ queryKey: ['/api/schools', schoolId], queryFn: () => fetch(`/api/schools/${schoolId}`).then(r => r.json()), enabled: !!schoolId });
+
+  const [schoolForm, setSchoolForm] = useState({ name: school?.name ?? '', address: school?.address ?? '', phone: school?.phone ?? '', email: school?.email ?? '', motto: school?.motto ?? '', schoolType: '', logoUrl: '' });
+  const [logoPreview, setLogoPreview] = useState<string>('');
 
   // Academic Years
   const [showYearForm, setShowYearForm] = useState(false);
@@ -67,10 +70,28 @@ export default function SchoolSetup() {
   const activateYear = useMutation({ mutationFn: (id: string) => apiRequest('PUT', `/api/academic-years/${id}/activate`, {}), onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['/api/academic-years', schoolId] }); toast({ title: 'Academic year activated' }); } });
 
   const saveSchool = useMutation({
-    mutationFn: () => apiRequest('PUT', `/api/schools/${schoolId}`, schoolForm),
+    mutationFn: () => apiRequest('PUT', `/api/schools/${schoolId}`, { ...schoolForm, logoUrl: logoPreview || schoolForm.logoUrl }),
     onSuccess: () => { toast({ title: 'School info updated' }); },
     onError: (e: any) => toast({ variant: 'destructive', title: 'Error', description: e.message }),
   });
+
+  const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!file.type.match(/image\/(jpeg|jpg|png)/)) {
+      toast({ variant: 'destructive', title: 'Only JPEG/PNG images allowed' });
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = ev => setLogoPreview(ev.target?.result as string);
+    reader.readAsDataURL(file);
+  };
+
+  const SCHOOL_TYPE_LABELS: Record<string, string> = {
+    nursery: 'Nursery Only', primary: 'Primary Only', secondary: 'Secondary Only',
+    nursery_primary: 'Nursery & Primary', primary_secondary: 'Primary & Secondary',
+    all: 'Nursery, Primary & Secondary',
+  };
 
   const getYearName = (id: string) => (academicYears as any[]).find(y => y.id === id)?.name ?? '—';
 
@@ -94,7 +115,8 @@ export default function SchoolSetup() {
           </TabsList>
 
           {/* School Info */}
-          <TabsContent value="info" className="mt-4">
+          <TabsContent value="info" className="mt-4 space-y-4">
+            {/* Basic Info Card */}
             <Card className="border-0 shadow-sm max-w-xl">
               <CardHeader className="pb-2 pt-4 px-5"><CardTitle className="text-sm font-semibold text-gray-700">School Information</CardTitle></CardHeader>
               <CardContent className="px-5 pb-5 space-y-3">
@@ -105,9 +127,70 @@ export default function SchoolSetup() {
                   <div className="space-y-1"><Label>Email</Label><Input value={schoolForm.email} onChange={e => setSchoolForm(f => ({ ...f, email: e.target.value }))} /></div>
                 </div>
                 <div className="space-y-1"><Label>School Motto</Label><Input value={schoolForm.motto} onChange={e => setSchoolForm(f => ({ ...f, motto: e.target.value }))} placeholder="e.g. Excellence in Service" /></div>
+                <div className="space-y-1">
+                  <Label>School Type</Label>
+                  <Select value={schoolForm.schoolType || schoolData?.school_type || ''} onValueChange={v => setSchoolForm(f => ({ ...f, schoolType: v }))}>
+                    <SelectTrigger><SelectValue placeholder="Select school type..." /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="nursery">Nursery Only</SelectItem>
+                      <SelectItem value="primary">Primary Only</SelectItem>
+                      <SelectItem value="secondary">Secondary Only</SelectItem>
+                      <SelectItem value="nursery_primary">Nursery &amp; Primary</SelectItem>
+                      <SelectItem value="primary_secondary">Primary &amp; Secondary</SelectItem>
+                      <SelectItem value="all">Nursery, Primary &amp; Secondary</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* Logo Upload */}
+                <div className="space-y-2">
+                  <Label>School Logo</Label>
+                  <div className="flex items-center gap-4">
+                    <div className="w-16 h-16 rounded-lg border-2 border-dashed border-gray-200 flex items-center justify-center bg-gray-50 overflow-hidden flex-shrink-0">
+                      {(logoPreview || schoolData?.logo_url) ? (
+                        <img src={logoPreview || schoolData?.logo_url} alt="Logo" className="w-full h-full object-contain" />
+                      ) : (
+                        <School className="w-6 h-6 text-gray-300" />
+                      )}
+                    </div>
+                    <div className="flex-1 space-y-1">
+                      <label htmlFor="logo-upload" className="cursor-pointer">
+                        <div className="flex items-center gap-2 px-3 py-2 border border-gray-200 rounded-lg text-sm text-gray-600 hover:bg-gray-50 w-fit">
+                          <Upload className="w-3.5 h-3.5" /> Upload Logo (JPEG/PNG)
+                        </div>
+                        <input id="logo-upload" type="file" accept="image/jpeg,image/jpg,image/png" className="hidden" onChange={handleLogoUpload} />
+                      </label>
+                      <p className="text-xs text-gray-400">Used in report cards, receipts and printouts</p>
+                    </div>
+                  </div>
+                </div>
+
                 <Button onClick={() => saveSchool.mutate()} disabled={saveSchool.isPending} className="bg-blue-600 hover:bg-blue-700">
                   {saveSchool.isPending ? 'Saving...' : 'Save Changes'}
                 </Button>
+              </CardContent>
+            </Card>
+
+            {/* Bank Details Card (read-only for director) */}
+            <Card className="border-0 shadow-sm max-w-xl border-l-4 border-l-amber-400">
+              <CardHeader className="pb-2 pt-4 px-5 flex flex-row items-center gap-2">
+                <Landmark className="w-4 h-4 text-amber-600" />
+                <CardTitle className="text-sm font-semibold text-gray-700">Bank Account Details</CardTitle>
+                <Badge className="ml-auto text-xs bg-amber-100 text-amber-700">Set by Admin</Badge>
+              </CardHeader>
+              <CardContent className="px-5 pb-5">
+                {schoolData?.bank_account_number ? (
+                  <div className="space-y-2 text-sm">
+                    <div className="grid grid-cols-2 gap-x-4 gap-y-2">
+                      <div><span className="text-xs text-gray-500 block">Bank Name</span><span className="font-medium text-gray-800">{schoolData.bank_name || '—'}</span></div>
+                      <div><span className="text-xs text-gray-500 block">Account Type</span><span className="font-medium text-gray-800 capitalize">{schoolData.bank_account_type?.replace('_', ' ') || '—'}</span></div>
+                      <div><span className="text-xs text-gray-500 block">Account Title</span><span className="font-medium text-gray-800">{schoolData.bank_account_title || '—'}</span></div>
+                      <div><span className="text-xs text-gray-500 block">Account Number</span><span className="font-mono font-semibold text-gray-900">{schoolData.bank_account_number}</span></div>
+                    </div>
+                  </div>
+                ) : (
+                  <p className="text-sm text-gray-400 italic">No bank account details set yet. Contact your system administrator to add them.</p>
+                )}
               </CardContent>
             </Card>
           </TabsContent>

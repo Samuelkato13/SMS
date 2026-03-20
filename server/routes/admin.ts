@@ -64,11 +64,24 @@ export function registerAdminRoutes(app: Express) {
 
   app.put("/api/admin/schools/:id", async (req, res) => {
     try {
-      const { name, abbreviation, subdomain, email, phone, address, status } = req.body;
+      const {
+        name, abbreviation, subdomain, email, phone, address, status, motto, schoolType, logoUrl,
+        bankAccountTitle, bankAccountType, bankAccountNumber, bankName
+      } = req.body;
       const result = await pool.query(
-        `UPDATE schools SET name=$1, abbreviation=$2, subdomain=$3, email=$4, phone=$5, address=$6, status=$7, updated_at=now()
-         WHERE id=$8 RETURNING *`,
-        [name, abbreviation, subdomain, email, phone, address, status, req.params.id]);
+        `UPDATE schools SET
+           name=$1, abbreviation=$2, subdomain=$3, email=$4, phone=$5, address=$6, status=$7,
+           motto=COALESCE($8,motto), school_type=COALESCE($9,school_type), logo_url=COALESCE($10,logo_url),
+           bank_account_title=COALESCE($11,bank_account_title),
+           bank_account_type=COALESCE($12,bank_account_type),
+           bank_account_number=COALESCE($13,bank_account_number),
+           bank_name=COALESCE($14,bank_name),
+           updated_at=now()
+         WHERE id=$15 RETURNING *`,
+        [name, abbreviation, subdomain, email, phone, address, status,
+         motto, schoolType, logoUrl,
+         bankAccountTitle, bankAccountType, bankAccountNumber, bankName,
+         req.params.id]);
       if (!result.rows.length) return res.status(404).json({ message: "School not found" });
       await auditLog('superadmin@skyvale.com', 'update_school', `Updated school: ${name}`);
       res.json(result.rows[0]);
