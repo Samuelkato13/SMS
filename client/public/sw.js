@@ -99,7 +99,8 @@ self.addEventListener('fetch', event => {
         if (cached) return cached;
         return fetch(request).then(response => {
           if (response.ok) {
-            caches.open(CACHE_NAME).then(c => c.put(request, response.clone()));
+            const clone = response.clone();
+            caches.open(CACHE_NAME).then(c => c.put(request, clone));
           }
           return response;
         });

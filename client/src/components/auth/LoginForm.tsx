@@ -76,60 +76,10 @@ export const LoginForm = () => {
     defaultValues: { username: "", password: "" },
   });
 
-  const HARDCODED_ACCOUNTS: StaffAccount[] = [
-    { username: "dr-eds",  role: "director",        name: "Sarah Director",      schoolCode: "EDS" },
-    { username: "ht-eds",  role: "head_teacher",    name: "Samuel Kato",         schoolCode: "EDS" },
-    { username: "ct-eds",  role: "class_teacher",   name: "Grace Nakato",        schoolCode: "EDS" },
-    { username: "st-eds",  role: "subject_teacher", name: "David Mugisha",       schoolCode: "EDS" },
-    { username: "bsr-eds", role: "bursar",          name: "Christine Nabukeera", schoolCode: "EDS" },
-    STATIC_SUPER_ADMIN,
-  ];
 
   useEffect(() => {
-    (async () => {
-      try {
-        const [ur, sr] = await Promise.all([
-          fetch("/api/users"),
-          fetch("/api/schools"),
-        ]);
-        if (!ur.ok || !sr.ok) throw new Error("Failed to load");
-        const users: any[] = await ur.json();
-        const schools: any[] = await sr.json();
-
-        const schoolMap: Record<string, string> = Object.fromEntries(
-          schools.map((s) => [s.id, s.abbreviation])
-        );
-
-        const roleOrder = ["director", "head_teacher", "class_teacher", "subject_teacher", "bursar"];
-        const seen = new Set<string>();
-        const list: StaffAccount[] = [];
-
-        for (const role of roleOrder) {
-          const u = users.find((x) => x.role === role && x.username);
-          if (u && !seen.has(role)) {
-            seen.add(role);
-            list.push({
-              username: u.username,
-              role: u.role,
-              name: `${u.first_name ?? ""} ${u.last_name ?? ""}`.trim(),
-              schoolCode: schoolMap[u.school_id] ?? "EDS",
-            });
-          }
-        }
-
-        // If DB returned no school users, use hardcoded fallback (e.g. fresh production DB)
-        if (list.length === 0) {
-          setAccounts(HARDCODED_ACCOUNTS);
-        } else {
-          list.push(STATIC_SUPER_ADMIN);
-          setAccounts(list);
-        }
-      } catch (e) {
-        console.error("Demo accounts fetch error:", e);
-        setFetchError(true);
-        setAccounts(HARDCODED_ACCOUNTS);
-      }
-    })();
+    // Only show superadmin account (Supabase auth)
+    setAccounts([STATIC_SUPER_ADMIN]);
   }, []);
 
   const handleSignIn = async (username: string, password: string, label?: string) => {
