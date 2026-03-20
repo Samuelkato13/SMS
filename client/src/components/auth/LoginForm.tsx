@@ -42,13 +42,6 @@ const ROLE_STYLE: Record<string, { pill: string; btn: string; card: string; icon
   super_admin:     { pill: "bg-slate-700 text-white",         btn: "bg-slate-700 hover:bg-slate-800 text-white",     card: "border-slate-300 bg-slate-50",     icon: "⚙️" },
 };
 
-const STATIC_SUPER_ADMIN: StaffAccount = {
-  username: "super_admin",
-  role: "super_admin",
-  name: "SKYVALE Admin",
-  schoolCode: "SYS",
-};
-
 const redirectForRole = (role: string) => {
   switch (role) {
     case "super_admin":     return "/admin";
@@ -61,13 +54,12 @@ const redirectForRole = (role: string) => {
   }
 };
 
-const getPassword = (role: string) => role === "super_admin" ? "Admin@2025!" : "demo123";
+const getPassword = (_role: string) => "demo123";
 
 export const LoginForm = () => {
   const [loading, setLoading] = useState(false);
   const [activeUsername, setActiveUsername] = useState<string | null>(null);
   const [accounts, setAccounts] = useState<StaffAccount[]>([]);
-  const [fetchError, setFetchError] = useState(false);
   const { toast } = useToast();
   const [, navigate] = useLocation();
 
@@ -77,9 +69,37 @@ export const LoginForm = () => {
   });
 
 
+  const HARDCODED_DEMOS: StaffAccount[] = [
+    { username: "dr-eds",  role: "director",        name: "Sarah Director",      schoolCode: "EDS" },
+    { username: "ht-eds",  role: "head_teacher",    name: "Samuel Kato",         schoolCode: "EDS" },
+    { username: "ct-eds",  role: "class_teacher",   name: "Grace Nakato",        schoolCode: "EDS" },
+    { username: "st-eds",  role: "subject_teacher", name: "David Mugisha",       schoolCode: "EDS" },
+    { username: "bsr-eds", role: "bursar",          name: "Christine Nabukeera", schoolCode: "EDS" },
+  ];
+
   useEffect(() => {
-    // Only show superadmin account (Supabase auth)
-    setAccounts([STATIC_SUPER_ADMIN]);
+    (async () => {
+      try {
+        const [ur, sr] = await Promise.all([fetch("/api/users"), fetch("/api/schools")]);
+        if (!ur.ok || !sr.ok) throw new Error("Failed");
+        const users: any[] = await ur.json();
+        const schools: any[] = await sr.json();
+        const schoolMap: Record<string, string> = Object.fromEntries(schools.map((s) => [s.id, s.abbreviation]));
+        const roleOrder = ["director", "head_teacher", "class_teacher", "subject_teacher", "bursar"];
+        const seen = new Set<string>();
+        const list: StaffAccount[] = [];
+        for (const role of roleOrder) {
+          const u = users.find((x) => x.role === role && x.username);
+          if (u && !seen.has(role)) {
+            seen.add(role);
+            list.push({ username: u.username, role: u.role, name: `${u.first_name ?? ""} ${u.last_name ?? ""}`.trim(), schoolCode: schoolMap[u.school_id] ?? "EDS" });
+          }
+        }
+        setAccounts(list.length > 0 ? list : HARDCODED_DEMOS);
+      } catch {
+        setAccounts(HARDCODED_DEMOS);
+      }
+    })();
   }, []);
 
   const handleSignIn = async (username: string, password: string, label?: string) => {
@@ -194,9 +214,8 @@ export const LoginForm = () => {
             <h3 className="text-lg font-bold text-gray-900">Demo Accounts</h3>
             <div className="flex-1 h-px bg-gray-200" />
             <span className="text-xs text-gray-500">
-              Password:{" "}
+              All demo accounts use password:{" "}
               <code className="bg-white border border-gray-200 px-2 py-0.5 rounded font-mono">demo123</code>
-              {" "}(admin: <code className="bg-white border border-gray-200 px-2 py-0.5 rounded font-mono">Admin@2025!</code>)
             </span>
           </div>
 

@@ -49,32 +49,39 @@ async function bootstrap() {
       WHERE NOT EXISTS (SELECT 1 FROM schools WHERE id='a0000000-0000-0000-0000-000000000001')
     `);
 
-    // ── Seed all demo users ──────────────────────────────────────────────────
-    const demoHash = await bcrypt.hash("demo123", 10);
-    const superHash = await bcrypt.hash("Admin@2025!", 10);
+    // ── Seed real superadmin (no school attached) ────────────────────────────
+    const superHash = await bcrypt.hash("Skyvale@2025!", 10);
+    await pool.query(`DELETE FROM users WHERE username='super_admin' AND id!='f0000000-0000-0000-0000-000000000001'`);
+    await pool.query(`
+      INSERT INTO users (id, username, email, role, school_id, first_name, last_name, is_active, password_hash)
+      VALUES ('f0000000-0000-0000-0000-000000000001','skyvale_admin','admin@skyvale.com','super_admin',NULL,'SKYVALE','Admin',true,$1)
+      ON CONFLICT (id) DO UPDATE SET
+        username='skyvale_admin',
+        email='admin@skyvale.com',
+        school_id=NULL,
+        password_hash=EXCLUDED.password_hash,
+        is_active=true
+    `, [superHash]);
 
+    // ── Seed demo school users ───────────────────────────────────────────────
+    const demoHash = await bcrypt.hash("demo123", 10);
     const demoUsers = [
-      { id: 'f0000000-0000-0000-0000-000000000001', username: 'super_admin', email: 'superadmin@skyvale.com', role: 'super_admin',     first: 'SKYVALE',    last: 'Admin',     hash: superHash },
-      { id: 'c0000000-0000-0000-0000-000000000002', username: 'dr-eds',      email: 'director@demo.com',      role: 'director',        first: 'Sarah',      last: 'Director',  hash: demoHash  },
-      { id: 'c0000000-0000-0000-0000-000000000003', username: 'ht-eds',      email: 'headteacher@demo.com',   role: 'head_teacher',    first: 'Samuel',     last: 'Kato',      hash: demoHash  },
-      { id: 'c0000000-0000-0000-0000-000000000004', username: 'ct-eds',      email: 'classteacher@demo.com',  role: 'class_teacher',   first: 'Grace',      last: 'Nakato',    hash: demoHash  },
-      { id: 'c0000000-0000-0000-0000-000000000005', username: 'st-eds',      email: 'subjectteacher@demo.com',role: 'subject_teacher', first: 'David',      last: 'Mugisha',   hash: demoHash  },
-      { id: 'c0000000-0000-0000-0000-000000000006', username: 'bsr-eds',     email: 'bursar@demo.com',        role: 'bursar',          first: 'Christine',  last: 'Nabukeera', hash: demoHash  },
+      { id: 'c0000000-0000-0000-0000-000000000002', username: 'dr-eds',  email: 'director@demo.com',       role: 'director',        first: 'Sarah',     last: 'Director',  hash: demoHash },
+      { id: 'c0000000-0000-0000-0000-000000000003', username: 'ht-eds',  email: 'headteacher@demo.com',    role: 'head_teacher',    first: 'Samuel',    last: 'Kato',      hash: demoHash },
+      { id: 'c0000000-0000-0000-0000-000000000004', username: 'ct-eds',  email: 'classteacher@demo.com',   role: 'class_teacher',   first: 'Grace',     last: 'Nakato',    hash: demoHash },
+      { id: 'c0000000-0000-0000-0000-000000000005', username: 'st-eds',  email: 'subjectteacher@demo.com', role: 'subject_teacher', first: 'David',     last: 'Mugisha',   hash: demoHash },
+      { id: 'c0000000-0000-0000-0000-000000000006', username: 'bsr-eds', email: 'bursar@demo.com',         role: 'bursar',          first: 'Christine', last: 'Nabukeera', hash: demoHash },
     ];
 
     for (const u of demoUsers) {
-      // Remove any stale rows that share this email or username (but different ID)
       await pool.query(`DELETE FROM users WHERE LOWER(email)=$1 AND id!=$2`, [u.email.toLowerCase(), u.id]);
       await pool.query(`DELETE FROM users WHERE username=$1 AND id!=$2`, [u.username, u.id]);
       await pool.query(`
         INSERT INTO users (id, username, email, role, school_id, first_name, last_name, is_active, password_hash)
         VALUES ($1,$2,$3,$4,'a0000000-0000-0000-0000-000000000001',$5,$6,true,$7)
         ON CONFLICT (id) DO UPDATE SET
-          username=EXCLUDED.username,
-          email=EXCLUDED.email,
-          password_hash=EXCLUDED.password_hash,
-          role=EXCLUDED.role,
-          is_active=true
+          username=EXCLUDED.username, email=EXCLUDED.email,
+          password_hash=EXCLUDED.password_hash, role=EXCLUDED.role, is_active=true
       `, [u.id, u.username, u.email, u.role, u.first, u.last, u.hash]);
     }
 
