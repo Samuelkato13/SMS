@@ -160,6 +160,7 @@ export default function AdminSchools() {
                   <tr className="border-b border-gray-100 bg-gray-50">
                     <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">School</th>
                     <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Subdomain</th>
+                    <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Type</th>
                     <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Users</th>
                     <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Plan</th>
                     <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Status</th>
@@ -169,12 +170,12 @@ export default function AdminSchools() {
                 <tbody className="divide-y divide-gray-50">
                   {isLoading ? (
                     [...Array(5)].map((_, i) => (
-                      <tr key={i}><td colSpan={6} className="px-5 py-3">
+                      <tr key={i}><td colSpan={7} className="px-5 py-3">
                         <div className="animate-pulse h-4 bg-gray-100 rounded" />
                       </td></tr>
                     ))
                   ) : paged.length === 0 ? (
-                    <tr><td colSpan={6} className="px-5 py-10 text-center text-gray-400">
+                    <tr><td colSpan={7} className="px-5 py-10 text-center text-gray-400">
                       <School className="w-8 h-8 mx-auto mb-2 opacity-40" />
                       No schools found
                     </td></tr>
@@ -182,9 +183,13 @@ export default function AdminSchools() {
                     <tr key={s.id} className="hover:bg-gray-50/60 transition-colors">
                       <td className="px-5 py-3">
                         <div className="flex items-center gap-3">
-                          <div className="w-8 h-8 bg-indigo-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                            <span className="text-indigo-600 text-xs font-bold">{(s.abbreviation ?? s.name ?? 'S').slice(0, 2)}</span>
-                          </div>
+                          {s.logo_url ? (
+                            <img src={s.logo_url} alt={s.abbreviation} className="w-8 h-8 rounded-lg object-contain border border-gray-100" />
+                          ) : (
+                            <div className="w-8 h-8 bg-indigo-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                              <span className="text-indigo-600 text-xs font-bold">{(s.abbreviation ?? s.name ?? 'S').slice(0, 2)}</span>
+                            </div>
+                          )}
                           <div>
                             <p className="font-medium text-gray-900">{s.name}</p>
                             <p className="text-xs text-gray-400">{s.email}</p>
@@ -192,6 +197,13 @@ export default function AdminSchools() {
                         </div>
                       </td>
                       <td className="px-4 py-3 text-gray-600 font-mono text-xs">{s.subdomain || '—'}</td>
+                      <td className="px-4 py-3">
+                        {s.school_type ? (
+                          <span className="text-xs bg-sky-50 text-sky-700 border border-sky-200 px-2 py-0.5 rounded-full whitespace-nowrap">
+                            {SCHOOL_TYPES.find(t => t.value === s.school_type)?.label ?? s.school_type}
+                          </span>
+                        ) : <span className="text-gray-400 text-xs">—</span>}
+                      </td>
                       <td className="px-4 py-3 text-gray-700 font-medium">{s.user_count ?? 0}</td>
                       <td className="px-4 py-3">
                         <Badge className={`text-xs ${PLAN_COLORS[s.plan ?? 'trial']}`}>{s.plan ?? 'trial'}</Badge>

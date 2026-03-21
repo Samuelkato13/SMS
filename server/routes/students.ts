@@ -91,4 +91,14 @@ export function registerStudentRoutes(app: Express) {
       res.json(result.rows[0]);
     } catch (err: any) { res.status(500).json({ message: err.message }); }
   });
+
+  app.delete("/api/students/:id", async (req, res) => {
+    try {
+      const result = await pool.query(
+        `DELETE FROM students WHERE id=$1 RETURNING id`, [req.params.id]
+      );
+      if (!result.rows.length) return res.status(404).json({ message: "Student not found" });
+      res.json({ success: true });
+    } catch (err: any) { res.status(500).json({ message: err.message }); }
+  });
 }

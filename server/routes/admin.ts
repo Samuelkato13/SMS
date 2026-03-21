@@ -51,12 +51,18 @@ export function registerAdminRoutes(app: Express) {
 
   app.post("/api/admin/schools", async (req, res) => {
     try {
-      const { name, abbreviation, subdomain, email, phone, address, status } = req.body;
+      const {
+        name, abbreviation, subdomain, email, phone, address, status,
+        motto, schoolType, logoUrl, bankName, bankAccountTitle, bankAccountType, bankAccountNumber
+      } = req.body;
       if (!name || !email) return res.status(400).json({ message: "Name and email required" });
       const result = await pool.query(
-        `INSERT INTO schools (id, name, abbreviation, subdomain, email, phone, address, status, created_at, updated_at)
-         VALUES (gen_random_uuid(),$1,$2,$3,$4,$5,$6,$7,now(),now()) RETURNING *`,
-        [name, abbreviation??name.slice(0,6).toUpperCase(), subdomain??null, email, phone??'', address??'', status??'trial']);
+        `INSERT INTO schools (id, name, abbreviation, subdomain, email, phone, address, status,
+           motto, school_type, logo_url, bank_name, bank_account_title, bank_account_type, bank_account_number,
+           created_at, updated_at)
+         VALUES (gen_random_uuid(),$1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,now(),now()) RETURNING *`,
+        [name, abbreviation??name.slice(0,6).toUpperCase(), subdomain??null, email, phone??'', address??'', status??'trial',
+         motto??null, schoolType??null, logoUrl??null, bankName??null, bankAccountTitle??null, bankAccountType??null, bankAccountNumber??null]);
       await auditLog('superadmin@skyvale.com', 'create_school', `Created school: ${name}`);
       res.json(result.rows[0]);
     } catch (err: any) { res.status(500).json({ message: err.message }); }

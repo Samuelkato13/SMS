@@ -10,7 +10,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
-import { Plus, Search, Users, CreditCard, GraduationCap, Phone } from 'lucide-react';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
+import { Plus, Search, Users, CreditCard, GraduationCap, Phone, Trash2 } from 'lucide-react';
 
 interface Student {
   id: string;
@@ -44,11 +45,12 @@ interface NewStudentForm {
 
 export const StudentList = () => {
   const { profile } = useAuth();
-  const { canCreate } = useRole();
+  const { canCreate, canDelete } = useRole();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [searchTerm, setSearchTerm] = useState('');
   const [showAddDialog, setShowAddDialog] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<Student | null>(null);
   const [newStudent, setNewStudent] = useState<NewStudentForm>({
     firstName: '', lastName: '', dateOfBirth: '', gender: 'male',
     classId: '', guardianName: '', guardianPhone: '', address: '', email: ''
@@ -84,6 +86,21 @@ export const StudentList = () => {
     onError: () => {
       toast({ variant: 'destructive', title: "Error", description: "Failed to add student. Please try again." });
     }
+  });
+
+  const deleteStudentMutation = useMutation({
+    mutationFn: (id: string) => fetch(`/api/students/${id}`, { method: 'DELETE' }).then(r => {
+      if (!r.ok) throw new Error('Failed to delete student');
+      return r.json();
+    }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/students', profile?.schoolId] });
+      toast({ title: 'Student removed', description: 'The student record has been deleted.' });
+      setDeleteTarget(null);
+    },
+    onError: () => {
+      toast({ variant: 'destructive', title: 'Error', description: 'Failed to delete student.' });
+    },
   });
 
   const handleAddStudent = () => {
@@ -261,15 +278,47 @@ export const StudentList = () => {
                   <Badge variant={student.is_active ? 'default' : 'secondary'} className="text-xs">
                     {student.is_active ? 'Active' : 'Inactive'}
                   </Badge>
-                  <Badge variant="outline" className="text-xs capitalize">
-                    {student.gender}
-                  </Badge>
+                  <div className="flex items-center gap-2">
+                    <Badge variant="outline" className="text-xs capitalize">
+                      {student.gender}
+                    </Badge>
+                    {canDelete('students') && (
+                      <button
+                        onClick={() => setDeleteTarget(student)}
+                        className="text-red-400 hover:text-red-600 p-1 rounded transition-colors"
+                        title="Delete student"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    )}
+                  </div>
                 </div>
               </CardContent>
             </Card>
           ))}
         </div>
       )}
+
+      <AlertDialog open={!!deleteTarget} onOpenChange={open => !open && setDeleteTarget(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Student?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to permanently delete <strong>{deleteTarget?.first_name} {deleteTarget?.last_name}</strong>?
+              This will remove all their records including marks, attendance, and payment history. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => deleteTarget && deleteStudentMutation.mutate(deleteTarget.id)}
+              className="bg-red-600 hover:bg-red-700"
+            >
+              {deleteStudentMutation.isPending ? 'Deleting...' : 'Delete'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

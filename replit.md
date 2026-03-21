@@ -10,6 +10,12 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes
 
+### March 21, 2026
+- **Student DELETE route added**: `DELETE /api/students/:id` now available; StudentList UI has delete button (with confirmation dialog) visible only to users with `canDelete('students')` permission
+- **Admin Create School fixed**: `POST /api/admin/schools` now saves all fields — `school_type`, `motto`, `logo_url`, `bank_name`, `bank_account_title`, `bank_account_type`, `bank_account_number` (was only saving basic fields before)
+- **Admin Schools table improved**: Added "Type" column showing school type as a sky-blue badge; school logo preview shown in the name column when a logo URL is set
+- **Report Card PDFs enhanced**: Both single and bulk PDF generators now include proper school header — school name, motto in italics, address/phone contact line, then "STUDENT REPORT CARD" title with a divider; fetches real school data via `/api/schools/:id`
+
 ### March 15, 2026 (Final)
 - **Username-Only Authentication**: Auth system completely refactored to use usernames only (no email logins)
   - Backend: `POST /api/auth/login` accepts only `{ username, password }`
