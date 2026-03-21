@@ -194,6 +194,7 @@ async function bootstrap() {
     await pool.query(`ALTER TABLE payments ADD COLUMN IF NOT EXISTS prn_number VARCHAR(50)`);
     await pool.query(`ALTER TABLE fee_structures ADD COLUMN IF NOT EXISTS category VARCHAR(50) DEFAULT 'tuition'`);
     await pool.query(`ALTER TABLE fee_structures ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ DEFAULT NOW()`);
+    await pool.query(`ALTER TABLE fee_structures ALTER COLUMN due_date DROP NOT NULL`);
 
     await pool.query(`
       CREATE TABLE IF NOT EXISTS fee_adjustments (
