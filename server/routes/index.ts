@@ -17,6 +17,8 @@ import { registerAcademicRoutes } from "./academic";
 import { registerAdminRoutes } from "./admin";
 import { registerSignupRoutes } from "./signup";
 import { registerUploadRoutes } from "./upload";
+import { registerPromotionRoutes } from "./promotions";
+import { registerGroupRoutes } from "./groups";
 
 // ── DB bootstrap: ensure all required tables and seed data exist ─────────────
 async function bootstrap() {
@@ -301,6 +303,49 @@ async function bootstrap() {
       )
     `);
 
+    // ── Promotion & Grouping tables ──────────────────────────────────────────
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS promotion_logs (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        school_id UUID REFERENCES schools(id) ON DELETE CASCADE,
+        from_class_id UUID,
+        to_class_id UUID,
+        from_class_name VARCHAR(100),
+        to_class_name VARCHAR(100),
+        student_ids JSONB NOT NULL DEFAULT '[]',
+        student_count INTEGER DEFAULT 0,
+        promoted_by UUID REFERENCES users(id),
+        promoted_by_name VARCHAR(200),
+        academic_year VARCHAR(20),
+        notes TEXT,
+        promoted_at TIMESTAMPTZ DEFAULT NOW()
+      )
+    `);
+
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS student_groups (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        school_id UUID REFERENCES schools(id) ON DELETE CASCADE,
+        name VARCHAR(200) NOT NULL,
+        description TEXT,
+        color VARCHAR(20) DEFAULT 'blue',
+        created_by UUID REFERENCES users(id),
+        created_by_name VARCHAR(200),
+        created_at TIMESTAMPTZ DEFAULT NOW(),
+        updated_at TIMESTAMPTZ DEFAULT NOW()
+      )
+    `);
+
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS student_group_members (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        group_id UUID REFERENCES student_groups(id) ON DELETE CASCADE,
+        student_id UUID REFERENCES students(id) ON DELETE CASCADE,
+        added_at TIMESTAMPTZ DEFAULT NOW(),
+        UNIQUE(group_id, student_id)
+      )
+    `);
+
     // Demo school subscription
     await pool.query(`
       INSERT INTO subscriptions (school_id, plan, start_date, end_date, status, amount_ugx)
@@ -333,6 +378,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   registerAcademicRoutes(app);
   registerAdminRoutes(app);
   registerSignupRoutes(app);
+  registerPromotionRoutes(app);
+  registerGroupRoutes(app);
   registerReplitAuthRoutes(app);
 
   return createServer(app);
