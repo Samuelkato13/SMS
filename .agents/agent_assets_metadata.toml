@@ -6,3 +6,9 @@ id = "Dp-Cx2rnDZL5h-SeNaymr"
 uri = "file://edupay-project.tar.gz"
 type = "unspecified"
 title = "EduPay Project — Full Source Code"
+
+[[outputs]]
+id = "RlrM6nl71LCBc00Zk0L8M"
+uri = "file://EduPay_SKYVALE_v1.0.tar.gz"
+type = "unspecified"
+title = "EduPay_SKYVALE_v1.0.tar.gz"
