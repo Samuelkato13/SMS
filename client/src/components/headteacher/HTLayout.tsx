@@ -18,7 +18,7 @@ const NAV: NavItem[] = [
   { label: 'Teacher Management',  href: '/headteacher/teachers',        icon: Users           },
   { label: 'Students',            href: '/headteacher/students',        icon: UserSquare2     },
   { label: 'Exam Management',     href: '/headteacher/exams',           icon: ClipboardList   },
-  { label: 'Performance Reports', href: '/headteacher/performance',     icon: BarChart3       },
+  { label: 'Reports Hub',          href: '/headteacher/performance',     icon: BarChart3       },
   { label: 'Report Cards',        href: '/headteacher/report-cards',    icon: FileText        },
   { label: 'Print IDs',           href: '/headteacher/print-ids',       icon: CreditCard      },
   { label: 'Promotion Studio',    href: '/headteacher/promotion',       icon: TrendingUp      },

@@ -73,6 +73,8 @@ import ReportStudio from "@/pages/director/ReportStudio";
 import FinancialSummary from "@/pages/director/FinancialSummary";
 import PromotionStudio from "@/pages/shared/PromotionStudio";
 import GroupingStudio from "@/pages/shared/GroupingStudio";
+import ReportsHub from "@/pages/shared/ReportsHub";
+import { CTLayout } from "@/components/classteacher/CTLayout";
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, loading, isSuperAdmin, profile } = useAuth();
@@ -371,6 +373,11 @@ function Router() {
       </Route>
       <Route path="/classteacher/communication">
         <ClassTeacherRoute><ParentCommunication /></ClassTeacherRoute>
+      </Route>
+      <Route path="/classteacher/reports">
+        <ClassTeacherRoute>
+          <CTLayout><ReportsHub /></CTLayout>
+        </ClassTeacherRoute>
       </Route>
 
       {/* ── Bursar routes ──────────────────────────────────────────── */}

@@ -19,6 +19,7 @@ import { registerSignupRoutes } from "./signup";
 import { registerUploadRoutes } from "./upload";
 import { registerPromotionRoutes } from "./promotions";
 import { registerGroupRoutes } from "./groups";
+import { registerTimetableRoutes } from "./timetable";
 
 // ── DB bootstrap: ensure all required tables and seed data exist ─────────────
 async function bootstrap() {
@@ -367,6 +368,23 @@ async function bootstrap() {
       )
     `);
 
+    // Timetable
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS timetable (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        school_id UUID NOT NULL,
+        class_id UUID NOT NULL,
+        subject_id UUID,
+        teacher_id UUID,
+        day_of_week VARCHAR(15) NOT NULL,
+        period_number INTEGER NOT NULL,
+        start_time VARCHAR(10),
+        end_time VARCHAR(10),
+        room VARCHAR(50),
+        created_at TIMESTAMPTZ DEFAULT NOW()
+      )
+    `);
+
     // Demo school subscription
     await pool.query(`
       INSERT INTO subscriptions (school_id, plan, start_date, end_date, status, amount_ugx)
@@ -401,6 +419,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   registerSignupRoutes(app);
   registerPromotionRoutes(app);
   registerGroupRoutes(app);
+  registerTimetableRoutes(app);
   registerReplitAuthRoutes(app);
 
   return createServer(app);

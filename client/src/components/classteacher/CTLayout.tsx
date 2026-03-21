@@ -18,6 +18,7 @@ const NAV: NavItem[] = [
   { label: 'Attendance',         href: '/classteacher/attendance',     icon: CalendarCheck   },
   { label: 'Enter Marks',        href: '/classteacher/marks',          icon: PenLine         },
   { label: 'Class Performance',  href: '/classteacher/performance',    icon: BarChart2       },
+  { label: 'Reports',            href: '/classteacher/reports',        icon: FileText        },
   { label: 'Report Cards',       href: '/classteacher/report-cards',   icon: FileText        },
   { label: 'Parent Communication', href: '/classteacher/communication',icon: MessageSquare   },
 ];
