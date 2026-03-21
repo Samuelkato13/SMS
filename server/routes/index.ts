@@ -191,6 +191,25 @@ async function bootstrap() {
     await pool.query(`ALTER TABLE payments ADD COLUMN IF NOT EXISTS notes TEXT`);
     await pool.query(`ALTER TABLE payments ADD COLUMN IF NOT EXISTS provider VARCHAR(50)`);
     await pool.query(`ALTER TABLE payments ADD COLUMN IF NOT EXISTS phone_number VARCHAR(20)`);
+    await pool.query(`ALTER TABLE payments ADD COLUMN IF NOT EXISTS prn_number VARCHAR(50)`);
+    await pool.query(`ALTER TABLE fee_structures ADD COLUMN IF NOT EXISTS category VARCHAR(50) DEFAULT 'tuition'`);
+
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS fee_adjustments (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        school_id UUID NOT NULL REFERENCES schools(id) ON DELETE CASCADE,
+        student_id UUID NOT NULL REFERENCES students(id) ON DELETE CASCADE,
+        fee_structure_id UUID REFERENCES fee_structures(id),
+        adjustment_type VARCHAR(30) NOT NULL DEFAULT 'discount',
+        amount NUMERIC(12,2) NOT NULL,
+        reason TEXT,
+        academic_year VARCHAR(20),
+        term VARCHAR(20),
+        applied_by UUID REFERENCES users(id),
+        applied_by_name VARCHAR(200),
+        created_at TIMESTAMPTZ DEFAULT NOW()
+      )
+    `);
 
     await pool.query(`
       CREATE TABLE IF NOT EXISTS bank_statements (

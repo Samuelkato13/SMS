@@ -135,6 +135,16 @@ export default function ReportsHub() {
     queryFn: () => fetch(`/api/fee-structures?schoolId=${schoolId}`).then(r => r.json()),
     enabled: !!schoolId && ["detailed_fees"].includes(activeTab),
   });
+  const { data: feeAdjustments = [] } = useQuery<any[]>({
+    queryKey: ["/api/fee-adjustments", schoolId],
+    queryFn: () => fetch(`/api/fee-adjustments?schoolId=${schoolId}`).then(r => r.json()),
+    enabled: !!schoolId && activeTab === "balance_adjustments",
+  });
+  const { data: allPayments = [] } = useQuery<any[]>({
+    queryKey: ["/api/payments", schoolId],
+    queryFn: () => fetch(`/api/payments?schoolId=${schoolId}`).then(r => r.json()),
+    enabled: !!schoolId && activeTab === "balance_adjustments",
+  });
   const { data: timetableData = [], isLoading: loadTT } = useQuery<any[]>({
     queryKey: ["/api/timetable", schoolId, ttClass],
     queryFn: () => fetch(`/api/timetable?schoolId=${schoolId}${ttClass ? `&classId=${ttClass}` : ""}`).then(r => r.json()),
@@ -203,8 +213,8 @@ export default function ReportsHub() {
     return list.sort((a, b) => a.last_name.localeCompare(b.last_name));
   }, [students, filterStatus, filterClass, filterGender, filterSection, studentSearch]);
 
-  // Reversed / balance adjustments
-  const adjustments = useMemo(() => (payments as any[]).filter(p => p.is_reversed), [payments]);
+  // Reversed payments (from allPayments which includes reversed ones)
+  const adjustments = useMemo(() => (allPayments as any[]).filter(p => p.is_reversed), [allPayments]);
 
   // Timetable grid per day+period
   const ttGrid = useMemo(() => {
@@ -999,11 +1009,10 @@ export default function ReportsHub() {
                     }> = {};
                     (payments as any[]).filter(p => !p.is_reversed).forEach((p: any) => {
                       if (!payByStudent[p.student_id]) {
-                        const cls = classes.find((c: any) => c.id === p.class_id);
                         payByStudent[p.student_id] = {
-                          name: `${p.first_name ?? ""} ${p.last_name ?? ""}`.trim(),
-                          studentNumber: p.payment_code ?? "—",
-                          class: cls?.name ?? "—",
+                          name: p.student_name ?? `${p.first_name ?? ""} ${p.last_name ?? ""}`.trim(),
+                          studentNumber: p.student_code ?? p.payment_code ?? "—",
+                          class: p.class_name ?? "—",
                           total: 0, count: 0, methods: {},
                         };
                       }
@@ -1078,26 +1087,31 @@ export default function ReportsHub() {
           {/* ── Tab: Balance Adjustments ──────────────────────────────────── */}
           {activeTab === "balance_adjustments" && (
             <div className="space-y-4">
-              <DateRangeBar />
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-3 gap-3">
                 <div className="bg-red-50 rounded-xl p-4 text-center">
                   <p className="text-2xl font-bold text-red-700">{adjustments.length}</p>
                   <p className="text-xs text-red-500 font-medium mt-0.5">Reversed Payments</p>
                 </div>
                 <div className="bg-amber-50 rounded-xl p-4 text-center">
-                  <p className="text-2xl font-bold text-amber-700">
-                    {ugx(adjustments.reduce((s, p: any) => s + Number(p.amount), 0))}
+                  <p className="text-2xl font-bold text-amber-700">{feeAdjustments.length}</p>
+                  <p className="text-xs text-amber-500 font-medium mt-0.5">Fee Adjustments</p>
+                </div>
+                <div className="bg-blue-50 rounded-xl p-4 text-center">
+                  <p className="text-xl font-bold text-blue-700">
+                    {ugx(feeAdjustments.reduce((s: number, a: any) => s + Number(a.amount), 0))}
                   </p>
-                  <p className="text-xs text-amber-500 font-medium mt-0.5">Total Adjusted</p>
+                  <p className="text-xs text-blue-500 font-medium mt-0.5">Total Discounts</p>
                 </div>
               </div>
+
+              {/* Reversed Payments */}
               <Card className="border-0 shadow-sm">
                 <CardHeader className="pb-2">
-                  <CardTitle className="text-sm">Balance Adjustment Log</CardTitle>
+                  <CardTitle className="text-sm text-red-700">Reversed Payments</CardTitle>
                 </CardHeader>
                 <CardContent className="p-0">
                   {adjustments.length === 0 ? (
-                    <div className="text-center py-10 text-gray-400 text-sm">No balance adjustments in this period</div>
+                    <div className="text-center py-8 text-gray-400 text-sm">No reversed payments</div>
                   ) : (
                     <table className="w-full">
                       <thead className="bg-gray-50 border-b border-gray-100">
@@ -1123,6 +1137,50 @@ export default function ReportsHub() {
                             </td>
                             <td className="px-4 py-2.5 text-xs text-gray-500">
                               {p.paid_at ? new Date(p.paid_at).toLocaleDateString() : "—"}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  )}
+                </CardContent>
+              </Card>
+
+              {/* Fee Adjustments (discounts, waivers, advance) */}
+              <Card className="border-0 shadow-sm">
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm text-amber-700">Fee Adjustments (Discounts / Waivers / Advances)</CardTitle>
+                </CardHeader>
+                <CardContent className="p-0">
+                  {feeAdjustments.length === 0 ? (
+                    <div className="text-center py-8 text-gray-400 text-sm">No fee adjustments recorded</div>
+                  ) : (
+                    <table className="w-full">
+                      <thead className="bg-gray-50 border-b border-gray-100">
+                        <tr>
+                          {["Student", "Type", "Fee", "Amount", "Reason", "Applied By", "Date"].map(h => (
+                            <th key={h} className="text-left px-4 py-2.5 text-xs font-semibold text-gray-500">{h}</th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-gray-50">
+                        {feeAdjustments.map((a: any) => (
+                          <tr key={a.id} className="hover:bg-amber-50/20">
+                            <td className="px-4 py-2.5 text-sm font-medium text-gray-900">{a.student_name}</td>
+                            <td className="px-4 py-2.5">
+                              <Badge className={`text-xs capitalize ${
+                                a.adjustment_type === "discount" ? "bg-amber-50 text-amber-700" :
+                                a.adjustment_type === "waiver" ? "bg-purple-50 text-purple-700" :
+                                a.adjustment_type === "bursary" ? "bg-blue-50 text-blue-700" :
+                                "bg-green-50 text-green-700"
+                              }`}>{a.adjustment_type}</Badge>
+                            </td>
+                            <td className="px-4 py-2.5 text-xs text-gray-500">{a.fee_name ?? "—"}</td>
+                            <td className="px-4 py-2.5 text-sm font-bold text-amber-700">{ugx(a.amount)}</td>
+                            <td className="px-4 py-2.5 text-xs text-gray-500 max-w-[180px] truncate">{a.reason ?? "—"}</td>
+                            <td className="px-4 py-2.5 text-xs text-gray-500">{a.applied_by_name ?? "—"}</td>
+                            <td className="px-4 py-2.5 text-xs text-gray-500">
+                              {a.created_at ? new Date(a.created_at).toLocaleDateString() : "—"}
                             </td>
                           </tr>
                         ))}

@@ -87,8 +87,10 @@ export function registerFeeRoutes(app: Express) {
     try {
       const { schoolId, from, to } = req.query;
       if (!schoolId) return res.status(400).json({ message: "schoolId required" });
-      let query = `SELECT p.*, s.first_name || ' ' || s.last_name as student_name,
-                          s.admission_number, c.name as class_name, f.name as fee_name,
+      let query = `SELECT p.*, s.first_name, s.last_name,
+                          s.first_name || ' ' || s.last_name as student_name,
+                          s.admission_number, s.payment_code as student_code,
+                          c.name as class_name, f.name as fee_name, f.category as fee_category,
                           u.first_name || ' ' || u.last_name as recorded_by_name
                    FROM payments p JOIN students s ON p.student_id=s.id
                    LEFT JOIN classes c ON s.class_id=c.id
@@ -108,7 +110,8 @@ export function registerFeeRoutes(app: Express) {
       const { schoolId, studentId, paymentCode } = req.query;
       if (!schoolId) return res.status(400).json({ message: "schoolId required" });
       let query = `SELECT p.*, s.first_name, s.last_name, s.payment_code as student_code,
-                          f.name as fee_name, u.first_name || ' ' || u.last_name as recorded_by_name
+                          f.name as fee_name, f.category as fee_category,
+                          u.first_name || ' ' || u.last_name as recorded_by_name
                    FROM payments p JOIN students s ON p.student_id=s.id
                    JOIN fee_structures f ON p.fee_structure_id=f.id JOIN users u ON p.recorded_by=u.id
                    WHERE p.school_id=$1`;
@@ -134,12 +137,65 @@ export function registerFeeRoutes(app: Express) {
 
   app.post("/api/payments/record", async (req, res) => {
     try {
-      const { studentId, feeStructureId, schoolId, paymentCode, amount, paymentMethod, transactionRef, notes, recordedBy, receiptNumber } = req.body;
+      const { studentId, feeStructureId, schoolId, paymentCode, amount, paymentMethod,
+              transactionRef, notes, recordedBy, receiptNumber, provider, phoneNumber, prnNumber } = req.body;
       const result = await pool.query(
-        `INSERT INTO payments (student_id, fee_structure_id, school_id, payment_code, amount, payment_method, transaction_ref, status, paid_at, recorded_by, receipt_number, notes)
-         VALUES ($1,$2,$3,$4,$5,$6,$7,'completed',NOW(),$8,$9,$10) RETURNING *`,
-        [studentId, feeStructureId, schoolId, paymentCode, amount, paymentMethod, transactionRef, recordedBy, receiptNumber, notes]);
+        `INSERT INTO payments (student_id, fee_structure_id, school_id, payment_code, amount, payment_method,
+          transaction_ref, status, paid_at, recorded_by, receipt_number, notes, provider, phone_number, prn_number)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,'completed',NOW(),$8,$9,$10,$11,$12,$13) RETURNING *`,
+        [studentId, feeStructureId, schoolId, paymentCode, amount, paymentMethod,
+         transactionRef||null, recordedBy, receiptNumber, notes||null, provider||null, phoneNumber||null, prnNumber||null]);
       res.status(201).json(result.rows[0]);
+    } catch (err: any) { res.status(500).json({ message: err.message }); }
+  });
+
+  // PRN (Payment Reference Number) generation for mobile money
+  app.post("/api/payments/prn", async (req, res) => {
+    try {
+      const { schoolId, studentId, amount, feeStructureId } = req.body;
+      if (!schoolId || !studentId || !amount) return res.status(400).json({ message: "schoolId, studentId, amount required" });
+      const code = await pool.query(`SELECT payment_code FROM students WHERE id=$1`, [studentId]);
+      const payCode = code.rows[0]?.payment_code || 'STU';
+      const prn = `PRN-${payCode}-${Date.now().toString(36).toUpperCase()}`;
+      res.json({ prn, instructions: `Pay UGX ${Number(amount).toLocaleString()} via MTN/Airtel Mobile Money using PRN: ${prn}. Dial *165# (MTN) or *185# (Airtel), choose Pay Bills, enter this PRN.` });
+    } catch (err: any) { res.status(500).json({ message: err.message }); }
+  });
+
+  // Fee adjustments (discounts, waivers, advances)
+  app.get("/api/fee-adjustments", async (req, res) => {
+    try {
+      const { schoolId, studentId } = req.query;
+      if (!schoolId) return res.status(400).json({ message: "schoolId required" });
+      let q = `SELECT fa.*, s.first_name||' '||s.last_name as student_name, s.payment_code,
+                      f.name as fee_name, f.category
+               FROM fee_adjustments fa
+               JOIN students s ON fa.student_id=s.id
+               LEFT JOIN fee_structures f ON fa.fee_structure_id=f.id
+               WHERE fa.school_id=$1`;
+      const params: any[] = [schoolId]; let idx = 2;
+      if (studentId) { q += ` AND fa.student_id=$${idx++}`; params.push(studentId); }
+      q += ' ORDER BY fa.created_at DESC';
+      const r = await pool.query(q, params);
+      res.json(r.rows);
+    } catch (err: any) { res.status(500).json({ message: err.message }); }
+  });
+
+  app.post("/api/fee-adjustments", async (req, res) => {
+    try {
+      const { schoolId, studentId, feeStructureId, adjustmentType, amount, reason, academicYear, term, appliedBy, appliedByName } = req.body;
+      if (!schoolId || !studentId || !amount || !adjustmentType) return res.status(400).json({ message: "Missing required fields" });
+      const r = await pool.query(
+        `INSERT INTO fee_adjustments (school_id, student_id, fee_structure_id, adjustment_type, amount, reason, academic_year, term, applied_by, applied_by_name)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10) RETURNING *`,
+        [schoolId, studentId, feeStructureId||null, adjustmentType, amount, reason||null, academicYear||null, term||null, appliedBy||null, appliedByName||null]);
+      res.status(201).json(r.rows[0]);
+    } catch (err: any) { res.status(500).json({ message: err.message }); }
+  });
+
+  app.delete("/api/fee-adjustments/:id", async (req, res) => {
+    try {
+      await pool.query(`DELETE FROM fee_adjustments WHERE id=$1`, [req.params.id]);
+      res.json({ success: true });
     } catch (err: any) { res.status(500).json({ message: err.message }); }
   });
 
@@ -152,6 +208,19 @@ export function registerFeeRoutes(app: Express) {
          WHERE id=$2 RETURNING *`, [reversalReason, req.params.id]);
       if (!result.rows.length) return res.status(404).json({ message: "Payment not found" });
       res.json(result.rows[0]);
+    } catch (err: any) { res.status(500).json({ message: err.message }); }
+  });
+
+  // Alias: /api/fee-structures → same as /api/fees
+  app.get("/api/fee-structures", async (req, res) => {
+    try {
+      const { schoolId } = req.query;
+      if (!schoolId) return res.status(400).json({ message: "schoolId required" });
+      const result = await pool.query(
+        `SELECT f.*, c.name as class_name FROM fee_structures f
+         LEFT JOIN classes c ON f.class_id=c.id WHERE f.school_id=$1 ORDER BY f.category, f.due_date`,
+        [schoolId]);
+      res.json(result.rows);
     } catch (err: any) { res.status(500).json({ message: err.message }); }
   });
 

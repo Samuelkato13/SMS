@@ -13,10 +13,24 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Pencil, Trash2, FileText, Calendar, DollarSign } from "lucide-react";
+import { Plus, Pencil, Trash2, Calendar, DollarSign, Tag } from "lucide-react";
 
 const TERMS = ["Term 1", "Term 2", "Term 3"];
 const YEARS = ["2024", "2025", "2026"];
+const CATEGORIES = [
+  { value: "tuition", label: "Tuition" }, { value: "transport", label: "Transport" },
+  { value: "boarding", label: "Boarding" }, { value: "uniform", label: "Uniform" },
+  { value: "exam", label: "Exam" }, { value: "development", label: "Development" },
+  { value: "swimming", label: "Swimming" }, { value: "library", label: "Library" },
+  { value: "lunch", label: "Lunch" }, { value: "other", label: "Other" },
+];
+const CATEGORY_COLORS: Record<string, string> = {
+  tuition: "bg-blue-100 text-blue-800", transport: "bg-orange-100 text-orange-800",
+  boarding: "bg-purple-100 text-purple-800", uniform: "bg-pink-100 text-pink-800",
+  exam: "bg-red-100 text-red-800", development: "bg-indigo-100 text-indigo-800",
+  swimming: "bg-cyan-100 text-cyan-800", library: "bg-yellow-100 text-yellow-800",
+  lunch: "bg-lime-100 text-lime-800", other: "bg-gray-100 text-gray-700",
+};
 
 export default function FeeManagement() {
   const { profile } = useAuth();
@@ -27,7 +41,7 @@ export default function FeeManagement() {
   const [editItem, setEditItem] = useState<any>(null);
   const [showDelete, setShowDelete] = useState<any>(null);
 
-  const emptyForm = { name: "", description: "", amount: "", dueDate: "", classId: "", academicYear: "2025", term: "Term 1", isOptional: false };
+  const emptyForm = { name: "", description: "", amount: "", dueDate: "", classId: "", academicYear: "2025", term: "Term 1", isOptional: false, category: "tuition" };
   const [form, setForm] = useState(emptyForm);
 
   const { data: fees = [], isLoading } = useQuery({
@@ -81,7 +95,7 @@ export default function FeeManagement() {
       name: f.name, description: f.description ?? "",
       amount: String(f.amount), dueDate: f.due_date?.split("T")[0] ?? "",
       classId: f.class_id ?? "", academicYear: f.academic_year, term: f.term ?? "Term 1",
-      isOptional: f.is_optional ?? false
+      isOptional: f.is_optional ?? false, category: f.category ?? "tuition"
     });
     setShowForm(true);
   };
@@ -92,7 +106,8 @@ export default function FeeManagement() {
     const data = {
       name: form.name, description: form.description, amount: Number(form.amount),
       dueDate: form.dueDate, classId: form.classId || null,
-      academicYear: form.academicYear, term: form.term, isOptional: form.isOptional
+      academicYear: form.academicYear, term: form.term, isOptional: form.isOptional,
+      category: form.category,
     };
     editItem ? updateMut.mutate(data) : createMut.mutate(data);
   };
@@ -150,7 +165,7 @@ export default function FeeManagement() {
                   <table className="w-full text-sm">
                     <thead className="bg-gray-50 border-b">
                       <tr>
-                        {["Fee Name","Description","Amount (UGX)","Due Date","Class","Optional","Actions"].map(h => (
+                        {["Fee Name","Category","Amount (UGX)","Due Date","Class","Optional","Actions"].map(h => (
                           <th key={h} className="text-left p-3 font-medium text-gray-600">{h}</th>
                         ))}
                       </tr>
@@ -158,8 +173,15 @@ export default function FeeManagement() {
                     <tbody>
                       {items.map((f: any) => (
                         <tr key={f.id} className="border-b hover:bg-gray-50">
-                          <td className="p-3 font-medium">{f.name}</td>
-                          <td className="p-3 text-gray-500 max-w-[200px] truncate">{f.description ?? "—"}</td>
+                          <td className="p-3 font-medium">
+                            {f.name}
+                            {f.description && <p className="text-xs text-gray-400 truncate max-w-[150px]">{f.description}</p>}
+                          </td>
+                          <td className="p-3">
+                            <Badge className={`text-xs ${CATEGORY_COLORS[f.category ?? "other"] ?? "bg-gray-100 text-gray-700"}`}>
+                              <Tag size={10} className="mr-1" />{CATEGORIES.find(c => c.value === f.category)?.label ?? f.category ?? "Other"}
+                            </Badge>
+                          </td>
                           <td className="p-3 font-semibold text-emerald-700">
                             <span className="flex items-center gap-1"><DollarSign size={13} />{Number(f.amount).toLocaleString()}</span>
                           </td>
@@ -201,6 +223,20 @@ export default function FeeManagement() {
             <div>
               <Label>Fee Name *</Label>
               <Input className="mt-1" value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} placeholder="e.g. School Fees Term 1" />
+            </div>
+            <div>
+              <Label>Category *</Label>
+              <Select value={form.category} onValueChange={v => setForm(f => ({ ...f, category: v }))}>
+                <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {CATEGORIES.map(c => (
+                    <SelectItem key={c.value} value={c.value}>
+                      <span className={`px-1.5 py-0.5 rounded text-[10px] font-medium mr-2 ${CATEGORY_COLORS[c.value]}`}>{c.label}</span>
+                      {c.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
             <div>
               <Label>Description</Label>

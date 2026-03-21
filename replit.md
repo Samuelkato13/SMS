@@ -10,6 +10,18 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes
 
+### March 21, 2026 (Latest)
+- **PaymentsReceived.tsx fully rewritten** — Complete bursar payments page overhaul:
+  - PRN (Payment Reference Number) generation via `POST /api/payments/prn` for mobile money
+  - Provider selector (MTN / Airtel) and phone number field shown when mobile money is selected
+  - Fee category badges displayed in dropdown and payments table (tuition, transport, boarding, etc.)
+  - Discount/Adjustment recording dialog with types: discount, waiver, bursary, advance, overpayment
+  - Improved receipt PDFs: school name, fee name, category, PRN, provider, reference number
+  - Payments table now shows: Category, PRN/Ref column, Provider in method badge
+  - Adjustments tab shows full log with student, type, fee, amount, reason, applied-by
+- **FeeManagement.tsx upgraded** — Category selector added to fee creation/edit form; category badge shown in fee table
+- **Backend: `/api/payments` returns `fee_category`** — Joined from fee_structures for direct use in receipts
+
 ### March 21, 2026
 - **Student DELETE route added**: `DELETE /api/students/:id` now available; StudentList UI has delete button (with confirmation dialog) visible only to users with `canDelete('students')` permission
 - **Admin Create School fixed**: `POST /api/admin/schools` now saves all fields — `school_type`, `motto`, `logo_url`, `bank_name`, `bank_account_title`, `bank_account_type`, `bank_account_number` (was only saving basic fields before)
