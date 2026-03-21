@@ -31,6 +31,19 @@ export function registerMarksRoutes(app: Express) {
               editReason, editedBy, editedByName } = req.body;
       if (!Array.isArray(entries) || !examId || !subjectId || !classId || !schoolId)
         return res.status(400).json({ message: "Missing required fields" });
+
+      // Guard: subject teachers can only save marks for subjects assigned to them
+      if (recordedBy) {
+        const userRow = await pool.query('SELECT role FROM users WHERE id=$1', [recordedBy]);
+        const userRole = userRow.rows[0]?.role;
+        if (userRole === 'subject_teacher') {
+          const subjectRow = await pool.query('SELECT teacher_id FROM subjects WHERE id=$1', [subjectId]);
+          const assignedTeacher = subjectRow.rows[0]?.teacher_id;
+          if (assignedTeacher && assignedTeacher !== recordedBy) {
+            return res.status(403).json({ message: "You are not assigned to teach this subject" });
+          }
+        }
+      }
       const results = [];
       for (const entry of entries) {
         const { studentId, marksObtained, subjectTeacherRemarks } = entry;

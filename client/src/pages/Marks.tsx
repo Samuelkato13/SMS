@@ -63,6 +63,12 @@ export default function Marks() {
     enabled: !!schoolId,
   });
 
+  // Subject teachers only see subjects assigned to them
+  const isSubjectTeacher = profile?.role === 'subject_teacher';
+  const visibleSubjects = isSubjectTeacher
+    ? subjects.filter((s: any) => s.teacher_id === profile?.id)
+    : subjects;
+
   const { data: students = [] } = useQuery<any[]>({
     queryKey: ['/api/students', schoolId, selectedClass],
     queryFn: () => fetch(`/api/students?schoolId=${schoolId}${selectedClass ? `&classId=${selectedClass}` : ''}`).then(r => r.json()),
@@ -98,7 +104,6 @@ export default function Marks() {
   });
 
   // ── Marks entry permission for class teacher ──────────────────────────────
-  const isSubjectTeacher = profile?.role === 'subject_teacher';
   const { data: ctPermissions = [] } = useQuery<any[]>({
     queryKey: ['/api/marks-permissions', schoolId, selectedClass, selectedSubject, selectedExam],
     queryFn: () =>
@@ -272,7 +277,7 @@ export default function Marks() {
                 <label className="text-xs font-medium text-gray-600 mb-1 block">Subject *</label>
                 <Select value={selectedSubject} onValueChange={setSelectedSubject}>
                   <SelectTrigger className="h-9"><SelectValue placeholder="Select subject" /></SelectTrigger>
-                  <SelectContent>{subjects.map((s: any) => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}</SelectContent>
+                  <SelectContent>{visibleSubjects.map((s: any) => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}</SelectContent>
                 </Select>
               </div>
             </div>
