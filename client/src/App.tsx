@@ -71,6 +71,8 @@ import FeesManagement from "@/pages/director/FeesManagement";
 import DirectorReports from "@/pages/director/DirectorReports";
 import ReportStudio from "@/pages/director/ReportStudio";
 import FinancialSummary from "@/pages/director/FinancialSummary";
+import PromotionStudio from "@/pages/shared/PromotionStudio";
+import GroupingStudio from "@/pages/shared/GroupingStudio";
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, loading, isSuperAdmin, profile } = useAuth();
@@ -341,6 +343,12 @@ function Router() {
       <Route path="/headteacher/print-ids">
         <HeadTeacherRoute><PrintIDs /></HeadTeacherRoute>
       </Route>
+      <Route path="/headteacher/promotion">
+        <HeadTeacherRoute><PromotionStudio /></HeadTeacherRoute>
+      </Route>
+      <Route path="/headteacher/grouping">
+        <HeadTeacherRoute><GroupingStudio /></HeadTeacherRoute>
+      </Route>
 
       {/* ── Class Teacher routes ────────────────────────────────────── */}
       <Route path="/classteacher">
@@ -387,6 +395,9 @@ function Router() {
       <Route path="/bursar/receipts">
         <BursarRoute><ReceiptsPage /></BursarRoute>
       </Route>
+      <Route path="/bursar/grouping">
+        <BursarRoute><GroupingStudio /></BursarRoute>
+      </Route>
 
       {/* ── Director routes ────────────────────────────────────────── */}
       <Route path="/director">
@@ -415,6 +426,12 @@ function Router() {
       </Route>
       <Route path="/director/financial">
         <DirectorRoute><FinancialSummary /></DirectorRoute>
+      </Route>
+      <Route path="/director/promotion">
+        <DirectorRoute><PromotionStudio /></DirectorRoute>
+      </Route>
+      <Route path="/director/grouping">
+        <DirectorRoute><GroupingStudio /></DirectorRoute>
       </Route>
 
       <Route component={NotFound} />

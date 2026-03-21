@@ -227,6 +227,27 @@ async function bootstrap() {
     await pool.query(`ALTER TABLE marks ADD COLUMN IF NOT EXISTS subject_teacher_remarks TEXT`);
     await pool.query(`ALTER TABLE marks ADD COLUMN IF NOT EXISTS is_locked BOOLEAN DEFAULT false`);
     await pool.query(`ALTER TABLE marks ADD COLUMN IF NOT EXISTS approved_by UUID`);
+    await pool.query(`ALTER TABLE marks ADD COLUMN IF NOT EXISTS edit_reason TEXT`);
+    await pool.query(`ALTER TABLE marks ADD COLUMN IF NOT EXISTS edited_by UUID`);
+    await pool.query(`ALTER TABLE marks ADD COLUMN IF NOT EXISTS edited_by_name VARCHAR(200)`);
+
+    // Marks entry permissions (subject teacher allows class teacher to help)
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS marks_entry_permissions (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        school_id UUID REFERENCES schools(id) ON DELETE CASCADE,
+        class_id UUID REFERENCES classes(id) ON DELETE CASCADE,
+        subject_id UUID REFERENCES subjects(id) ON DELETE CASCADE,
+        exam_id UUID REFERENCES exams(id) ON DELETE CASCADE,
+        granted_by UUID REFERENCES users(id),
+        granted_by_name VARCHAR(200),
+        granted_to_role VARCHAR(50) DEFAULT 'class_teacher',
+        is_active BOOLEAN DEFAULT TRUE,
+        notes TEXT,
+        created_at TIMESTAMPTZ DEFAULT NOW(),
+        UNIQUE(class_id, subject_id, exam_id, granted_to_role)
+      )
+    `);
     await pool.query(`ALTER TABLE fee_structures ADD COLUMN IF NOT EXISTS components JSONB`);
 
     // Report card remarks

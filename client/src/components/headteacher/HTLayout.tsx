@@ -4,7 +4,7 @@ import { EduPayLogo } from '@/components/ui/EduPayLogo';
 import {
   LayoutDashboard, CalendarDays, Users, UserSquare2, ClipboardList,
   BarChart3, FileText, CreditCard, Menu, LogOut, ChevronRight,
-  Bell, X
+  Bell, X, TrendingUp, Layers
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/hooks/useAuth';
@@ -21,6 +21,8 @@ const NAV: NavItem[] = [
   { label: 'Performance Reports', href: '/headteacher/performance',     icon: BarChart3       },
   { label: 'Report Cards',        href: '/headteacher/report-cards',    icon: FileText        },
   { label: 'Print IDs',           href: '/headteacher/print-ids',       icon: CreditCard      },
+  { label: 'Promotion Studio',    href: '/headteacher/promotion',       icon: TrendingUp      },
+  { label: 'Grouping Studio',     href: '/headteacher/grouping',        icon: Layers          },
 ];
 
 function NavLink({ item }: { item: NavItem }) {

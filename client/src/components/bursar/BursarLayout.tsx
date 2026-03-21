@@ -3,7 +3,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useSchoolContext as useSchool } from "@/contexts/SchoolContext";
 import {
   LayoutDashboard, CreditCard, FileText, BarChart3,
-  RefreshCw, Building2, Receipt, LogOut, Menu, X, ChevronRight
+  RefreshCw, Building2, Receipt, LogOut, Menu, X, ChevronRight, Layers
 } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
@@ -16,6 +16,7 @@ const NAV = [
   { href: "/bursar/reconciliation", icon: RefreshCw,     label: "Reconciliation" },
   { href: "/bursar/bank-statements", icon: Building2,    label: "Bank Statements" },
   { href: "/bursar/receipts",     icon: Receipt,         label: "Receipts" },
+  { href: "/bursar/grouping",     icon: Layers,          label: "Grouping Studio" },
 ];
 
 export function BursarLayout({ children }: { children: React.ReactNode }) {

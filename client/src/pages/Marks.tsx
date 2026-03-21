@@ -13,7 +13,8 @@ import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useToast } from '@/hooks/use-toast';
-import { Save, Star, Lock, Unlock, CheckCircle2, AlertCircle, WifiOff } from 'lucide-react';
+import { Save, Star, Lock, Unlock, CheckCircle2, AlertCircle, WifiOff, ShieldCheck, ShieldOff } from 'lucide-react';
+import { Switch } from '@/components/ui/switch';
 
 const TERMS = ['Term 1', 'Term 2', 'Term 3'];
 const YEARS = ['2025', '2026', '2027', '2024'];
@@ -95,6 +96,45 @@ export default function Marks() {
     },
     onError: (e: any) => toast({ title: 'Lock failed', description: e.message, variant: 'destructive' }),
   });
+
+  // ── Marks entry permission for class teacher ──────────────────────────────
+  const isSubjectTeacher = profile?.role === 'subject_teacher';
+  const { data: ctPermissions = [] } = useQuery<any[]>({
+    queryKey: ['/api/marks-permissions', schoolId, selectedClass, selectedSubject, selectedExam],
+    queryFn: () =>
+      fetch(`/api/marks-permissions?schoolId=${schoolId}&classId=${selectedClass}&subjectId=${selectedSubject}&examId=${selectedExam}`)
+        .then(r => r.json()),
+    enabled: !!(schoolId && selectedClass && selectedSubject && selectedExam && isSubjectTeacher),
+  });
+  const activePerm = ctPermissions.find((p: any) => p.is_active);
+  const ctPermGranted = !!activePerm;
+
+  const grantCtPermMut = useMutation({
+    mutationFn: () => apiRequest('POST', '/api/marks-permissions', {
+      schoolId, classId: selectedClass, subjectId: selectedSubject, examId: selectedExam,
+      grantedBy: profile?.id,
+      grantedByName: `${profile?.firstName} ${profile?.lastName}`,
+    }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/marks-permissions'] });
+      toast({ title: 'Class teacher can now enter marks for this exam' });
+    },
+    onError: (e: any) => toast({ variant: 'destructive', title: 'Error', description: e.message }),
+  });
+
+  const revokeCtPermMut = useMutation({
+    mutationFn: () => apiRequest('PUT', `/api/marks-permissions/${activePerm?.id}`, { isActive: false }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/marks-permissions'] });
+      toast({ title: 'Class teacher access revoked' });
+    },
+    onError: (e: any) => toast({ variant: 'destructive', title: 'Error', description: e.message }),
+  });
+
+  const toggleCtPerm = () => {
+    if (ctPermGranted) revokeCtPermMut.mutate();
+    else grantCtPermMut.mutate();
+  };
 
   const selectedExamData = useMemo(() => exams.find((e: any) => e.id === selectedExam), [exams, selectedExam]);
   const maxMarks = selectedExamData?.total_marks || 100;
@@ -255,6 +295,37 @@ export default function Marks() {
                 </CardContent>
               </Card>
             ))}
+          </div>
+        )}
+
+        {/* CT Permission Toggle — only visible to subject teacher */}
+        {filtersReady && isSubjectTeacher && (
+          <div className={`flex items-center justify-between gap-4 rounded-xl border px-4 py-3 transition-colors
+            ${ctPermGranted
+              ? 'bg-emerald-50 border-emerald-200'
+              : 'bg-gray-50 border-gray-200'}`}
+          >
+            <div className="flex items-center gap-3">
+              {ctPermGranted
+                ? <ShieldCheck className="w-5 h-5 text-emerald-600 flex-shrink-0" />
+                : <ShieldOff className="w-5 h-5 text-gray-400 flex-shrink-0" />}
+              <div>
+                <p className={`text-sm font-semibold ${ctPermGranted ? 'text-emerald-800' : 'text-gray-700'}`}>
+                  Allow Class Teacher to Enter Marks
+                </p>
+                <p className="text-xs text-gray-500 mt-0.5">
+                  {ctPermGranted
+                    ? 'Class teacher can enter and edit marks for this exam. They must provide a reason when editing.'
+                    : 'Only you can currently enter marks. Toggle to allow the class teacher to help.'}
+                </p>
+              </div>
+            </div>
+            <Switch
+              checked={ctPermGranted}
+              onCheckedChange={toggleCtPerm}
+              disabled={grantCtPermMut.isPending || revokeCtPermMut.isPending}
+              className="data-[state=checked]:bg-emerald-600"
+            />
           </div>
         )}
 

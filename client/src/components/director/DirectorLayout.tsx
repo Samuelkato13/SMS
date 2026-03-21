@@ -3,7 +3,8 @@ import { Link, useLocation } from 'wouter';
 import { EduPayLogo } from '@/components/ui/EduPayLogo';
 import {
   LayoutDashboard, Settings, Users, UserSquare2, BookOpen, DollarSign,
-  BarChart3, FileText, PieChart, Menu, LogOut, ChevronRight, Bell
+  BarChart3, FileText, PieChart, Menu, LogOut, ChevronRight, Bell,
+  TrendingUp, Layers
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -22,6 +23,8 @@ const NAV: NavItem[] = [
   { label: 'Reports',            href: '/director/reports',          icon: BarChart3       },
   { label: 'Report Studio',      href: '/director/report-studio',    icon: FileText        },
   { label: 'Financial Summary',  href: '/director/financial',        icon: PieChart        },
+  { label: 'Promotion Studio',   href: '/director/promotion',        icon: TrendingUp      },
+  { label: 'Grouping Studio',    href: '/director/grouping',         icon: Layers          },
 ];
 
 function SidebarLink({ item, collapsed }: { item: NavItem; collapsed: boolean }) {

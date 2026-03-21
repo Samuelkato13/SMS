@@ -27,7 +27,8 @@ export function registerMarksRoutes(app: Express) {
 
   app.post("/api/marks/bulk", async (req, res) => {
     try {
-      const { entries, examId, subjectId, classId, schoolId, term, academicYear, recordedBy } = req.body;
+      const { entries, examId, subjectId, classId, schoolId, term, academicYear, recordedBy,
+              editReason, editedBy, editedByName } = req.body;
       if (!Array.isArray(entries) || !examId || !subjectId || !classId || !schoolId)
         return res.status(400).json({ message: "Missing required fields" });
       const results = [];
@@ -44,20 +45,82 @@ export function registerMarksRoutes(app: Express) {
         else if (pct >= 60) grade = 'C4'; else if (pct >= 50) grade = 'C5'; else if (pct >= 45) grade = 'C6';
         else if (pct >= 35) grade = 'P7';
         const r = await pool.query(
-          `INSERT INTO marks (student_id, exam_id, subject_id, class_id, school_id, marks_obtained, total_marks, grade, term, academic_year, subject_teacher_remarks, recorded_by)
-           VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)
+          `INSERT INTO marks (student_id, exam_id, subject_id, class_id, school_id, marks_obtained, total_marks,
+            grade, term, academic_year, subject_teacher_remarks, recorded_by, edit_reason, edited_by, edited_by_name)
+           VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15)
            ON CONFLICT (student_id, exam_id, subject_id) DO UPDATE SET
              marks_obtained=EXCLUDED.marks_obtained, grade=EXCLUDED.grade, term=EXCLUDED.term,
              academic_year=EXCLUDED.academic_year, subject_teacher_remarks=EXCLUDED.subject_teacher_remarks,
-             recorded_by=EXCLUDED.recorded_by, updated_at=NOW()
+             recorded_by=EXCLUDED.recorded_by,
+             edit_reason=COALESCE(EXCLUDED.edit_reason, marks.edit_reason),
+             edited_by=COALESCE(EXCLUDED.edited_by, marks.edited_by),
+             edited_by_name=COALESCE(EXCLUDED.edited_by_name, marks.edited_by_name),
+             updated_at=NOW()
            RETURNING *`,
           [studentId, examId, subjectId, classId, schoolId, score, total, grade,
-           term||'Term 1', academicYear||'2025', subjectTeacherRemarks||null, recordedBy]
+           term||'Term 1', academicYear||'2025', subjectTeacherRemarks||null, recordedBy,
+           editReason||null, editedBy||null, editedByName||null]
         );
         results.push(r.rows[0]);
       }
       res.json({ saved: results.length, marks: results });
     } catch (err: any) { res.status(500).json({ message: err.message }); }
+  });
+
+  // ── Marks Entry Permissions ────────────────────────────────────────────────
+  app.get("/api/marks-permissions", async (req, res) => {
+    const { schoolId, classId, subjectId, examId } = req.query;
+    if (!schoolId) return res.status(400).json({ message: "schoolId required" });
+    try {
+      let q = `SELECT mep.*, u.first_name||' '||u.last_name AS granted_by_name_live
+               FROM marks_entry_permissions mep
+               LEFT JOIN users u ON u.id=mep.granted_by
+               WHERE mep.school_id=$1`;
+      const params: any[] = [schoolId]; let idx = 2;
+      if (classId)   { q += ` AND mep.class_id=$${idx++}`;   params.push(classId); }
+      if (subjectId) { q += ` AND mep.subject_id=$${idx++}`; params.push(subjectId); }
+      if (examId)    { q += ` AND mep.exam_id=$${idx++}`;    params.push(examId); }
+      q += ' ORDER BY mep.created_at DESC';
+      const r = await pool.query(q, params);
+      res.json(r.rows);
+    } catch (e: any) { res.status(500).json({ message: e.message }); }
+  });
+
+  app.post("/api/marks-permissions", async (req, res) => {
+    const { schoolId, classId, subjectId, examId, grantedBy, grantedByName, notes } = req.body;
+    if (!schoolId || !classId || !subjectId || !examId)
+      return res.status(400).json({ message: "schoolId, classId, subjectId, examId required" });
+    try {
+      const r = await pool.query(
+        `INSERT INTO marks_entry_permissions
+           (school_id, class_id, subject_id, exam_id, granted_by, granted_by_name, is_active, notes)
+         VALUES ($1,$2,$3,$4,$5,$6,true,$7)
+         ON CONFLICT (class_id, subject_id, exam_id, granted_to_role) DO UPDATE SET
+           is_active=true, granted_by=EXCLUDED.granted_by,
+           granted_by_name=EXCLUDED.granted_by_name, notes=EXCLUDED.notes
+         RETURNING *`,
+        [schoolId, classId, subjectId, examId, grantedBy||null, grantedByName||null, notes||null]
+      );
+      res.json(r.rows[0]);
+    } catch (e: any) { res.status(500).json({ message: e.message }); }
+  });
+
+  app.put("/api/marks-permissions/:id", async (req, res) => {
+    const { isActive } = req.body;
+    try {
+      const r = await pool.query(
+        `UPDATE marks_entry_permissions SET is_active=$1 WHERE id=$2 RETURNING *`,
+        [isActive, req.params.id]
+      );
+      res.json(r.rows[0]);
+    } catch (e: any) { res.status(500).json({ message: e.message }); }
+  });
+
+  app.delete("/api/marks-permissions/:id", async (req, res) => {
+    try {
+      await pool.query("DELETE FROM marks_entry_permissions WHERE id=$1", [req.params.id]);
+      res.json({ success: true });
+    } catch (e: any) { res.status(500).json({ message: e.message }); }
   });
 
   app.post("/api/marks/lock", async (req, res) => {
