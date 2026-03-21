@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/hooks/useAuth';
 import { useSchoolContext } from '@/contexts/SchoolContext';
+import { OfflineBanner } from '@/components/layout/OfflineBanner';
 
 interface NavItem { label: string; href: string; icon: typeof LayoutDashboard }
 
@@ -123,6 +124,7 @@ export function DirectorLayout({ children }: { children: ReactNode }) {
             <span className="hidden sm:block text-gray-700 font-medium">{profile?.firstName} {profile?.lastName}</span>
           </div>
         </header>
+        <OfflineBanner />
         <main className="flex-1 overflow-y-auto p-5">{children}</main>
       </div>
     </div>

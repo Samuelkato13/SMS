@@ -7,6 +7,7 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
+import { OfflineBanner } from "@/components/layout/OfflineBanner";
 
 const NAV = [
   { href: "/bursar",              icon: LayoutDashboard, label: "Dashboard" },
@@ -115,6 +116,7 @@ export function BursarLayout({ children }: { children: React.ReactNode }) {
           </button>
           <span className="font-semibold">Finance Office</span>
         </header>
+        <OfflineBanner />
         <main className="flex-1 overflow-y-auto p-4 md:p-6">
           {children}
         </main>

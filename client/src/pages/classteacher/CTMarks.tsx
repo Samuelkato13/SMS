@@ -4,9 +4,11 @@ import { useAuth } from '@/hooks/useAuth';
 import { CTLayout } from '@/components/classteacher/CTLayout';
 import { queryClient, apiRequest } from '@/lib/queryClient';
 import { useToast } from '@/hooks/use-toast';
+import { useOffline } from '@/hooks/useOffline';
+import { syncManager } from '@/lib/syncManager';
 import {
   PenLine, Save, Lock, ShieldCheck, AlertTriangle,
-  CheckCircle, Info, User
+  CheckCircle, Info, User, WifiOff
 } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -37,6 +39,7 @@ function gradeColor(g: string) {
 export default function CTMarks() {
   const { profile } = useAuth();
   const { toast } = useToast();
+  const { isOnline } = useOffline();
   const schoolId = profile?.schoolId;
 
   const [selectedSubject, setSelectedSubject] = useState('');
@@ -124,9 +127,10 @@ export default function CTMarks() {
     onError: (e: any) => toast({ variant: 'destructive', title: 'Error saving marks', description: e.message }),
   });
 
-  const doSave = (reason?: string) => {
+  const doSave = async (reason?: string) => {
     if (!selectedSubject || !selectedExam || !myClass) return;
     const examObj = exams.find((e: any) => e.id === selectedExam);
+    const subjectObj = subjects.find((s: any) => s.id === selectedSubject);
     const marksEntries = students
       .filter((s: any) => entries[s.id] !== undefined && entries[s.id] !== '')
       .map((s: any) => ({ studentId: s.id, marksObtained: entries[s.id] }));
@@ -136,7 +140,7 @@ export default function CTMarks() {
       return;
     }
 
-    saveMut.mutate({
+    const payload = {
       entries: marksEntries,
       examId: selectedExam,
       subjectId: selectedSubject,
@@ -145,11 +149,27 @@ export default function CTMarks() {
       term: examObj?.term || 'Term 1',
       academicYear: new Date().getFullYear().toString(),
       recordedBy: profile?.id,
-      // Pass edit reason + editor info (only applied to conflicting/updated marks on server)
       editReason: reason || null,
       editedBy: profile?.id,
       editedByName: `${profile?.firstName} ${profile?.lastName}`,
-    });
+    };
+
+    if (!isOnline) {
+      await syncManager.queueMarksSave(
+        payload,
+        `Marks for ${subjectObj?.name ?? 'subject'} — ${examObj?.title ?? 'exam'} (${myClass.name})`
+      );
+      toast({
+        title: 'Saved offline',
+        description: `${marksEntries.length} marks queued — will sync automatically when you reconnect.`,
+      });
+      setEditReason('');
+      setReasonOpen(false);
+      setPendingSave(null);
+      return;
+    }
+
+    saveMut.mutate(payload);
   };
 
   const handleSaveClick = () => {
@@ -424,10 +444,10 @@ export default function CTMarks() {
                 <Button
                   onClick={handleSaveClick}
                   disabled={saveMut.isPending || enteredCount === 0}
-                  className="bg-orange-600 hover:bg-orange-700 gap-2 min-w-[120px]"
+                  className={`gap-2 min-w-[120px] ${!isOnline ? 'bg-amber-600 hover:bg-amber-700' : 'bg-orange-600 hover:bg-orange-700'}`}
                 >
-                  <Save className="w-4 h-4" />
-                  {saveMut.isPending ? 'Saving...' : 'Save Marks'}
+                  {!isOnline ? <WifiOff className="w-4 h-4" /> : <Save className="w-4 h-4" />}
+                  {saveMut.isPending ? 'Saving...' : !isOnline ? 'Save Offline' : 'Save Marks'}
                 </Button>
               </div>
             )}

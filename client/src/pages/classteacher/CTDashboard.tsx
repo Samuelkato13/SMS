@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '@/hooks/useAuth';
 import { CTLayout } from '@/components/classteacher/CTLayout';
+import { useDataPrecache } from '@/hooks/useDataPrecache';
 import { Users, TrendingUp, Star, CalendarCheck, AlertCircle, UserCheck, PenLine, MessageSquare } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -50,6 +51,9 @@ export default function CTDashboard() {
     queryFn: () => fetch(`/api/exams?schoolId=${schoolId}`).then(r => r.json()),
     enabled: !!schoolId,
   });
+
+  // Pre-cache critical data to IndexedDB for offline use
+  useDataPrecache(schoolId, allStudents, classes, []);
 
   const boys = students.filter((s: any) => s.gender === 'male').length;
   const girls = students.filter((s: any) => s.gender === 'female').length;

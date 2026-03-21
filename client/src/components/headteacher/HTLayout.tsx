@@ -9,6 +9,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/hooks/useAuth';
 import { useSchoolContext } from '@/contexts/SchoolContext';
+import { OfflineBanner } from '@/components/layout/OfflineBanner';
 
 interface NavItem { label: string; href: string; icon: typeof LayoutDashboard }
 
@@ -121,6 +122,7 @@ export function HTLayout({ children }: { children: ReactNode }) {
           </div>
         </header>
 
+        <OfflineBanner />
         <main className="flex-1 overflow-y-auto p-5">
           {children}
         </main>

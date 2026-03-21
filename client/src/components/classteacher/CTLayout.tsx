@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button';
 import { useAuth } from '@/hooks/useAuth';
 import { useSchoolContext } from '@/contexts/SchoolContext';
 import { useQuery } from '@tanstack/react-query';
+import { OfflineBanner } from '@/components/layout/OfflineBanner';
 
 interface NavItem { label: string; href: string; icon: typeof LayoutDashboard }
 
@@ -125,6 +126,7 @@ export function CTLayout({ children }: { children: ReactNode }) {
             </div>
           </div>
         </header>
+        <OfflineBanner />
         <main className="flex-1 overflow-y-auto p-5">{children}</main>
       </div>
     </div>

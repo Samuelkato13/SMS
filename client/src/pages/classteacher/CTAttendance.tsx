@@ -4,7 +4,9 @@ import { useAuth } from '@/hooks/useAuth';
 import { CTLayout } from '@/components/classteacher/CTLayout';
 import { queryClient, apiRequest } from '@/lib/queryClient';
 import { useToast } from '@/hooks/use-toast';
-import { CalendarCheck, CheckCircle, XCircle, Clock, BarChart2, Save, Users, TrendingUp } from 'lucide-react';
+import { useOffline } from '@/hooks/useOffline';
+import { syncManager } from '@/lib/syncManager';
+import { CalendarCheck, CheckCircle, XCircle, Clock, BarChart2, Save, Users, TrendingUp, WifiOff } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -35,6 +37,7 @@ function StatusBtn({ value, current, onChange }: { value: Status; current: Statu
 export default function CTAttendance() {
   const { profile } = useAuth();
   const { toast } = useToast();
+  const { isOnline } = useOffline();
   const schoolId = profile?.schoolId;
   const today = new Date().toISOString().split('T')[0];
   const [viewDate, setViewDate] = useState(today);
@@ -99,7 +102,7 @@ export default function CTAttendance() {
     setRecords(upd);
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!myClass) return;
     const entries = students.map((s: any) => ({
       studentId: s.id,
@@ -109,6 +112,19 @@ export default function CTAttendance() {
       status: records[s.id] || 'present',
       recordedBy: profile?.id,
     }));
+
+    if (!isOnline) {
+      await syncManager.queueAttendanceSave(
+        { entries },
+        `Attendance for ${myClass.name} on ${viewDate}`
+      );
+      toast({
+        title: 'Saved offline',
+        description: 'Attendance queued — will sync automatically when you reconnect.',
+      });
+      return;
+    }
+
     submitMut.mutate({ entries });
   };
 
@@ -259,10 +275,10 @@ export default function CTAttendance() {
                 <Button
                   onClick={handleSubmit}
                   disabled={submitMut.isPending || !myClass}
-                  className="bg-orange-600 hover:bg-orange-700 gap-2 min-w-[150px]"
+                  className={`gap-2 min-w-[150px] ${!isOnline ? 'bg-amber-600 hover:bg-amber-700' : 'bg-orange-600 hover:bg-orange-700'}`}
                 >
-                  <Save className="w-4 h-4" />
-                  {submitMut.isPending ? 'Saving...' : todayHasSaved && viewDate === today ? 'Update Attendance' : 'Submit Attendance'}
+                  {!isOnline ? <WifiOff className="w-4 h-4" /> : <Save className="w-4 h-4" />}
+                  {submitMut.isPending ? 'Saving...' : !isOnline ? 'Save Offline' : todayHasSaved && viewDate === today ? 'Update Attendance' : 'Submit Attendance'}
                 </Button>
               </div>
             )}
