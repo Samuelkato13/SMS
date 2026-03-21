@@ -1,0 +1,8 @@
+uploads = []
+generated = []
+
+[[outputs]]
+id = "Dp-Cx2rnDZL5h-SeNaymr"
+uri = "file://edupay-project.tar.gz"
+type = "unspecified"
+title = "EduPay Project — Full Source Code"
