@@ -10,7 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Building2, Trash2, TrendingUp, TrendingDown } from "lucide-react";
+import { Plus, Building2, Trash2, TrendingUp, TrendingDown, Clock, Zap } from "lucide-react";
 
 export default function BankStatements() {
   const { profile } = useAuth();
@@ -72,11 +72,30 @@ export default function BankStatements() {
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div>
             <h1 className="text-2xl font-bold text-gray-900">Bank Statements</h1>
-            <p className="text-gray-500 text-sm mt-0.5">{(statements as any[]).length} statements recorded</p>
+            <p className="text-gray-500 text-sm mt-0.5">{(statements as any[]).length} statements recorded manually</p>
           </div>
           <Button onClick={() => setShowAdd(true)} className="bg-teal-600 hover:bg-teal-700 gap-2">
             <Plus size={16} /> Add Statement
           </Button>
+        </div>
+
+        {/* Coming Soon Notice */}
+        <div className="flex items-start gap-4 bg-gradient-to-r from-purple-50 to-indigo-50 border border-purple-200 rounded-2xl p-4">
+          <div className="w-10 h-10 rounded-xl bg-purple-100 flex items-center justify-center flex-shrink-0">
+            <Zap size={20} className="text-purple-600" />
+          </div>
+          <div className="flex-1">
+            <div className="flex items-center gap-2">
+              <p className="font-semibold text-purple-900 text-sm">Automated Bank Feed — Coming Soon</p>
+              <span className="px-2 py-0.5 rounded-full bg-purple-200 text-purple-800 text-[10px] font-bold uppercase flex items-center gap-1">
+                <Clock size={9} /> Soon
+              </span>
+            </div>
+            <p className="text-xs text-purple-700 mt-1">
+              Direct integration with Stanbic, DFCU, Centenary, and other Ugandan banks for automatic statement imports is on the roadmap.
+              For now, enter your bank statements manually below — all data is saved to the database for reconciliation.
+            </p>
+          </div>
         </div>
 
         {/* Summary */}

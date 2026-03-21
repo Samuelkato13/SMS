@@ -17,24 +17,24 @@ export function registerFeeRoutes(app: Express) {
 
   app.post("/api/fees", async (req, res) => {
     try {
-      const { name, description, amount, dueDate, classId, schoolId, academicYear, term, isOptional } = req.body;
+      const { name, description, amount, dueDate, classId, schoolId, academicYear, term, isOptional, category } = req.body;
       const result = await pool.query(
-        `INSERT INTO fee_structures (name, description, amount, due_date, class_id, school_id, academic_year, term, is_optional)
-         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9) RETURNING *`,
-        [name, description, amount, dueDate, classId, schoolId, academicYear, term, isOptional]);
+        `INSERT INTO fee_structures (name, description, amount, due_date, class_id, school_id, academic_year, term, is_optional, category)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10) RETURNING *`,
+        [name, description||null, amount, dueDate, classId||null, schoolId, academicYear, term, isOptional||false, category||'tuition']);
       res.status(201).json(result.rows[0]);
     } catch (err: any) { res.status(500).json({ message: err.message }); }
   });
 
   app.put("/api/fees/:id", async (req, res) => {
     try {
-      const { name, description, amount, dueDate, classId, academicYear, term, isOptional, components } = req.body;
+      const { name, description, amount, dueDate, classId, academicYear, term, isOptional, components, category } = req.body;
       const result = await pool.query(
         `UPDATE fee_structures SET name=$1, description=$2, amount=$3, due_date=$4, class_id=$5,
-         academic_year=$6, term=$7, is_optional=$8, components=$9, updated_at=NOW()
-         WHERE id=$10 RETURNING *`,
-        [name, description, amount, dueDate, classId||null, academicYear, term, isOptional,
-         components ? JSON.stringify(components) : null, req.params.id]);
+         academic_year=$6, term=$7, is_optional=$8, components=$9, category=$10, updated_at=NOW()
+         WHERE id=$11 RETURNING *`,
+        [name, description||null, amount, dueDate, classId||null, academicYear, term, isOptional||false,
+         components ? JSON.stringify(components) : null, category||'tuition', req.params.id]);
       if (!result.rows.length) return res.status(404).json({ message: "Fee not found" });
       res.json(result.rows[0]);
     } catch (err: any) { res.status(500).json({ message: err.message }); }

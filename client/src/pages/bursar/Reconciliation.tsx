@@ -11,7 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
-import { RefreshCw, CheckCircle2, AlertCircle, Link2 } from "lucide-react";
+import { RefreshCw, CheckCircle2, AlertCircle, Link2, Clock, Zap } from "lucide-react";
 
 export default function Reconciliation() {
   const { profile } = useAuth();
@@ -63,6 +63,25 @@ export default function Reconciliation() {
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Reconciliation</h1>
           <p className="text-gray-500 text-sm mt-0.5">Match system payments against bank records</p>
+        </div>
+
+        {/* Coming Soon Notice */}
+        <div className="flex items-start gap-4 bg-gradient-to-r from-teal-50 to-cyan-50 border border-teal-200 rounded-2xl p-4">
+          <div className="w-10 h-10 rounded-xl bg-teal-100 flex items-center justify-center flex-shrink-0">
+            <Zap size={20} className="text-teal-600" />
+          </div>
+          <div className="flex-1">
+            <div className="flex items-center gap-2">
+              <p className="font-semibold text-teal-900 text-sm">Automated Reconciliation — Coming Soon</p>
+              <span className="px-2 py-0.5 rounded-full bg-teal-200 text-teal-800 text-[10px] font-bold uppercase flex items-center gap-1">
+                <Clock size={9} /> Soon
+              </span>
+            </div>
+            <p className="text-xs text-teal-700 mt-1">
+              Automatic matching of mobile money and bank payments against system records is on the roadmap.
+              For now, manually match each payment to a bank statement below — your reconciliation data is fully saved to the database.
+            </p>
+          </div>
         </div>
 
         {/* Summary */}

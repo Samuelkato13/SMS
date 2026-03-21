@@ -511,53 +511,93 @@ export default function PaymentsReceived() {
 
             {/* Mobile money specific fields */}
             {form.paymentMethod === "mobile_money" && (
-              <div className="space-y-3 bg-blue-50 rounded-xl p-3 border border-blue-100">
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <Label className="text-xs">Provider</Label>
-                    <Select value={form.provider} onValueChange={v => setForm(f => ({ ...f, provider: v }))}>
-                      <SelectTrigger className="mt-1 h-9"><SelectValue placeholder="Select..." /></SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="mtn">MTN Mobile Money</SelectItem>
-                        <SelectItem value="airtel">Airtel Money</SelectItem>
-                      </SelectContent>
-                    </Select>
+              <div className="space-y-3">
+                {/* Coming Soon banner */}
+                <div className="flex items-start gap-3 bg-amber-50 border border-amber-200 rounded-xl p-3">
+                  <div className="w-8 h-8 rounded-lg bg-amber-100 flex items-center justify-center flex-shrink-0">
+                    <Smartphone size={16} className="text-amber-600" />
                   </div>
                   <div>
-                    <Label className="text-xs">Phone Number</Label>
-                    <div className="relative mt-1">
-                      <Phone size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-                      <Input className="pl-8 h-9" value={form.phoneNumber} onChange={e => setForm(f => ({ ...f, phoneNumber: e.target.value }))} placeholder="07XX XXX XXX" />
+                    <p className="text-xs font-semibold text-amber-800">Direct MTN / Airtel Integration — Coming Soon</p>
+                    <p className="text-xs text-amber-700 mt-0.5">
+                      Automatic push &amp; pull payments will be available in a future update. For now, record the transaction details manually after the parent has paid via mobile money.
+                    </p>
+                  </div>
+                </div>
+                <div className="bg-blue-50 rounded-xl p-3 border border-blue-100 space-y-3">
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <Label className="text-xs">Provider</Label>
+                      <Select value={form.provider} onValueChange={v => setForm(f => ({ ...f, provider: v }))}>
+                        <SelectTrigger className="mt-1 h-9"><SelectValue placeholder="Select..." /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="mtn">MTN Mobile Money</SelectItem>
+                          <SelectItem value="airtel">Airtel Money</SelectItem>
+                        </SelectContent>
+                      </Select>
                     </div>
-                  </div>
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className="flex-1">
-                    <Label className="text-xs">Transaction Ref / PRN</Label>
-                    <Input className="mt-1 h-9 font-mono text-sm" value={form.prnNumber || form.transactionRef} onChange={e => setForm(f => ({ ...f, prnNumber: e.target.value, transactionRef: e.target.value }))} placeholder="Enter ref or generate PRN..." />
-                  </div>
-                  <Button size="sm" variant="outline" className="mt-5 h-9 text-xs border-blue-300 text-blue-700" onClick={generatePRN} disabled={prnLoading}>
-                    {prnLoading ? "..." : "Generate PRN"}
-                  </Button>
-                </div>
-                {prn && (
-                  <div className="bg-white rounded-lg p-3 border border-blue-200">
-                    <div className="flex items-start gap-2">
-                      <Info size={14} className="text-blue-500 mt-0.5 flex-shrink-0" />
-                      <div>
-                        <p className="text-xs font-bold text-blue-800 font-mono">{prn.prn}</p>
-                        <p className="text-xs text-gray-500 mt-1">{prn.instructions}</p>
+                    <div>
+                      <Label className="text-xs">Payer's Phone Number</Label>
+                      <div className="relative mt-1">
+                        <Phone size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                        <Input className="pl-8 h-9" value={form.phoneNumber} onChange={e => setForm(f => ({ ...f, phoneNumber: e.target.value }))} placeholder="07XX XXX XXX" />
                       </div>
                     </div>
                   </div>
-                )}
+                  <div className="flex items-center gap-2">
+                    <div className="flex-1">
+                      <Label className="text-xs">Transaction Reference / PRN</Label>
+                      <Input
+                        className="mt-1 h-9 font-mono text-sm"
+                        value={form.prnNumber || form.transactionRef}
+                        onChange={e => setForm(f => ({ ...f, prnNumber: e.target.value, transactionRef: e.target.value }))}
+                        placeholder="Enter the mobile money transaction ID..."
+                      />
+                    </div>
+                    <div className="flex flex-col items-center gap-0.5 mt-5">
+                      <Button
+                        size="sm" variant="outline"
+                        className="h-9 text-xs border-blue-300 text-blue-700 whitespace-nowrap"
+                        onClick={generatePRN} disabled={prnLoading}
+                      >
+                        {prnLoading ? "..." : "Gen. Ref No."}
+                      </Button>
+                      <span className="text-[9px] text-gray-400">Demo only</span>
+                    </div>
+                  </div>
+                  {prn && (
+                    <div className="bg-white rounded-lg p-3 border border-blue-200">
+                      <div className="flex items-start gap-2">
+                        <Info size={13} className="text-blue-400 mt-0.5 flex-shrink-0" />
+                        <div>
+                          <p className="text-[10px] text-gray-400 uppercase font-semibold mb-0.5">Demo Reference Number</p>
+                          <p className="text-xs font-bold text-blue-800 font-mono">{prn.prn}</p>
+                          <p className="text-xs text-gray-500 mt-1">Real MTN/Airtel integration coming soon. Use this number for record-keeping only.</p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
               </div>
             )}
 
             {form.paymentMethod === "bank_transfer" && (
-              <div>
-                <Label>Transaction Reference *</Label>
-                <Input className="mt-1" value={form.transactionRef} onChange={e => setForm(f => ({ ...f, transactionRef: e.target.value }))} placeholder="Bank transaction reference number" />
+              <div className="space-y-3">
+                <div className="flex items-start gap-3 bg-purple-50 border border-purple-200 rounded-xl p-3">
+                  <div className="w-8 h-8 rounded-lg bg-purple-100 flex items-center justify-center flex-shrink-0">
+                    <ArrowDownCircle size={16} className="text-purple-600" />
+                  </div>
+                  <div>
+                    <p className="text-xs font-semibold text-purple-800">Direct Bank Transfer Integration — Coming Soon</p>
+                    <p className="text-xs text-purple-700 mt-0.5">
+                      Automated bank feed &amp; direct transfer verification coming in a future update. Enter the bank reference number below after confirming the transfer on your bank statement.
+                    </p>
+                  </div>
+                </div>
+                <div>
+                  <Label>Bank Transaction Reference *</Label>
+                  <Input className="mt-1" value={form.transactionRef} onChange={e => setForm(f => ({ ...f, transactionRef: e.target.value }))} placeholder="e.g. TXN2025031400456" />
+                </div>
               </div>
             )}
 
