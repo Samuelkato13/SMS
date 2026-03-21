@@ -112,6 +112,7 @@ export default function ReportCards() {
     doc.text(`Class: ${student.class_name || '—'}`, 110, y);
     y += 8;
     doc.text(`Exam: ${exams.find((e:any)=>e.id===selectedExam)?.title || 'All Exams'}`, 20, y);
+    if (student.section) doc.text(`Section: ${student.section === 'boarding' ? 'Boarding' : 'Day'}`, 110, y);
     y += 8;
 
     doc.setFont('helvetica', 'bold');

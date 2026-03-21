@@ -33,6 +33,9 @@ function IDCard({ student, school, schoolAbbr }: { student: any; school: any; sc
             <p className="text-[11px] text-gray-500"><span className="font-medium text-gray-700">ID:</span> {student.student_number}</p>
             <p className="text-[11px] text-gray-500"><span className="font-medium text-gray-700">Class:</span> {student.class_name || '—'}</p>
             <p className="text-[11px] text-gray-500"><span className="font-medium text-gray-700">Year:</span> {new Date().getFullYear()}</p>
+            {student.section && (
+              <p className="text-[11px] text-gray-500"><span className="font-medium text-gray-700">Section:</span> {student.section === 'boarding' ? 'Boarding' : 'Day'}</p>
+            )}
             {student.date_of_birth && (
               <p className="text-[11px] text-gray-500"><span className="font-medium text-gray-700">DOB:</span> {new Date(student.date_of_birth).toLocaleDateString('en-UG', { day:'2-digit', month:'short', year:'numeric' })}</p>
             )}

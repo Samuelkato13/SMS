@@ -241,7 +241,18 @@ export default function CTStudents() {
                             </div>
                             <div>
                               <p className="text-sm font-semibold text-gray-900">{s.first_name} {s.last_name}</p>
-                              <p className="text-xs text-gray-400">{s.student_number}</p>
+                              <div className="flex items-center gap-1.5 mt-0.5">
+                                <p className="text-xs text-gray-400">{s.student_number}</p>
+                                {s.section && (
+                                  <span className={`text-xs px-1.5 py-0 rounded border font-medium ${
+                                    s.section === 'boarding'
+                                      ? 'bg-purple-50 text-purple-600 border-purple-200'
+                                      : 'bg-green-50 text-green-600 border-green-200'
+                                  }`}>
+                                    {s.section === 'boarding' ? 'Boarding' : 'Day'}
+                                  </span>
+                                )}
+                              </div>
                             </div>
                           </div>
                         </td>
@@ -409,6 +420,11 @@ export default function CTStudents() {
                   <div className="flex items-center gap-2 mt-1">
                     <Badge className="bg-orange-100 text-orange-700 text-xs">{myClass?.name}</Badge>
                     <Badge className="bg-gray-100 text-gray-600 text-xs capitalize">{viewing.gender}</Badge>
+                    {viewing.section && (
+                      <Badge className={`text-xs capitalize ${viewing.section === 'boarding' ? 'bg-purple-100 text-purple-700' : 'bg-green-100 text-green-700'}`}>
+                        {viewing.section === 'boarding' ? 'Boarding' : 'Day'}
+                      </Badge>
+                    )}
                   </div>
                 </div>
               </div>

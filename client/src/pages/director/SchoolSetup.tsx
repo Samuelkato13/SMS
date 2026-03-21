@@ -29,7 +29,7 @@ export default function SchoolSetup() {
 
   const { data: schoolData } = useQuery<any>({ queryKey: ['/api/schools', schoolId], queryFn: () => fetch(`/api/schools/${schoolId}`).then(r => r.json()), enabled: !!schoolId });
 
-  const [schoolForm, setSchoolForm] = useState({ name: school?.name ?? '', address: school?.address ?? '', phone: school?.phone ?? '', email: school?.email ?? '', motto: school?.motto ?? '', schoolType: '', logoUrl: '' });
+  const [schoolForm, setSchoolForm] = useState({ name: school?.name ?? '', address: school?.address ?? '', phone: school?.phone ?? '', email: school?.email ?? '', motto: school?.motto ?? '', schoolType: '', sectionType: '', logoUrl: '' });
   const [logoPreview, setLogoPreview] = useState<string>('');
 
   // Academic Years
@@ -127,19 +127,32 @@ export default function SchoolSetup() {
                   <div className="space-y-1"><Label>Email</Label><Input value={schoolForm.email} onChange={e => setSchoolForm(f => ({ ...f, email: e.target.value }))} /></div>
                 </div>
                 <div className="space-y-1"><Label>School Motto</Label><Input value={schoolForm.motto} onChange={e => setSchoolForm(f => ({ ...f, motto: e.target.value }))} placeholder="e.g. Excellence in Service" /></div>
-                <div className="space-y-1">
-                  <Label>School Type</Label>
-                  <Select value={schoolForm.schoolType || schoolData?.school_type || ''} onValueChange={v => setSchoolForm(f => ({ ...f, schoolType: v }))}>
-                    <SelectTrigger><SelectValue placeholder="Select school type..." /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="nursery">Nursery Only</SelectItem>
-                      <SelectItem value="primary">Primary Only</SelectItem>
-                      <SelectItem value="secondary">Secondary Only</SelectItem>
-                      <SelectItem value="nursery_primary">Nursery &amp; Primary</SelectItem>
-                      <SelectItem value="primary_secondary">Primary &amp; Secondary</SelectItem>
-                      <SelectItem value="all">Nursery, Primary &amp; Secondary</SelectItem>
-                    </SelectContent>
-                  </Select>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1">
+                    <Label>School Type</Label>
+                    <Select value={schoolForm.schoolType || schoolData?.school_type || ''} onValueChange={v => setSchoolForm(f => ({ ...f, schoolType: v }))}>
+                      <SelectTrigger><SelectValue placeholder="Select school type..." /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="nursery">Nursery Only</SelectItem>
+                        <SelectItem value="primary">Primary Only</SelectItem>
+                        <SelectItem value="secondary">Secondary Only</SelectItem>
+                        <SelectItem value="nursery_primary">Nursery &amp; Primary</SelectItem>
+                        <SelectItem value="primary_secondary">Primary &amp; Secondary</SelectItem>
+                        <SelectItem value="all">Nursery, Primary &amp; Secondary</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-1">
+                    <Label>School Section</Label>
+                    <Select value={schoolForm.sectionType || schoolData?.section_type || ''} onValueChange={v => setSchoolForm(f => ({ ...f, sectionType: v }))}>
+                      <SelectTrigger><SelectValue placeholder="Day / Boarding..." /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="day">Day Only</SelectItem>
+                        <SelectItem value="boarding">Boarding Only</SelectItem>
+                        <SelectItem value="day_boarding">Day &amp; Boarding</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </div>
 
                 {/* Logo Upload */}

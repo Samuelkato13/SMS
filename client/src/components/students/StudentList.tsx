@@ -28,6 +28,7 @@ interface Student {
   guardian_name: string;
   guardian_phone: string;
   address: string;
+  section?: string;
   is_active: boolean;
 }
 
@@ -41,6 +42,7 @@ interface NewStudentForm {
   guardianPhone: string;
   address: string;
   email: string;
+  section: string;
 }
 
 export const StudentList = () => {
@@ -53,7 +55,7 @@ export const StudentList = () => {
   const [deleteTarget, setDeleteTarget] = useState<Student | null>(null);
   const [newStudent, setNewStudent] = useState<NewStudentForm>({
     firstName: '', lastName: '', dateOfBirth: '', gender: 'male',
-    classId: '', guardianName: '', guardianPhone: '', address: '', email: ''
+    classId: '', guardianName: '', guardianPhone: '', address: '', email: '', section: 'day'
   });
 
   const { data: students = [], isLoading } = useQuery<Student[]>({
@@ -81,7 +83,7 @@ export const StudentList = () => {
       queryClient.invalidateQueries({ queryKey: ['/api/students', profile?.schoolId] });
       toast({ title: "Student Added!", description: "New student has been registered successfully." });
       setShowAddDialog(false);
-      setNewStudent({ firstName: '', lastName: '', dateOfBirth: '', gender: 'male', classId: '', guardianName: '', guardianPhone: '', address: '', email: '' });
+      setNewStudent({ firstName: '', lastName: '', dateOfBirth: '', gender: 'male', classId: '', guardianName: '', guardianPhone: '', address: '', email: '', section: 'day' });
     },
     onError: () => {
       toast({ variant: 'destructive', title: "Error", description: "Failed to add student. Please try again." });
@@ -118,6 +120,7 @@ export const StudentList = () => {
       guardianName: newStudent.guardianName,
       guardianPhone: newStudent.guardianPhone,
       address: newStudent.address,
+      section: newStudent.section,
     });
   };
 
@@ -208,6 +211,16 @@ export const StudentList = () => {
                   <Label>Address *</Label>
                   <Input value={newStudent.address} onChange={e => setNewStudent(p => ({...p, address: e.target.value}))} placeholder="Student's home address" />
                 </div>
+                <div className="space-y-1">
+                  <Label>Section *</Label>
+                  <Select value={newStudent.section} onValueChange={v => setNewStudent(p => ({...p, section: v}))}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="day">Day</SelectItem>
+                      <SelectItem value="boarding">Boarding</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
               <div className="flex justify-end gap-3">
                 <Button variant="outline" onClick={() => setShowAddDialog(false)}>Cancel</Button>
@@ -275,9 +288,20 @@ export const StudentList = () => {
                 </div>
 
                 <div className="mt-3 pt-3 border-t border-gray-100 flex items-center justify-between">
-                  <Badge variant={student.is_active ? 'default' : 'secondary'} className="text-xs">
-                    {student.is_active ? 'Active' : 'Inactive'}
-                  </Badge>
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    <Badge variant={student.is_active ? 'default' : 'secondary'} className="text-xs">
+                      {student.is_active ? 'Active' : 'Inactive'}
+                    </Badge>
+                    {student.section && (
+                      <span className={`text-xs px-2 py-0.5 rounded-full border font-medium ${
+                        student.section === 'boarding'
+                          ? 'bg-purple-50 text-purple-700 border-purple-200'
+                          : 'bg-green-50 text-green-700 border-green-200'
+                      }`}>
+                        {student.section === 'boarding' ? 'Boarding' : 'Day'}
+                      </span>
+                    )}
+                  </div>
                   <div className="flex items-center gap-2">
                     <Badge variant="outline" className="text-xs capitalize">
                       {student.gender}

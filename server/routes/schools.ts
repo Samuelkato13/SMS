@@ -35,16 +35,17 @@ export function registerSchoolRoutes(app: Express) {
   // Director-editable fields (no bank details — those are admin/superadmin only)
   app.put("/api/schools/:id", async (req, res) => {
     try {
-      const { name, abbreviation, email, phone, address, logoUrl, motto, schoolType } = req.body;
+      const { name, abbreviation, email, phone, address, logoUrl, motto, schoolType, sectionType } = req.body;
       const result = await pool.query(
         `UPDATE schools SET
            name=COALESCE($1,name), abbreviation=COALESCE($2,abbreviation),
            email=COALESCE($3,email), phone=COALESCE($4,phone),
            address=COALESCE($5,address), logo_url=COALESCE($6,logo_url),
            motto=COALESCE($7,motto), school_type=COALESCE($8,school_type),
+           section_type=COALESCE($9,section_type),
            updated_at=NOW()
-         WHERE id=$9 RETURNING *`,
-        [name, abbreviation, email, phone, address, logoUrl, motto, schoolType, req.params.id]
+         WHERE id=$10 RETURNING *`,
+        [name, abbreviation, email, phone, address, logoUrl, motto, schoolType, sectionType??null, req.params.id]
       );
       if (!result.rows.length) return res.status(404).json({ message: "School not found" });
       res.json(result.rows[0]);
@@ -55,7 +56,7 @@ export function registerSchoolRoutes(app: Express) {
   app.put("/api/schools/:id/admin", async (req, res) => {
     try {
       const {
-        name, abbreviation, email, phone, address, logoUrl, motto, schoolType, subdomain, status,
+        name, abbreviation, email, phone, address, logoUrl, motto, schoolType, sectionType, subdomain, status,
         bankAccountTitle, bankAccountType, bankAccountNumber, bankName
       } = req.body;
       const result = await pool.query(
@@ -64,14 +65,15 @@ export function registerSchoolRoutes(app: Express) {
            email=COALESCE($3,email), phone=COALESCE($4,phone),
            address=COALESCE($5,address), logo_url=COALESCE($6,logo_url),
            motto=COALESCE($7,motto), school_type=COALESCE($8,school_type),
-           subdomain=COALESCE($9,subdomain), status=COALESCE($10,status),
-           bank_account_title=COALESCE($11,bank_account_title),
-           bank_account_type=COALESCE($12,bank_account_type),
-           bank_account_number=COALESCE($13,bank_account_number),
-           bank_name=COALESCE($14,bank_name),
+           section_type=COALESCE($9,section_type),
+           subdomain=COALESCE($10,subdomain), status=COALESCE($11,status),
+           bank_account_title=COALESCE($12,bank_account_title),
+           bank_account_type=COALESCE($13,bank_account_type),
+           bank_account_number=COALESCE($14,bank_account_number),
+           bank_name=COALESCE($15,bank_name),
            updated_at=NOW()
-         WHERE id=$15 RETURNING *`,
-        [name, abbreviation, email, phone, address, logoUrl, motto, schoolType, subdomain, status,
+         WHERE id=$16 RETURNING *`,
+        [name, abbreviation, email, phone, address, logoUrl, motto, schoolType, sectionType??null, subdomain, status,
          bankAccountTitle, bankAccountType, bankAccountNumber, bankName, req.params.id]
       );
       if (!result.rows.length) return res.status(404).json({ message: "School not found" });

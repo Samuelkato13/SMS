@@ -53,16 +53,16 @@ export function registerAdminRoutes(app: Express) {
     try {
       const {
         name, abbreviation, subdomain, email, phone, address, status,
-        motto, schoolType, logoUrl, bankName, bankAccountTitle, bankAccountType, bankAccountNumber
+        motto, schoolType, sectionType, logoUrl, bankName, bankAccountTitle, bankAccountType, bankAccountNumber
       } = req.body;
       if (!name || !email) return res.status(400).json({ message: "Name and email required" });
       const result = await pool.query(
         `INSERT INTO schools (id, name, abbreviation, subdomain, email, phone, address, status,
-           motto, school_type, logo_url, bank_name, bank_account_title, bank_account_type, bank_account_number,
+           motto, school_type, section_type, logo_url, bank_name, bank_account_title, bank_account_type, bank_account_number,
            created_at, updated_at)
-         VALUES (gen_random_uuid(),$1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,now(),now()) RETURNING *`,
+         VALUES (gen_random_uuid(),$1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,now(),now()) RETURNING *`,
         [name, abbreviation??name.slice(0,6).toUpperCase(), subdomain??null, email, phone??'', address??'', status??'trial',
-         motto??null, schoolType??null, logoUrl??null, bankName??null, bankAccountTitle??null, bankAccountType??null, bankAccountNumber??null]);
+         motto??null, schoolType??null, sectionType??null, logoUrl??null, bankName??null, bankAccountTitle??null, bankAccountType??null, bankAccountNumber??null]);
       await auditLog('superadmin@skyvale.com', 'create_school', `Created school: ${name}`);
       res.json(result.rows[0]);
     } catch (err: any) { res.status(500).json({ message: err.message }); }
@@ -71,21 +71,22 @@ export function registerAdminRoutes(app: Express) {
   app.put("/api/admin/schools/:id", async (req, res) => {
     try {
       const {
-        name, abbreviation, subdomain, email, phone, address, status, motto, schoolType, logoUrl,
+        name, abbreviation, subdomain, email, phone, address, status, motto, schoolType, sectionType, logoUrl,
         bankAccountTitle, bankAccountType, bankAccountNumber, bankName
       } = req.body;
       const result = await pool.query(
         `UPDATE schools SET
            name=$1, abbreviation=$2, subdomain=$3, email=$4, phone=$5, address=$6, status=$7,
-           motto=COALESCE($8,motto), school_type=COALESCE($9,school_type), logo_url=COALESCE($10,logo_url),
-           bank_account_title=COALESCE($11,bank_account_title),
-           bank_account_type=COALESCE($12,bank_account_type),
-           bank_account_number=COALESCE($13,bank_account_number),
-           bank_name=COALESCE($14,bank_name),
+           motto=COALESCE($8,motto), school_type=COALESCE($9,school_type),
+           section_type=COALESCE($10,section_type), logo_url=COALESCE($11,logo_url),
+           bank_account_title=COALESCE($12,bank_account_title),
+           bank_account_type=COALESCE($13,bank_account_type),
+           bank_account_number=COALESCE($14,bank_account_number),
+           bank_name=COALESCE($15,bank_name),
            updated_at=now()
-         WHERE id=$15 RETURNING *`,
+         WHERE id=$16 RETURNING *`,
         [name, abbreviation, subdomain, email, phone, address, status,
-         motto, schoolType, logoUrl,
+         motto, schoolType, sectionType??null, logoUrl,
          bankAccountTitle, bankAccountType, bankAccountNumber, bankName,
          req.params.id]);
       if (!result.rows.length) return res.status(404).json({ message: "School not found" });

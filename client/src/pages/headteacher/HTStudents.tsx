@@ -132,9 +132,16 @@ export default function HTStudents() {
                         <p className="text-xs text-gray-400">{s.guardian_phone || ''}</p>
                       </td>
                       <td className="px-4 py-3">
-                        <Badge className={`text-xs ${s.is_active !== false ? 'bg-emerald-50 text-emerald-700' : 'bg-gray-100 text-gray-500'}`}>
-                          {s.is_active !== false ? 'Active' : 'Inactive'}
-                        </Badge>
+                        <div className="flex flex-col gap-1">
+                          <Badge className={`text-xs ${s.is_active !== false ? 'bg-emerald-50 text-emerald-700' : 'bg-gray-100 text-gray-500'}`}>
+                            {s.is_active !== false ? 'Active' : 'Inactive'}
+                          </Badge>
+                          {s.section && (
+                            <Badge className={`text-xs ${s.section === 'boarding' ? 'bg-purple-50 text-purple-700' : 'bg-green-50 text-green-700'}`}>
+                              {s.section === 'boarding' ? 'Boarding' : 'Day'}
+                            </Badge>
+                          )}
+                        </div>
                       </td>
                       <td className="px-4 py-3">
                         <Button variant="ghost" size="sm" onClick={() => openEdit(s)} className="text-emerald-600 hover:text-emerald-800 hover:bg-emerald-50 gap-1.5">

@@ -55,7 +55,7 @@ export function registerStudentRoutes(app: Express) {
 
   app.post("/api/students", async (req, res) => {
     try {
-      const { firstName, lastName, email, dateOfBirth, gender, classId, schoolId, guardianName, guardianPhone, guardianEmail, address } = req.body;
+      const { firstName, lastName, email, dateOfBirth, gender, classId, schoolId, guardianName, guardianPhone, guardianEmail, address, section } = req.body;
       const abbr = await pool.query("SELECT abbreviation FROM schools WHERE id=$1", [schoolId]);
       const schoolAbbr = abbr.rows[0]?.abbreviation || "SCH";
       const countRes = await pool.query("SELECT COUNT(*) FROM students WHERE school_id=$1", [schoolId]);
@@ -63,9 +63,9 @@ export function registerStudentRoutes(app: Express) {
       const year = new Date().getFullYear();
       const paymentCode = `${schoolAbbr}-${year}-${count}`;
       const result = await pool.query(
-        `INSERT INTO students (first_name, last_name, email, date_of_birth, gender, class_id, school_id, payment_code, guardian_name, guardian_phone, guardian_email, address)
-         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12) RETURNING *`,
-        [firstName, lastName, email, dateOfBirth, gender, classId, schoolId, paymentCode, guardianName, guardianPhone, guardianEmail, address]
+        `INSERT INTO students (first_name, last_name, email, date_of_birth, gender, class_id, school_id, payment_code, guardian_name, guardian_phone, guardian_email, address, section)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13) RETURNING *`,
+        [firstName, lastName, email, dateOfBirth, gender, classId, schoolId, paymentCode, guardianName, guardianPhone, guardianEmail, address, section??'day']
       );
       res.status(201).json(result.rows[0]);
     } catch (err: any) { res.status(500).json({ message: err.message }); }
@@ -73,7 +73,7 @@ export function registerStudentRoutes(app: Express) {
 
   app.put("/api/students/:id", async (req, res) => {
     try {
-      const { firstName, lastName, email, dateOfBirth, gender, classId, guardianName, guardianPhone, guardianEmail, address, isActive, medicalInfo } = req.body;
+      const { firstName, lastName, email, dateOfBirth, gender, classId, guardianName, guardianPhone, guardianEmail, address, isActive, medicalInfo, section } = req.body;
       const result = await pool.query(
         `UPDATE students SET
            first_name=COALESCE($1,first_name), last_name=COALESCE($2,last_name),
@@ -81,11 +81,12 @@ export function registerStudentRoutes(app: Express) {
            gender=COALESCE($5,gender), class_id=COALESCE($6,class_id),
            guardian_name=COALESCE($7,guardian_name), guardian_phone=COALESCE($8,guardian_phone),
            guardian_email=COALESCE($9,guardian_email), address=COALESCE($10,address),
-           is_active=COALESCE($11,is_active), medical_info=COALESCE($12,medical_info), updated_at=NOW()
-         WHERE id=$13 RETURNING *`,
+           is_active=COALESCE($11,is_active), medical_info=COALESCE($12,medical_info),
+           section=COALESCE($13,section), updated_at=NOW()
+         WHERE id=$14 RETURNING *`,
         [firstName??null, lastName??null, email??null, dateOfBirth??null, gender??null,
          classId??null, guardianName??null, guardianPhone??null, guardianEmail??null,
-         address??null, isActive!==undefined?isActive:null, medicalInfo??null, req.params.id]
+         address??null, isActive!==undefined?isActive:null, medicalInfo??null, section??null, req.params.id]
       );
       if (!result.rows.length) return res.status(404).json({ message: "Student not found" });
       res.json(result.rows[0]);

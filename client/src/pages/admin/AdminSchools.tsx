@@ -39,9 +39,15 @@ const SCHOOL_TYPES = [
   { value: 'all',              label: 'Nursery, Primary & Secondary' },
 ];
 
+const SECTION_TYPES = [
+  { value: 'day',         label: 'Day Only' },
+  { value: 'boarding',    label: 'Boarding Only' },
+  { value: 'day_boarding',label: 'Day & Boarding' },
+];
+
 const emptyForm = {
   name: '', abbreviation: '', subdomain: '', email: '', phone: '', address: '',
-  status: 'trial', motto: '', schoolType: '', logoUrl: '',
+  status: 'trial', motto: '', schoolType: '', sectionType: '', logoUrl: '',
   bankName: '', bankAccountTitle: '', bankAccountType: '', bankAccountNumber: '',
 };
 
@@ -114,7 +120,7 @@ export default function AdminSchools() {
     setForm({
       name: s.name ?? '', abbreviation: s.abbreviation ?? '', subdomain: s.subdomain ?? '',
       email: s.email ?? '', phone: s.phone ?? '', address: s.address ?? '', status: s.status ?? 'active',
-      motto: s.motto ?? '', schoolType: s.school_type ?? '', logoUrl: s.logo_url ?? '',
+      motto: s.motto ?? '', schoolType: s.school_type ?? '', sectionType: s.section_type ?? '', logoUrl: s.logo_url ?? '',
       bankName: s.bank_name ?? '', bankAccountTitle: s.bank_account_title ?? '',
       bankAccountType: s.bank_account_type ?? '', bankAccountNumber: s.bank_account_number ?? '',
     });
@@ -198,11 +204,22 @@ export default function AdminSchools() {
                       </td>
                       <td className="px-4 py-3 text-gray-600 font-mono text-xs">{s.subdomain || '—'}</td>
                       <td className="px-4 py-3">
-                        {s.school_type ? (
-                          <span className="text-xs bg-sky-50 text-sky-700 border border-sky-200 px-2 py-0.5 rounded-full whitespace-nowrap">
-                            {SCHOOL_TYPES.find(t => t.value === s.school_type)?.label ?? s.school_type}
-                          </span>
-                        ) : <span className="text-gray-400 text-xs">—</span>}
+                        <div className="flex flex-col gap-1">
+                          {s.school_type ? (
+                            <span className="text-xs bg-sky-50 text-sky-700 border border-sky-200 px-2 py-0.5 rounded-full whitespace-nowrap">
+                              {SCHOOL_TYPES.find(t => t.value === s.school_type)?.label ?? s.school_type}
+                            </span>
+                          ) : <span className="text-gray-400 text-xs">—</span>}
+                          {s.section_type && (
+                            <span className={`text-xs px-2 py-0.5 rounded-full whitespace-nowrap border ${
+                              s.section_type === 'boarding' ? 'bg-purple-50 text-purple-700 border-purple-200' :
+                              s.section_type === 'day_boarding' ? 'bg-orange-50 text-orange-700 border-orange-200' :
+                              'bg-green-50 text-green-700 border-green-200'
+                            }`}>
+                              {SECTION_TYPES.find(t => t.value === s.section_type)?.label ?? s.section_type}
+                            </span>
+                          )}
+                        </div>
                       </td>
                       <td className="px-4 py-3 text-gray-700 font-medium">{s.user_count ?? 0}</td>
                       <td className="px-4 py-3">
@@ -289,14 +306,25 @@ export default function AdminSchools() {
                   <Input value={form.abbreviation} onChange={e => setForm(f => ({ ...f, abbreviation: e.target.value }))} placeholder="SMS" />
                 </div>
               </div>
-              <div className="space-y-1">
-                <Label>School Type</Label>
-                <Select value={form.schoolType} onValueChange={v => setForm(f => ({ ...f, schoolType: v }))}>
-                  <SelectTrigger><SelectValue placeholder="Select school type..." /></SelectTrigger>
-                  <SelectContent>
-                    {SCHOOL_TYPES.map(t => <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>)}
-                  </SelectContent>
-                </Select>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <Label>School Type</Label>
+                  <Select value={form.schoolType} onValueChange={v => setForm(f => ({ ...f, schoolType: v }))}>
+                    <SelectTrigger><SelectValue placeholder="Select type..." /></SelectTrigger>
+                    <SelectContent>
+                      {SCHOOL_TYPES.map(t => <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-1">
+                  <Label>Section Type</Label>
+                  <Select value={form.sectionType} onValueChange={v => setForm(f => ({ ...f, sectionType: v }))}>
+                    <SelectTrigger><SelectValue placeholder="Day / Boarding..." /></SelectTrigger>
+                    <SelectContent>
+                      {SECTION_TYPES.map(t => <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
               <div className="space-y-1">
                 <Label>Subdomain</Label>
