@@ -65,9 +65,8 @@ export default function OfficialLogin() {
 
         <div className="relative z-10 flex flex-col h-full p-12">
           {/* Logo */}
-          <div className="flex items-center gap-3">
-            <ZaabuPayLogo size={44} />
-            <span className="text-white font-extrabold text-2xl tracking-tight">ZaabuPay</span>
+          <div className="flex items-center">
+            <ZaabuPayLogo size={44} variant="dark" />
           </div>
 
           {/* Main content */}
@@ -107,9 +106,8 @@ export default function OfficialLogin() {
       {/* ── Right Login Panel ── */}
       <div className="flex-1 flex flex-col items-center justify-center px-6 py-12">
         {/* Mobile logo */}
-        <div className="lg:hidden mb-10 flex items-center gap-3">
-          <ZaabuPayLogo size={40} />
-          <span className="font-extrabold text-2xl text-gray-900">ZaabuPay</span>
+        <div className="lg:hidden mb-10 flex items-center">
+          <ZaabuPayLogo size={44} variant="light" />
         </div>
 
         <div className="w-full max-w-[420px]">

@@ -75,9 +75,8 @@ export const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
         {/* Brand Header */}
         <div className="p-5 border-b border-white/10">
           <div className="flex items-center space-x-3">
-            <ZaabuPayLogo size={36} className="shrink-0" />
+            <ZaabuPayLogo size={44} className="shrink-0" variant="dark" />
             <div className="min-w-0">
-              <h2 className="font-bold text-white text-lg leading-tight">ZaabuPay</h2>
               <p className="text-white/50 text-xs truncate">
                 {schoolName || 'School Management'}
               </p>
