@@ -38,7 +38,7 @@ export const Header = ({ onMenuClick }: HeaderProps) => {
 
           <div className="flex items-center gap-3">
             {/* Logo icon uses the role accent color */}
-            <ZaabuPayLogo size={64} className="hidden md:block" variant="light" />
+            <ZaabuPayLogo size={48} className="hidden md:block" variant="light" />
 
             {/* Role badge */}
             {profile?.role && (

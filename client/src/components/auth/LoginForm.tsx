@@ -123,7 +123,7 @@ export const LoginForm = () => {
       {/* ── Header ── */}
       <header className="bg-gradient-to-r from-blue-900 to-slate-900 px-6 py-4 flex items-center justify-between shadow-lg">
         <div className="flex items-center gap-3">
-          <ZaabuPayLogo size={72} variant="dark" />
+          <ZaabuPayLogo size={56} variant="dark" />
           <span className="text-xs text-blue-300 border border-blue-500/40 rounded px-2 py-0.5 font-medium ml-2">
             Demo Portal
           </span>
