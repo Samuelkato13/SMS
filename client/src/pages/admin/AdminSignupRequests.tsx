@@ -192,7 +192,7 @@ export default function AdminSignupRequests() {
                       )}
                       {r.status === "approved" && r.created_school_admin_password && (
                         <Button size="sm" variant="outline" className="w-full gap-1.5"
-                          onClick={() => setShowCreds({ directorEmail: r.created_school_admin_email, tempPassword: r.created_school_admin_password, school: { name: r.school_name } })}>
+                          onClick={() => setShowCreds({ directorUsername: r.created_school_admin_username, directorEmail: r.created_school_admin_email, tempPassword: r.created_school_admin_password, school: { name: r.school_name } })}>
                           <Eye size={13} /> View Credentials
                         </Button>
                       )}
@@ -274,7 +274,7 @@ export default function AdminSignupRequests() {
           <DialogHeader><DialogTitle className="text-green-700">School Account Created!</DialogTitle></DialogHeader>
           <div className="space-y-4">
             <p className="text-sm text-gray-600">
-              Share these credentials with <strong>{showCreds?.school?.name}</strong>:
+              Share these login details with the director of <strong>{showCreds?.school?.name}</strong>:
             </p>
             <div className="bg-gray-50 rounded-xl p-4 space-y-3">
               <div>
@@ -284,6 +284,15 @@ export default function AdminSignupRequests() {
                   <button onClick={() => copyToClipboard("edupayapp.com/login")}><Copy size={14} className="text-gray-500" /></button>
                 </div>
               </div>
+              {showCreds?.directorUsername && (
+                <div>
+                  <p className="text-xs text-gray-500 uppercase font-medium mb-1">Username</p>
+                  <div className="flex items-center gap-2">
+                    <code className="text-sm flex-1 text-indigo-700 font-bold">{showCreds.directorUsername}</code>
+                    <button onClick={() => copyToClipboard(showCreds.directorUsername)}><Copy size={14} className="text-gray-500" /></button>
+                  </div>
+                </div>
+              )}
               <div>
                 <p className="text-xs text-gray-500 uppercase font-medium mb-1">Email</p>
                 <div className="flex items-center gap-2">
@@ -300,7 +309,7 @@ export default function AdminSignupRequests() {
               </div>
             </div>
             <p className="text-xs text-amber-700 bg-amber-50 rounded p-2">
-              Remind them to change the password after first login. Trial expires in 30 days.
+              The director logs in with their <strong>username</strong>. Remind them to change the password after first login. Trial expires in 30 days.
             </p>
             <Button className="w-full" onClick={() => setShowCreds(null)}>Done</Button>
           </div>

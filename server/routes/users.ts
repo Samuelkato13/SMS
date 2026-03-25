@@ -24,10 +24,25 @@ export function registerUserRoutes(app: Express) {
         return res.status(400).json({ message: "Please provide a valid email address" });
       }
       const abbr = await pool.query("SELECT abbreviation FROM schools WHERE id=$1", [schoolId]);
-      const schoolAbbr = abbr.rows[0]?.abbreviation || "SYS";
-      const countRes = await pool.query("SELECT COUNT(*) FROM users WHERE school_id=$1", [schoolId]);
-      const count = parseInt(countRes.rows[0].count) + 1;
-      const username = `${schoolAbbr}_${role.replace(/_/g, "")}_${count}`;
+      const schoolAbbr = (abbr.rows[0]?.abbreviation ?? 'sch').toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 6);
+      const ROLE_PREFIX: Record<string, string> = {
+        director: 'dr', head_teacher: 'ht', class_teacher: 'ct',
+        subject_teacher: 'st', bursar: 'bsr', admin: 'adm',
+      };
+      const pfx = ROLE_PREFIX[role] ?? role.slice(0, 3);
+      const base = `${pfx}-${schoolAbbr}`;
+      const existingUn = await pool.query(
+        `SELECT username FROM users WHERE username=$1 OR username LIKE $2`, [base, `${base}-%`]
+      );
+      let username = base;
+      if (existingUn.rows.length) {
+        const used = new Set(existingUn.rows.map((r: any) => r.username));
+        if (used.has(base)) {
+          for (let i = 2; i <= 99; i++) {
+            if (!used.has(`${base}-${i}`)) { username = `${base}-${i}`; break; }
+          }
+        }
+      }
       const passwordHash = password ? await bcrypt.hash(password, 10) : null;
       const result = await pool.query(
         `INSERT INTO users (username, email, role, school_id, first_name, last_name, phone, department, password_hash)
@@ -41,17 +56,22 @@ export function registerUserRoutes(app: Express) {
 
   app.put("/api/users/:id", async (req, res) => {
     try {
-      const { role, firstName, lastName, isActive, email, department, phone, password } = req.body;
+      const { role, firstName, lastName, isActive, email, department, phone, password, username } = req.body;
       let passwordHash = undefined;
       if (password) passwordHash = await bcrypt.hash(password, 10);
+      if (username) {
+        const check = await pool.query(`SELECT id FROM users WHERE username=$1 AND id!=$2`, [username, req.params.id]);
+        if (check.rows.length) return res.status(400).json({ message: `Username "${username}" is already taken` });
+      }
       const result = await pool.query(
         `UPDATE users SET
            role=COALESCE($1,role), first_name=COALESCE($2,first_name), last_name=COALESCE($3,last_name),
            is_active=COALESCE($4,is_active), email=COALESCE($5,email), department=COALESCE($6,department),
-           phone=COALESCE($7,phone), password_hash=COALESCE($8,password_hash), updated_at=NOW()
-         WHERE id=$9 RETURNING *`,
+           phone=COALESCE($7,phone), password_hash=COALESCE($8,password_hash),
+           username=COALESCE($9,username), updated_at=NOW()
+         WHERE id=$10 RETURNING *`,
         [role??null, firstName??null, lastName??null, isActive!==undefined?isActive:null,
-         email??null, department??null, phone??null, passwordHash??null, req.params.id]
+         email??null, department??null, phone??null, passwordHash??null, username??null, req.params.id]
       );
       if (!result.rows.length) return res.status(404).json({ message: "User not found" });
       const { password_hash, ...safeUser } = result.rows[0];

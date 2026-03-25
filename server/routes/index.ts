@@ -414,6 +414,41 @@ async function bootstrap() {
       WHERE NOT EXISTS (SELECT 1 FROM subscriptions WHERE school_id='a0000000-0000-0000-0000-000000000001')
     `);
 
+    // Add username column to signup requests if missing
+    await pool.query(`ALTER TABLE school_signup_requests ADD COLUMN IF NOT EXISTS created_school_admin_username VARCHAR(100)`);
+
+    // Fix users that have NULL or email-based usernames — assign proper role-based usernames
+    const ROLE_PFX: Record<string, string> = {
+      director: 'dr', head_teacher: 'ht', class_teacher: 'ct',
+      subject_teacher: 'st', bursar: 'bsr', admin: 'adm',
+    };
+    const usersNeedingUsername = await pool.query(`
+      SELECT u.id, u.role, u.email, u.username, s.abbreviation as abbr
+      FROM users u
+      LEFT JOIN schools s ON u.school_id = s.id
+      WHERE u.role != 'super_admin'
+        AND (u.username IS NULL OR u.username = '' OR u.username NOT LIKE '%-%')
+    `);
+    for (const u of usersNeedingUsername.rows) {
+      const pfx = ROLE_PFX[u.role] ?? u.role.slice(0, 3);
+      const code = (u.abbr ?? u.email?.split('@')[0] ?? 'sch').toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 6);
+      const base = `${pfx}-${code}`;
+      const existingUn = await pool.query(
+        `SELECT username FROM users WHERE (username=$1 OR username LIKE $2) AND id!=$3`,
+        [base, `${base}-%`, u.id]
+      );
+      let finalUsername = base;
+      if (existingUn.rows.length) {
+        const used = new Set(existingUn.rows.map((r: any) => r.username));
+        if (used.has(base)) {
+          for (let i = 2; i <= 99; i++) {
+            if (!used.has(`${base}-${i}`)) { finalUsername = `${base}-${i}`; break; }
+          }
+        }
+      }
+      await pool.query(`UPDATE users SET username=$1 WHERE id=$2`, [finalUsername, u.id]);
+    }
+
     console.log("[bootstrap] DB ready. Super admin seeded. Demo passwords set.");
   } catch (err: any) {
     console.error("[bootstrap] Error:", err.message);

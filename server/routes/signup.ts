@@ -90,7 +90,21 @@ export function registerSignupRoutes(app: Express) {
       const nameParts = sr.contact_name.trim().split(' ');
       const firstName = nameParts[0];
       const lastName = nameParts.slice(1).join(' ') || 'Director';
-      const username = sr.email.split('@')[0];
+      // Generate proper username: dr-{schoolabbr}
+      const usernameBase = `dr-${abbr.toLowerCase().replace(/[^a-z0-9]/g, '')}`;
+      const existingUn = await pool.query(
+        `SELECT username FROM users WHERE username=$1 OR username LIKE $2`,
+        [usernameBase, `${usernameBase}-%`]
+      );
+      let username = usernameBase;
+      if (existingUn.rows.length) {
+        const used = new Set(existingUn.rows.map((r: any) => r.username));
+        if (used.has(usernameBase)) {
+          for (let i = 2; i <= 99; i++) {
+            if (!used.has(`${usernameBase}-${i}`)) { username = `${usernameBase}-${i}`; break; }
+          }
+        }
+      }
       await pool.query(
         `INSERT INTO users (username, email, role, school_id, first_name, last_name, password_hash, is_active)
          VALUES ($1,$2,'director',$3,$4,$5,$6,true)`,
@@ -106,14 +120,15 @@ export function registerSignupRoutes(app: Express) {
       await pool.query(
         `UPDATE school_signup_requests SET status='approved', reviewed_by=$1, reviewed_at=NOW(),
          trial_start_date=NOW(), trial_end_date=$2, approved_school_id=$3,
-         created_school_admin_email=$4, created_school_admin_password=$5, updated_at=NOW()
-         WHERE id=$6`,
-        [reviewedBy||null, trialEnd.toISOString().split('T')[0], school.id, sr.email, tempPassword, id]);
+         created_school_admin_email=$4, created_school_admin_password=$5,
+         created_school_admin_username=$6, updated_at=NOW()
+         WHERE id=$7`,
+        [reviewedBy||null, trialEnd.toISOString().split('T')[0], school.id, sr.email, tempPassword, username, id]);
 
       res.json({
         success: true, school,
-        directorEmail: sr.email, tempPassword,
-        message: `School created! Credentials for ${sr.contact_name}: Email: ${sr.email} / Password: ${tempPassword}`
+        directorUsername: username, directorEmail: sr.email, tempPassword,
+        message: `School created! Credentials for ${sr.contact_name}: Username: ${username} / Password: ${tempPassword}`
       });
     } catch (err: any) { res.status(500).json({ message: err.message }); }
   });

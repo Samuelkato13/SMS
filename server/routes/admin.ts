@@ -11,6 +11,29 @@ const auditLog = async (userEmail: string, action: string, details?: string, sch
   } catch (_) {}
 };
 
+const ROLE_PREFIX: Record<string, string> = {
+  director: 'dr', head_teacher: 'ht', class_teacher: 'ct',
+  subject_teacher: 'st', bursar: 'bsr', admin: 'adm', super_admin: 'sa',
+};
+
+async function generateUsername(role: string, schoolAbbr: string): Promise<string> {
+  const prefix = ROLE_PREFIX[role] ?? role.slice(0, 3);
+  const code = schoolAbbr.toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 6);
+  const base = `${prefix}-${code}`;
+  const existing = await pool.query(
+    `SELECT username FROM users WHERE username=$1 OR username LIKE $2`,
+    [base, `${base}-%`]
+  );
+  if (!existing.rows.length) return base;
+  const used = new Set(existing.rows.map((r: any) => r.username));
+  if (!used.has(base)) return base;
+  for (let i = 2; i <= 99; i++) {
+    const candidate = `${base}-${i}`;
+    if (!used.has(candidate)) return candidate;
+  }
+  return `${base}-${Date.now()}`;
+}
+
 export function registerAdminRoutes(app: Express) {
   // Stats
   app.get("/api/admin/stats", async (_req, res) => {
@@ -49,22 +72,54 @@ export function registerAdminRoutes(app: Express) {
     } catch (err: any) { res.status(500).json({ message: err.message }); }
   });
 
+  // POST /api/admin/schools — create school AND auto-create director with credentials
   app.post("/api/admin/schools", async (req, res) => {
     try {
       const {
         name, abbreviation, subdomain, email, phone, address, status,
-        motto, schoolType, sectionType, logoUrl, bankName, bankAccountTitle, bankAccountType, bankAccountNumber
+        motto, schoolType, sectionType, logoUrl, bankName, bankAccountTitle, bankAccountType, bankAccountNumber,
+        directorFirstName, directorLastName, directorEmail, directorPassword,
       } = req.body;
       if (!name || !email) return res.status(400).json({ message: "Name and email required" });
-      const result = await pool.query(
+
+      const abbr = (abbreviation ?? name.split(' ').map((w: string) => w[0]).join('')).toUpperCase().slice(0, 6);
+
+      const schoolResult = await pool.query(
         `INSERT INTO schools (id, name, abbreviation, subdomain, email, phone, address, status,
            motto, school_type, section_type, logo_url, bank_name, bank_account_title, bank_account_type, bank_account_number,
            created_at, updated_at)
          VALUES (gen_random_uuid(),$1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,now(),now()) RETURNING *`,
-        [name, abbreviation??name.slice(0,6).toUpperCase(), subdomain??null, email, phone??'', address??'', status??'trial',
-         motto??null, schoolType??null, sectionType??null, logoUrl??null, bankName??null, bankAccountTitle??null, bankAccountType??null, bankAccountNumber??null]);
+        [name, abbr, subdomain??null, email, phone??'', address??'', status??'trial',
+         motto??null, schoolType??null, sectionType??null, logoUrl??null, bankName??null,
+         bankAccountTitle??null, bankAccountType??null, bankAccountNumber??null]);
+      const school = schoolResult.rows[0];
+
+      // Auto-create director account
+      const tempPassword = directorPassword || `EduPay@${Math.random().toString(36).slice(2,8).toUpperCase()}`;
+      const hash = await bcrypt.hash(tempPassword, 10);
+      const dirEmail = directorEmail || email;
+      const firstName = directorFirstName || 'School';
+      const lastName = directorLastName || 'Director';
+      const username = await generateUsername('director', abbr);
+
+      await pool.query(
+        `INSERT INTO users (id, username, email, role, school_id, first_name, last_name, is_active, password_hash, created_at, updated_at)
+         VALUES (gen_random_uuid(),$1,$2,'director',$3,$4,$5,true,$6,now(),now())
+         ON CONFLICT (email) DO NOTHING`,
+        [username, dirEmail.toLowerCase(), school.id, firstName, lastName, hash]);
+
+      // Create trial subscription
+      const trialEnd = new Date(); trialEnd.setMonth(trialEnd.getMonth() + 1);
+      await pool.query(
+        `INSERT INTO subscriptions (school_id, plan, start_date, end_date, status, amount_ugx)
+         VALUES ($1,'trial',NOW(),$2,'active',0)`,
+        [school.id, trialEnd.toISOString().split('T')[0]]);
+
       await auditLog('superadmin@skyvale.com', 'create_school', `Created school: ${name}`);
-      res.json(result.rows[0]);
+      res.json({
+        ...school,
+        directorCredentials: { username, email: dirEmail.toLowerCase(), tempPassword },
+      });
     } catch (err: any) { res.status(500).json({ message: err.message }); }
   });
 
@@ -119,27 +174,81 @@ export function registerAdminRoutes(app: Express) {
   app.get("/api/admin/users", async (_req, res) => {
     try {
       const result = await pool.query(`
-        SELECT u.*, s.name as school_name FROM users u LEFT JOIN schools s ON u.school_id=s.id ORDER BY u.created_at DESC`);
+        SELECT u.*, s.name as school_name, s.abbreviation as school_abbr
+        FROM users u LEFT JOIN schools s ON u.school_id=s.id ORDER BY u.created_at DESC`);
       res.json(result.rows.map(({ password_hash, ...u }: any) => u));
     } catch (err: any) { res.status(500).json({ message: err.message }); }
   });
 
   app.post("/api/admin/users", async (req, res) => {
     try {
-      const { firstName, lastName, email, role, schoolId, password } = req.body;
-      if (!['director', 'head_teacher'].includes(role))
-        return res.status(400).json({ message: "Can only create Director or Head Teacher accounts here" });
+      const { firstName, lastName, email, role, schoolId, password, username: customUsername } = req.body;
+      if (!firstName || !email || !schoolId || !password)
+        return res.status(400).json({ message: "First name, email, school and password are required" });
       const existing = await pool.query(`SELECT id FROM users WHERE email=$1`, [email.toLowerCase()]);
       if (existing.rows.length) return res.status(400).json({ message: "Email already in use" });
       const hash = await bcrypt.hash(password, 10);
-      const username = email.split('@')[0].replace(/[^a-z0-9]/gi, '_');
+
+      // Get school abbreviation for username generation
+      const schoolRes = await pool.query(`SELECT abbreviation FROM schools WHERE id=$1`, [schoolId]);
+      const abbr = schoolRes.rows[0]?.abbreviation ?? 'sch';
+      const username = customUsername || await generateUsername(role, abbr);
+
+      // Check username not taken
+      const unCheck = await pool.query(`SELECT id FROM users WHERE username=$1`, [username]);
+      if (unCheck.rows.length) return res.status(400).json({ message: `Username "${username}" is already taken` });
+
       const result = await pool.query(
         `INSERT INTO users (id, username, email, role, school_id, first_name, last_name, is_active, password_hash, created_at, updated_at)
          VALUES (gen_random_uuid(),$1,$2,$3,$4,$5,$6,true,$7,now(),now()) RETURNING *`,
         [username, email.toLowerCase(), role, schoolId, firstName, lastName??'', hash]);
-      await auditLog('superadmin@skyvale.com', 'create_user', `Created ${role}: ${email}`);
+      await auditLog('superadmin@skyvale.com', 'create_user', `Created ${role}: ${email} (username: ${username})`);
+      const { password_hash, ...safeUser } = result.rows[0];
+      res.json({ ...safeUser, tempPassword: password });
+    } catch (err: any) { res.status(500).json({ message: err.message }); }
+  });
+
+  // PUT /api/admin/users/:id — edit username or reset password
+  app.put("/api/admin/users/:id", async (req, res) => {
+    try {
+      const { username, password, firstName, lastName, role } = req.body;
+      const updates: string[] = [];
+      const vals: any[] = [];
+      let idx = 1;
+      if (username) {
+        const check = await pool.query(`SELECT id FROM users WHERE username=$1 AND id!=$2`, [username, req.params.id]);
+        if (check.rows.length) return res.status(400).json({ message: `Username "${username}" is already taken` });
+        updates.push(`username=$${idx++}`); vals.push(username);
+      }
+      if (password) {
+        const hash = await bcrypt.hash(password, 10);
+        updates.push(`password_hash=$${idx++}`); vals.push(hash);
+      }
+      if (firstName) { updates.push(`first_name=$${idx++}`); vals.push(firstName); }
+      if (lastName !== undefined) { updates.push(`last_name=$${idx++}`); vals.push(lastName); }
+      if (role) { updates.push(`role=$${idx++}`); vals.push(role); }
+      if (!updates.length) return res.status(400).json({ message: "Nothing to update" });
+      updates.push(`updated_at=now()`);
+      vals.push(req.params.id);
+      const result = await pool.query(
+        `UPDATE users SET ${updates.join(', ')} WHERE id=$${idx} RETURNING *`, vals);
+      if (!result.rows.length) return res.status(404).json({ message: "User not found" });
+      await auditLog('superadmin@skyvale.com', 'update_user', `Updated user: ${result.rows[0].email}`);
       const { password_hash, ...safeUser } = result.rows[0];
       res.json(safeUser);
+    } catch (err: any) { res.status(500).json({ message: err.message }); }
+  });
+
+  // GET /api/admin/users/:id/generate-username — preview username for role+school
+  app.get("/api/admin/generate-username", async (req, res) => {
+    try {
+      const { role, schoolId } = req.query as any;
+      if (!role || !schoolId) return res.status(400).json({ message: "role and schoolId required" });
+      const schoolRes = await pool.query(`SELECT abbreviation FROM schools WHERE id=$1`, [schoolId]);
+      if (!schoolRes.rows.length) return res.status(404).json({ message: "School not found" });
+      const abbr = schoolRes.rows[0].abbreviation ?? 'sch';
+      const username = await generateUsername(role, abbr);
+      res.json({ username });
     } catch (err: any) { res.status(500).json({ message: err.message }); }
   });
 

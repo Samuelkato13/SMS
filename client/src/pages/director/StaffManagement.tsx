@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { useToast } from '@/hooks/use-toast';
-import { Plus, Search, Pencil, UserX, ChevronLeft, ChevronRight, Users } from 'lucide-react';
+import { Plus, Search, Pencil, UserX, ChevronLeft, ChevronRight, Users, Copy, Eye, EyeOff } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 
 const ROLE_COLORS: Record<string, string> = {
@@ -22,7 +22,7 @@ const ROLE_LABELS: Record<string, string> = {
   head_teacher: 'Head Teacher', class_teacher: 'Class Teacher', subject_teacher: 'Subject Teacher', bursar: 'Bursar', admin: 'Admin',
 };
 const PAGE_SIZE = 12;
-const emptyForm = { firstName: '', lastName: '', email: '', role: 'class_teacher', department: '', phone: '', password: '' };
+const emptyForm = { firstName: '', lastName: '', email: '', role: 'class_teacher', department: '', phone: '', password: '', username: '' };
 
 export default function StaffManagement() {
   const { toast } = useToast();
@@ -35,6 +35,8 @@ export default function StaffManagement() {
   const [editing, setEditing] = useState<any>(null);
   const [form, setForm] = useState(emptyForm);
   const [deactivateTarget, setDeactivateTarget] = useState<any>(null);
+  const [showCreds, setShowCreds] = useState<any>(null);
+  const [showPass, setShowPass] = useState(false);
 
   const { data: users = [], isLoading } = useQuery<any[]>({
     queryKey: ['/api/users', schoolId],
@@ -44,12 +46,15 @@ export default function StaffManagement() {
 
   const staff = users.filter((u: any) => u.role !== 'super_admin' && u.role !== 'director');
 
+  const copyToClipboard = (text: string) => { navigator.clipboard.writeText(text); toast({ title: 'Copied!' }); };
+
   const createMut = useMutation({
     mutationFn: (data: any) => apiRequest('POST', '/api/users', data),
-    onSuccess: () => {
+    onSuccess: (data: any) => {
       queryClient.invalidateQueries({ queryKey: ['/api/users', schoolId] });
-      toast({ title: 'Staff member created' });
-      setShowForm(false); setForm(emptyForm);
+      setShowForm(false);
+      setShowCreds({ username: data.username, email: data.email, tempPassword: form.password, name: `${data.first_name} ${data.last_name}`, role: data.role });
+      setForm(emptyForm);
     },
     onError: (e: any) => toast({ variant: 'destructive', title: 'Error', description: e.message }),
   });
@@ -85,7 +90,7 @@ export default function StaffManagement() {
   const openAdd = () => { setEditing(null); setForm(emptyForm); setShowForm(true); };
   const openEdit = (u: any) => {
     setEditing(u);
-    setForm({ firstName: u.first_name ?? '', lastName: u.last_name ?? '', email: u.email ?? '', role: u.role ?? 'class_teacher', department: u.department ?? '', phone: u.phone ?? '', password: '' });
+    setForm({ firstName: u.first_name ?? '', lastName: u.last_name ?? '', email: u.email ?? '', role: u.role ?? 'class_teacher', department: u.department ?? '', phone: u.phone ?? '', password: '', username: u.username ?? '' });
     setShowForm(true);
   };
 
@@ -94,7 +99,7 @@ export default function StaffManagement() {
     if (!editing && !form.password) return toast({ variant: 'destructive', title: 'Password required for new staff' });
     if (['director', 'super_admin'].includes(form.role)) return toast({ variant: 'destructive', title: 'Cannot assign that role' });
     const payload = { ...form, schoolId };
-    if (editing) updateMut.mutate({ id: editing.id, data: payload });
+    if (editing) updateMut.mutate({ id: editing.id, data: { ...payload, username: form.username || undefined } });
     else createMut.mutate(payload);
   };
 
@@ -134,7 +139,7 @@ export default function StaffManagement() {
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b bg-gray-50">
-                    {['Name', 'Email', 'Role', 'Department', 'Status', 'Actions'].map(h => (
+                    {['Name', 'Username', 'Role', 'Department', 'Status', 'Actions'].map(h => (
                       <th key={h} className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">{h}</th>
                     ))}
                   </tr>
@@ -154,7 +159,11 @@ export default function StaffManagement() {
                           <span className="font-medium text-gray-900">{u.first_name} {u.last_name}</span>
                         </div>
                       </td>
-                      <td className="px-4 py-3 text-gray-600 text-xs">{u.email}</td>
+                      <td className="px-4 py-3">
+                        {u.username
+                          ? <code className="text-xs bg-gray-100 text-indigo-700 px-2 py-0.5 rounded font-mono">{u.username}</code>
+                          : <span className="text-xs text-red-500">⚠ No username</span>}
+                      </td>
                       <td className="px-4 py-3"><Badge className={`text-xs ${ROLE_COLORS[u.role] ?? 'bg-gray-100 text-gray-600'}`}>{ROLE_LABELS[u.role] ?? u.role}</Badge></td>
                       <td className="px-4 py-3 text-gray-500 text-xs">{u.department ?? '—'}</td>
                       <td className="px-4 py-3"><Badge className={u.is_active ? 'bg-green-100 text-green-700 text-xs' : 'bg-gray-100 text-gray-500 text-xs'}>{u.is_active ? 'Active' : 'Inactive'}</Badge></td>
@@ -208,7 +217,26 @@ export default function StaffManagement() {
             </div>
             <div className="space-y-1"><Label>Department</Label><Input value={form.department} onChange={e => setForm(f => ({ ...f, department: e.target.value }))} placeholder="e.g. Sciences, Languages" /></div>
             <div className="space-y-1"><Label>Phone</Label><Input value={form.phone} onChange={e => setForm(f => ({ ...f, phone: e.target.value }))} placeholder="+256 700 000000" /></div>
-            <div className="space-y-1"><Label>{editing ? 'New Password (leave blank to keep)' : 'Password *'}</Label><Input type="password" value={form.password} onChange={e => setForm(f => ({ ...f, password: e.target.value }))} /></div>
+            {editing && (
+              <div className="space-y-1">
+                <Label>Username</Label>
+                <Input value={form.username}
+                  onChange={e => setForm(f => ({ ...f, username: e.target.value.toLowerCase().replace(/[^a-z0-9-_]/g, '') }))}
+                  className="font-mono" placeholder="e.g. ct-sms" />
+                <p className="text-xs text-gray-400">This is what the user types to log in. Only change if needed.</p>
+              </div>
+            )}
+            <div className="space-y-1">
+              <Label>{editing ? 'New Password (leave blank to keep)' : 'Password *'}</Label>
+              <div className="relative">
+                <Input type={showPass ? 'text' : 'password'} value={form.password}
+                  onChange={e => setForm(f => ({ ...f, password: e.target.value }))} className="pr-10" />
+                <button type="button" onClick={() => setShowPass(v => !v)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400">
+                  {showPass ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
+            </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowForm(false)}>Cancel</Button>
@@ -216,6 +244,45 @@ export default function StaffManagement() {
               {createMut.isPending || updateMut.isPending ? 'Saving...' : editing ? 'Save Changes' : 'Add Staff'}
             </Button>
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Credentials dialog — shown after creating a new staff member */}
+      <Dialog open={!!showCreds} onOpenChange={() => setShowCreds(null)}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader><DialogTitle className="text-green-700">Staff Account Created!</DialogTitle></DialogHeader>
+          <div className="space-y-4">
+            <p className="text-sm text-gray-600">
+              Share these login details with <strong>{showCreds?.name}</strong>:
+            </p>
+            <div className="bg-gray-50 rounded-xl p-4 space-y-3">
+              <div>
+                <p className="text-xs text-gray-500 uppercase font-medium mb-1">Login URL</p>
+                <div className="flex items-center gap-2">
+                  <code className="text-sm flex-1">edupayapp.com/login</code>
+                  <button onClick={() => copyToClipboard('edupayapp.com/login')}><Copy size={14} className="text-gray-500" /></button>
+                </div>
+              </div>
+              <div>
+                <p className="text-xs text-gray-500 uppercase font-medium mb-1">Username</p>
+                <div className="flex items-center gap-2">
+                  <code className="text-sm flex-1 text-indigo-700 font-bold">{showCreds?.username}</code>
+                  <button onClick={() => copyToClipboard(showCreds?.username ?? '')}><Copy size={14} className="text-gray-500" /></button>
+                </div>
+              </div>
+              <div>
+                <p className="text-xs text-gray-500 uppercase font-medium mb-1">Password</p>
+                <div className="flex items-center gap-2">
+                  <code className="text-sm flex-1 text-green-700 font-bold">{showCreds?.tempPassword}</code>
+                  <button onClick={() => copyToClipboard(showCreds?.tempPassword ?? '')}><Copy size={14} className="text-gray-500" /></button>
+                </div>
+              </div>
+            </div>
+            <p className="text-xs text-amber-700 bg-amber-50 rounded p-2">
+              Remind them to change the password after first login.
+            </p>
+            <Button className="w-full bg-blue-600 hover:bg-blue-700" onClick={() => setShowCreds(null)}>Done</Button>
+          </div>
         </DialogContent>
       </Dialog>
 

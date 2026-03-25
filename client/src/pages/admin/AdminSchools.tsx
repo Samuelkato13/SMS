@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { useToast } from '@/hooks/use-toast';
-import { Plus, Search, Pencil, Ban, Trash2, ChevronLeft, ChevronRight, School, MoreHorizontal, Landmark, Image } from 'lucide-react';
+import { Plus, Search, Pencil, Ban, Trash2, ChevronLeft, ChevronRight, School, MoreHorizontal, Landmark, Image, Copy, User } from 'lucide-react';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 
@@ -49,6 +49,7 @@ const emptyForm = {
   name: '', abbreviation: '', subdomain: '', email: '', phone: '', address: '',
   status: 'trial', motto: '', schoolType: '', sectionType: '', logoUrl: '',
   bankName: '', bankAccountTitle: '', bankAccountType: '', bankAccountNumber: '',
+  directorFirstName: '', directorLastName: '', directorEmail: '', directorPassword: '',
 };
 
 export default function AdminSchools() {
@@ -59,17 +60,24 @@ export default function AdminSchools() {
   const [editing, setEditing] = useState<any>(null);
   const [form, setForm] = useState(emptyForm);
   const [confirm, setConfirm] = useState<{ action: 'suspend' | 'delete'; school: any } | null>(null);
+  const [showCreds, setShowCreds] = useState<any>(null);
+
+  const copyToClipboard = (text: string) => {
+    navigator.clipboard.writeText(text);
+    toast({ title: 'Copied!' });
+  };
 
   const { data: schools = [], isLoading } = useQuery<any[]>({ queryKey: ['/api/admin/schools'] });
 
   const createMut = useMutation({
     mutationFn: (data: any) => apiRequest('POST', '/api/admin/schools', data),
-    onSuccess: () => {
+    onSuccess: (data: any) => {
       queryClient.invalidateQueries({ queryKey: ['/api/admin/schools'] });
       queryClient.invalidateQueries({ queryKey: ['/api/admin/stats'] });
       toast({ title: 'School created successfully' });
       setShowForm(false);
       setForm(emptyForm);
+      if (data.directorCredentials) setShowCreds({ schoolName: data.name, ...data.directorCredentials });
     },
     onError: (e: any) => toast({ variant: 'destructive', title: 'Error', description: e.message }),
   });
@@ -288,8 +296,9 @@ export default function AdminSchools() {
             <DialogTitle>{editing ? 'Edit School' : 'Add New School'}</DialogTitle>
           </DialogHeader>
           <Tabs defaultValue="general">
-            <TabsList className="w-full grid grid-cols-3 mb-3">
+            <TabsList className={`w-full grid mb-3 ${editing ? 'grid-cols-3' : 'grid-cols-4'}`}>
               <TabsTrigger value="general" className="text-xs gap-1"><School className="w-3 h-3" />General</TabsTrigger>
+              {!editing && <TabsTrigger value="director" className="text-xs gap-1"><User className="w-3 h-3" />Director</TabsTrigger>}
               <TabsTrigger value="identity" className="text-xs gap-1"><Image className="w-3 h-3" />Identity</TabsTrigger>
               <TabsTrigger value="bank" className="text-xs gap-1"><Landmark className="w-3 h-3" />Bank</TabsTrigger>
             </TabsList>
@@ -358,6 +367,33 @@ export default function AdminSchools() {
               </div>
             </TabsContent>
 
+            {/* Director Tab (new school only) */}
+            {!editing && (
+              <TabsContent value="director" className="space-y-3 mt-0">
+                <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg text-xs text-blue-800">
+                  A Director account will be created automatically. Fill in details or leave blank to use school email and auto-generate a password.
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1">
+                    <Label>Director First Name</Label>
+                    <Input value={form.directorFirstName} onChange={e => setForm(f => ({ ...f, directorFirstName: e.target.value }))} placeholder="e.g. John" />
+                  </div>
+                  <div className="space-y-1">
+                    <Label>Director Last Name</Label>
+                    <Input value={form.directorLastName} onChange={e => setForm(f => ({ ...f, directorLastName: e.target.value }))} placeholder="e.g. Mukasa" />
+                  </div>
+                </div>
+                <div className="space-y-1">
+                  <Label>Director Email (defaults to school email)</Label>
+                  <Input type="email" value={form.directorEmail} onChange={e => setForm(f => ({ ...f, directorEmail: e.target.value }))} placeholder="director@school.com (optional)" />
+                </div>
+                <div className="space-y-1">
+                  <Label>Temporary Password (auto-generated if blank)</Label>
+                  <Input type="text" value={form.directorPassword} onChange={e => setForm(f => ({ ...f, directorPassword: e.target.value }))} placeholder="Leave blank to auto-generate" />
+                </div>
+              </TabsContent>
+            )}
+
             {/* Identity Tab */}
             <TabsContent value="identity" className="space-y-3 mt-0">
               <div className="space-y-1">
@@ -416,6 +452,54 @@ export default function AdminSchools() {
               {isPending ? 'Saving...' : editing ? 'Save Changes' : 'Create School'}
             </Button>
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Director Credentials Dialog */}
+      <Dialog open={!!showCreds} onOpenChange={() => setShowCreds(null)}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="text-green-700">School & Director Account Created!</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <p className="text-sm text-gray-600">
+              Share these login details with the director of <strong>{showCreds?.schoolName}</strong>:
+            </p>
+            <div className="bg-gray-50 rounded-xl p-4 space-y-3">
+              <div>
+                <p className="text-xs text-gray-500 uppercase font-medium mb-1">Login URL</p>
+                <div className="flex items-center gap-2">
+                  <code className="text-sm flex-1">edupayapp.com/login</code>
+                  <button onClick={() => copyToClipboard('edupayapp.com/login')}><Copy size={14} className="text-gray-500" /></button>
+                </div>
+              </div>
+              <div>
+                <p className="text-xs text-gray-500 uppercase font-medium mb-1">Username</p>
+                <div className="flex items-center gap-2">
+                  <code className="text-sm flex-1 text-indigo-700 font-bold">{showCreds?.username}</code>
+                  <button onClick={() => copyToClipboard(showCreds?.username ?? '')}><Copy size={14} className="text-gray-500" /></button>
+                </div>
+              </div>
+              <div>
+                <p className="text-xs text-gray-500 uppercase font-medium mb-1">Email</p>
+                <div className="flex items-center gap-2">
+                  <code className="text-sm flex-1 text-blue-700">{showCreds?.email}</code>
+                  <button onClick={() => copyToClipboard(showCreds?.email ?? '')}><Copy size={14} className="text-gray-500" /></button>
+                </div>
+              </div>
+              <div>
+                <p className="text-xs text-gray-500 uppercase font-medium mb-1">Temporary Password</p>
+                <div className="flex items-center gap-2">
+                  <code className="text-sm flex-1 text-green-700 font-bold">{showCreds?.tempPassword}</code>
+                  <button onClick={() => copyToClipboard(showCreds?.tempPassword ?? '')}><Copy size={14} className="text-gray-500" /></button>
+                </div>
+              </div>
+            </div>
+            <p className="text-xs text-amber-700 bg-amber-50 rounded p-2">
+              The director should change the password after first login. The director can then add more users from their dashboard.
+            </p>
+            <Button className="w-full" onClick={() => setShowCreds(null)}>Done</Button>
+          </div>
         </DialogContent>
       </Dialog>
 
