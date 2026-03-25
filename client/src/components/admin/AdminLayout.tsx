@@ -91,7 +91,7 @@ export function AdminLayout({ children }: { children: ReactNode }) {
       `}>
         {/* Logo */}
         <div className="flex items-center gap-3 px-4 py-5 border-b border-indigo-800">
-          <ZaabuPayLogo size={collapsed ? 32 : 44} className="flex-shrink-0" variant="dark" />
+          <ZaabuPayLogo size={collapsed ? 36 : 60} className="flex-shrink-0" variant="dark" />
           {!collapsed && (
             <p className="text-indigo-300 text-[11px]">SKYVALE Technologies</p>
           )}

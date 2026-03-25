@@ -271,7 +271,7 @@ export const LandingOnly = () => {
       <header className="border-b bg-white/90 backdrop-blur-sm sticky top-0 z-50 shadow-sm">
         <div className="container mx-auto px-4 py-4 flex justify-between items-center">
           <div className="flex items-center">
-            <ZaabuPayLogo size={40} variant="light" />
+            <ZaabuPayLogo size={56} variant="light" />
           </div>
           <nav className="hidden md:flex space-x-8">
             <a
@@ -741,7 +741,7 @@ export const LandingOnly = () => {
           <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-12">
             <div>
               <div className="flex items-center mb-4">
-                <ZaabuPayLogo size={36} variant="dark" />
+                <ZaabuPayLogo size={52} variant="dark" />
               </div>
               <p className="text-gray-400 leading-relaxed text-sm">
                 Empowering Ugandan schools with modern, efficient management

@@ -68,7 +68,7 @@ export function DirectorLayout({ children }: { children: ReactNode }) {
       `}>
         {/* School brand */}
         <div className="flex items-center gap-3 px-4 py-4 border-b border-blue-700">
-          <ZaabuPayLogo size={32} className="flex-shrink-0" variant="dark" />
+          <ZaabuPayLogo size={52} className="flex-shrink-0" variant="dark" />
           {!collapsed && (
             <div className="min-w-0 flex-1">
               <p className="text-white font-bold text-xs leading-tight truncate">{school?.name ?? 'My School'}</p>

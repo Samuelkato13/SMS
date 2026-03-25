@@ -1,5 +1,5 @@
 import logoDark from "@assets/aeLjv-removebg-preview_1774429611912.png";
-import logoLight from "@assets/Z4REQ-removebg-preview_1774430029798.png";
+import logoLight from "@assets/CQgI0-removebg-preview_1774430678322.png";
 
 interface ZaabuPayLogoProps {
   size?: number;
@@ -7,7 +7,7 @@ interface ZaabuPayLogoProps {
   variant?: "dark" | "light";
 }
 
-export function ZaabuPayLogo({ size = 40, className = "", variant = "dark" }: ZaabuPayLogoProps) {
+export function ZaabuPayLogo({ size = 56, className = "", variant = "dark" }: ZaabuPayLogoProps) {
   const src = variant === "light" ? logoLight : logoDark;
   return (
     <img
@@ -20,7 +20,7 @@ export function ZaabuPayLogo({ size = 40, className = "", variant = "dark" }: Za
 }
 
 export function ZaabuPayWordmark({
-  size = 36,
+  size = 56,
   className = "",
   variant = "dark",
 }: {

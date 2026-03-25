@@ -58,7 +58,7 @@ export function HTLayout({ children }: { children: ReactNode }) {
       `}>
         <div className="p-5 border-b border-emerald-700/50 flex items-center justify-between">
           <div className="flex items-center gap-3 min-w-0">
-            <ZaabuPayLogo size={36} className="flex-shrink-0" variant="dark" />
+            <ZaabuPayLogo size={52} className="flex-shrink-0" variant="dark" />
             <div className="min-w-0">
               <p className="text-emerald-300 text-xs truncate">{school?.name || 'Head Teacher'}</p>
             </div>
