@@ -41,9 +41,15 @@ export function registerSignupRoutes(app: Express) {
   app.get("/api/admin/signup-requests", async (req, res) => {
     try {
       const { status } = req.query;
-      let query = `SELECT * FROM school_signup_requests`;
-      if (status) query += ` WHERE status=$1`;
-      query += ` ORDER BY created_at DESC`;
+      // Also look up the director's username from users table for approved requests
+      let query = `
+        SELECT sr.*,
+          COALESCE(sr.created_school_admin_username, u.username) AS resolved_username
+        FROM school_signup_requests sr
+        LEFT JOIN users u ON u.email = sr.created_school_admin_email AND u.role = 'director'
+      `;
+      if (status) query += ` WHERE sr.status=$1`;
+      query += ` ORDER BY sr.created_at DESC`;
       const result = await pool.query(query, status ? [status] : []);
       res.json(result.rows);
     } catch (err: any) { res.status(500).json({ message: err.message }); }

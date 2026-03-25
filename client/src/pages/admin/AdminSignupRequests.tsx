@@ -157,7 +157,9 @@ export default function AdminSignupRequests() {
                       {r.created_school_admin_email && r.status === "approved" && (
                         <div className="mt-2 p-2.5 bg-green-50 rounded-lg text-xs space-y-1">
                           <p className="font-semibold text-green-800">Credentials issued:</p>
-                          <p className="text-green-700">Email: {r.created_school_admin_email}</p>
+                          {(r.resolved_username || r.created_school_admin_username) && (
+                            <p className="text-green-700">Username: <strong>{r.resolved_username || r.created_school_admin_username}</strong></p>
+                          )}
                           <p className="text-green-700">Password: {r.created_school_admin_password}</p>
                         </div>
                       )}
@@ -192,7 +194,7 @@ export default function AdminSignupRequests() {
                       )}
                       {r.status === "approved" && r.created_school_admin_password && (
                         <Button size="sm" variant="outline" className="w-full gap-1.5"
-                          onClick={() => setShowCreds({ directorUsername: r.created_school_admin_username, directorEmail: r.created_school_admin_email, tempPassword: r.created_school_admin_password, school: { name: r.school_name } })}>
+                          onClick={() => setShowCreds({ directorUsername: r.resolved_username || r.created_school_admin_username, directorEmail: r.created_school_admin_email, tempPassword: r.created_school_admin_password, school: { name: r.school_name } })}>
                           <Eye size={13} /> View Credentials
                         </Button>
                       )}
