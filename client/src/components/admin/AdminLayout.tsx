@@ -37,8 +37,8 @@ function SidebarLink({ item, collapsed, pendingCount }: { item: NavItem; collaps
       <div className={`
         flex items-center gap-3 px-3 py-2.5 rounded-lg cursor-pointer transition-all duration-150 group
         ${active
-          ? 'bg-white/15 text-white font-semibold shadow-inner'
-          : 'text-indigo-200 hover:bg-white/10 hover:text-white'
+          ? 'bg-white/15 text-white font-semibold shadow-inner border-l-[3px] border-[#C9A85C]'
+          : 'text-indigo-200 hover:bg-white/10 hover:text-white border-l-[3px] border-transparent'
         }
       `}>
         <Icon className="w-5 h-5 flex-shrink-0" />
@@ -90,10 +90,10 @@ export function AdminLayout({ children }: { children: ReactNode }) {
         flex flex-col bg-indigo-900 transition-all duration-200 shadow-2xl
       `}>
         {/* Logo */}
-        <div className="flex items-center gap-3 px-4 py-5 border-b border-indigo-800">
+        <div className="flex items-center gap-3 px-4 py-5 border-b border-[#C9A85C]/30">
           <ZaabuPayLogo size={collapsed ? 32 : 64} className="flex-shrink-0" variant="dark" />
           {!collapsed && (
-            <p className="text-indigo-300 text-[11px]">SKYVALE Technologies</p>
+            <p className="text-[#C9A85C]/80 text-[11px] font-medium">SKYVALE Technologies</p>
           )}
           <Button
             variant="ghost"

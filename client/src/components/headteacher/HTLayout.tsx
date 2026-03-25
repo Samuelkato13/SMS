@@ -33,7 +33,7 @@ function NavLink({ item }: { item: NavItem }) {
   return (
     <Link href={item.href}>
       <div className={`flex items-center gap-3 px-3 py-2.5 rounded-lg cursor-pointer transition-all
-        ${active ? 'bg-emerald-600 text-white font-semibold shadow-sm' : 'text-emerald-100 hover:bg-emerald-700/50 hover:text-white'}`}>
+        ${active ? 'bg-emerald-600/80 text-white font-semibold shadow-sm border-l-[3px] border-[#C9A85C]' : 'text-emerald-100 hover:bg-emerald-700/50 hover:text-white border-l-[3px] border-transparent'}`}>
         <Icon className="w-4 h-4 flex-shrink-0" />
         <span className="flex-1 text-sm">{item.label}</span>
         {active && <ChevronRight className="w-3 h-3 opacity-60" />}

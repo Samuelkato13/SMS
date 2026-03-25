@@ -115,8 +115,8 @@ export const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
                         className={cn(
                           "flex items-center space-x-3 px-3 py-2.5 rounded-xl transition-all duration-150 text-sm",
                           isActive
-                            ? "text-white font-semibold"
-                            : "text-white/60 hover:bg-white/10 hover:text-white"
+                            ? "text-white font-semibold border-l-[3px] border-[#C9A85C]"
+                            : "text-white/60 hover:bg-white/10 hover:text-white border-l-[3px] border-transparent"
                         )}
                         style={isActive ? {
                           background: `linear-gradient(to right, var(--theme-active-from, #2563eb), var(--theme-active-to, #1d4ed8))`,

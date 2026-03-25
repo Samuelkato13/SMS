@@ -96,9 +96,9 @@ export default function OfficialLogin() {
           </div>
 
           {/* Footer */}
-          <div className="text-blue-400 text-xs">
-            <p>SKYVALE Technologies Uganda Limited</p>
-            <p className="mt-1">zaabupayapp.com</p>
+          <div className="text-xs">
+            <p className="text-[#C9A85C]/80">SKYVALE Technologies Uganda Limited</p>
+            <p className="mt-1 text-blue-400">zaabupayapp.com</p>
           </div>
         </div>
       </div>

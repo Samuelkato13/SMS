@@ -36,7 +36,7 @@ function SidebarLink({ item, collapsed }: { item: NavItem; collapsed: boolean })
     <Link href={item.href}>
       <div className={`
         flex items-center gap-3 px-3 py-2.5 rounded-lg cursor-pointer transition-all group
-        ${active ? 'bg-blue-600 text-white font-semibold shadow-sm' : 'text-blue-100 hover:bg-blue-700/50 hover:text-white'}
+        ${active ? 'bg-blue-600/80 text-white font-semibold shadow-sm border-l-[3px] border-[#C9A85C]' : 'text-blue-100 hover:bg-blue-700/50 hover:text-white border-l-[3px] border-transparent'}
       `}>
         <Icon className="w-4 h-4 flex-shrink-0" />
         {!collapsed && (
@@ -67,12 +67,12 @@ export function DirectorLayout({ children }: { children: ReactNode }) {
         flex flex-col bg-gradient-to-b from-blue-800 to-blue-900 transition-all duration-200 shadow-xl
       `}>
         {/* School brand */}
-        <div className="flex items-center gap-3 px-4 py-4 border-b border-blue-700">
+        <div className="flex items-center gap-3 px-4 py-4 border-b border-[#C9A85C]/30">
           <ZaabuPayLogo size={56} className="flex-shrink-0" variant="dark" />
           {!collapsed && (
             <div className="min-w-0 flex-1">
               <p className="text-white font-bold text-xs leading-tight truncate">{school?.name ?? 'My School'}</p>
-              <p className="text-blue-300 text-[10px]">Director Panel</p>
+              <p className="text-[#C9A85C]/80 text-[10px] font-medium">Director Panel</p>
             </div>
           )}
           <Button variant="ghost" size="sm" className="ml-auto text-blue-300 hover:text-white hover:bg-blue-700 p-1 flex-shrink-0" onClick={() => setCollapsed(!collapsed)}>
