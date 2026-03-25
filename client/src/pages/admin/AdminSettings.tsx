@@ -78,13 +78,13 @@ export default function AdminSettings() {
               </div>
               <div className="space-y-1">
                 <Label className="text-xs text-gray-500">Platform Name</Label>
-                <p className="text-sm font-medium text-gray-800">EduPay</p>
+                <p className="text-sm font-medium text-gray-800">ZaabuPay</p>
               </div>
               <div className="space-y-1">
                 <Label className="text-xs text-gray-500">Domain</Label>
                 <div className="flex items-center gap-1.5">
                   <Globe className="w-3.5 h-3.5 text-gray-400" />
-                  <p className="text-sm text-gray-700">edupayapp.com</p>
+                  <p className="text-sm text-gray-700">zaabupayapp.com</p>
                 </div>
               </div>
               <div className="space-y-1">

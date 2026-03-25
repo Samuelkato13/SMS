@@ -95,7 +95,7 @@ export function registerAdminRoutes(app: Express) {
       const school = schoolResult.rows[0];
 
       // Auto-create director account
-      const tempPassword = directorPassword || `EduPay@${Math.random().toString(36).slice(2,8).toUpperCase()}`;
+      const tempPassword = directorPassword || `ZaabuPay@${Math.random().toString(36).slice(2,8).toUpperCase()}`;
       const hash = await bcrypt.hash(tempPassword, 10);
       const dirEmail = directorEmail || email;
       const firstName = directorFirstName || 'School';

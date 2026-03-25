@@ -80,7 +80,7 @@ export function registerSignupRoutes(app: Express) {
       const sr = req2.rows[0];
       if (sr.status === 'approved') return res.status(400).json({ message: "Already approved" });
 
-      const tempPassword = `EduPay@${Math.random().toString(36).slice(2,8).toUpperCase()}`;
+      const tempPassword = `ZaabuPay@${Math.random().toString(36).slice(2,8).toUpperCase()}`;
       const passwordHash = await bcrypt.hash(tempPassword, 10);
       const trialEnd = new Date(); trialEnd.setMonth(trialEnd.getMonth() + 1);
       const abbr = schoolAbbr || sr.school_name.split(' ').map((w: string) => w[0]).join('').toUpperCase().slice(0,5);

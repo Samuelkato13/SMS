@@ -1,6 +1,6 @@
 import { ReactNode, useState } from 'react';
 import { Link, useLocation } from 'wouter';
-import { EduPayLogo } from '@/components/ui/EduPayLogo';
+import { ZaabuPayLogo } from '@/components/ui/ZaabuPayLogo';
 import { useQuery } from '@tanstack/react-query';
 import {
   LayoutDashboard, School, Users, CreditCard, Settings, ScrollText,
@@ -91,10 +91,10 @@ export function AdminLayout({ children }: { children: ReactNode }) {
       `}>
         {/* Logo */}
         <div className="flex items-center gap-3 px-4 py-5 border-b border-indigo-800">
-          <EduPayLogo size={36} className="flex-shrink-0" />
+          <ZaabuPayLogo size={36} className="flex-shrink-0" />
           {!collapsed && (
             <div className="min-w-0">
-              <p className="text-white font-bold text-sm leading-tight">EduPay Admin</p>
+              <p className="text-white font-bold text-sm leading-tight">ZaabuPay Admin</p>
               <p className="text-indigo-300 text-[11px]">SKYVALE Technologies</p>
             </div>
           )}
@@ -175,7 +175,7 @@ export function AdminLayout({ children }: { children: ReactNode }) {
             <Menu className="w-5 h-5" />
           </Button>
           <div className="flex-1">
-            <p className="text-xs text-gray-500">EduPay · SKYVALE Technologies Uganda Limited</p>
+            <p className="text-xs text-gray-500">ZaabuPay · SKYVALE Technologies Uganda Limited</p>
           </div>
           <Button variant="ghost" size="sm" className="text-gray-400 hover:text-gray-600">
             <Bell className="w-5 h-5" />

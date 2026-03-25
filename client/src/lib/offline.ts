@@ -54,14 +54,14 @@ export interface CachedSubject {
 }
 
 // ── Dexie Database ────────────────────────────────────────────────────────────
-class EduPayDB extends Dexie {
+class ZaabuPayDB extends Dexie {
   syncQueue!: Table<SyncQueueEntry, number>;
   students!: Table<CachedStudent, string>;
   classes!: Table<CachedClass, string>;
   subjects!: Table<CachedSubject, string>;
 
   constructor() {
-    super('EduPayDB_v2');
+    super('ZaabuPayDB_v2');
     this.version(1).stores({
       syncQueue: '++id, status, action, createdAt',
       students: 'id, class_id, school_id',
@@ -71,7 +71,7 @@ class EduPayDB extends Dexie {
   }
 }
 
-export const db = new EduPayDB();
+export const db = new ZaabuPayDB();
 
 // ── Queue Manager ─────────────────────────────────────────────────────────────
 export const syncQueue = {
@@ -168,7 +168,7 @@ export async function registerBackgroundSync() {
   if ('serviceWorker' in navigator && 'SyncManager' in window) {
     try {
       const reg = await navigator.serviceWorker.ready;
-      await (reg as any).sync.register('edupay-sync');
+      await (reg as any).sync.register('zaabupay-sync');
     } catch (_) { /* Background Sync not supported */ }
   }
 }

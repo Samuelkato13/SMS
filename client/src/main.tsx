@@ -21,11 +21,11 @@ if ('serviceWorker' in navigator) {
         });
       });
 
-      console.log('[EduPay] Service worker registered:', reg.scope);
+      console.log('[ZaabuPay] Service worker registered:', reg.scope);
 
       // Pre-warm API cache after app loads
-      const schoolId = sessionStorage.getItem('edupay_demo_auth')
-        ? JSON.parse(sessionStorage.getItem('edupay_demo_auth') || '{}')?.profile?.schoolId
+      const schoolId = sessionStorage.getItem('zaabupay_demo_auth')
+        ? JSON.parse(sessionStorage.getItem('zaabupay_demo_auth') || '{}')?.profile?.schoolId
         : null;
 
       if (schoolId && navigator.serviceWorker.controller) {
@@ -39,7 +39,7 @@ if ('serviceWorker' in navigator) {
         });
       }
     } catch (err) {
-      console.warn('[EduPay] Service worker registration failed:', err);
+      console.warn('[ZaabuPay] Service worker registration failed:', err);
     }
   });
 }

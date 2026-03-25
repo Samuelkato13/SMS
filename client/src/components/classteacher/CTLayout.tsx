@@ -68,7 +68,7 @@ export function CTLayout({ children }: { children: ReactNode }) {
               <BookOpen className="w-5 h-5 text-white" />
             </div>
             <div className="min-w-0">
-              <p className="font-bold text-white text-sm leading-tight">EduPay</p>
+              <p className="font-bold text-white text-sm leading-tight">ZaabuPay</p>
               <p className="text-orange-300 text-xs truncate">{myClass ? myClass.name : 'Class Teacher'}</p>
             </div>
           </div>

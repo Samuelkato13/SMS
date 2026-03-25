@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { EduPayLogo } from "@/components/ui/EduPayLogo";
+import { ZaabuPayLogo } from "@/components/ui/ZaabuPayLogo";
 import { Lock, User, ArrowRight, Phone, Loader2 } from "lucide-react";
 
 const loginSchema = z.object({
@@ -123,9 +123,9 @@ export const LoginForm = () => {
       {/* ── Header ── */}
       <header className="bg-gradient-to-r from-blue-900 to-slate-900 px-6 py-4 flex items-center justify-between shadow-lg">
         <div className="flex items-center gap-3">
-          <EduPayLogo size={38} />
+          <ZaabuPayLogo size={38} />
           <div className="flex items-center gap-2">
-            <span className="text-white font-extrabold text-xl tracking-tight">EduPay</span>
+            <span className="text-white font-extrabold text-xl tracking-tight">ZaabuPay</span>
             <span className="text-xs text-blue-300 border border-blue-500/40 rounded px-2 py-0.5 font-medium">
               Demo Portal
             </span>

@@ -52,7 +52,7 @@ async function bootstrap() {
     await pool.query(`
       INSERT INTO schools (id, name, abbreviation, email, phone, address, subscription_plan, is_active, status)
       SELECT 'a0000000-0000-0000-0000-000000000001',
-             'EduPay Demo School','EDS','admin@edupay.com',
+             'ZaabuPay Demo School','EDS','admin@zaabupay.com',
              '+256 700 123456','Plot 45, Kampala Road, Kampala, Uganda',
              'professional',true,'active'
       WHERE NOT EXISTS (SELECT 1 FROM schools WHERE id='a0000000-0000-0000-0000-000000000001')

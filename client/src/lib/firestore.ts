@@ -1,4 +1,4 @@
-// Firebase/Firestore has been removed. EduPay now uses only Replit PostgreSQL.
+// Firebase/Firestore has been removed. ZaabuPay now uses only Replit PostgreSQL.
 // This stub exists so any remaining imports don't break during the transition.
 
 export const getUserDoc = async () => null;

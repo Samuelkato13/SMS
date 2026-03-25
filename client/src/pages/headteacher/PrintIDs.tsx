@@ -19,7 +19,7 @@ function IDCard({ student, school, schoolAbbr }: { student: any; school: any; sc
           <GraduationCap className="w-4 h-4 text-white" />
         </div>
         <div className="flex-1 min-w-0">
-          <p className="text-white font-bold text-xs leading-tight truncate">{school?.name || 'EduPay School'}</p>
+          <p className="text-white font-bold text-xs leading-tight truncate">{school?.name || 'ZaabuPay School'}</p>
           <p className="text-emerald-200 text-[10px]">Student Identity Card</p>
         </div>
       </div>

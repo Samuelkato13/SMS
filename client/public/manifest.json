@@ -1,6 +1,6 @@
 {
-  "name": "EduPay School Management",
-  "short_name": "EduPay",
+  "name": "ZaabuPay School Management",
+  "short_name": "ZaabuPay",
   "description": "School Management System for Ugandan Schools by SKYVALE Technologies",
   "start_url": "/login",
   "scope": "/",

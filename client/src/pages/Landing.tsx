@@ -157,7 +157,7 @@ export const Landing = () => {
       name: "Sarah Nakato",
       role: "Head Teacher, Kampala Primary School",
       content:
-        "EduManage has transformed how we run our school. The mobile money integration alone has saved us countless hours.",
+        "ZaabuPay has transformed how we run our school. The mobile money integration alone has saved us countless hours.",
       rating: 5,
     },
     {
@@ -228,7 +228,7 @@ export const Landing = () => {
           <div className="flex items-center space-x-2">
             <GraduationCap className="w-8 h-8 text-blue-600" />
             <span className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-              EduManage
+              ZaabuPay
             </span>
           </div>
           <nav className="hidden md:flex space-x-8">
@@ -351,7 +351,7 @@ export const Landing = () => {
         <div className="container mx-auto">
           <div className="text-center mb-16">
             <h2 className="text-4xl md:text-5xl font-bold mb-4">
-              Why Schools Choose EduManage
+              Why Schools Choose ZaabuPay
             </h2>
             <p className="text-xl text-gray-600 max-w-3xl mx-auto">
               Join hundreds of schools that have transformed their operations
@@ -383,7 +383,7 @@ export const Landing = () => {
               What School Leaders Say
             </h2>
             <p className="text-xl text-gray-600">
-              Real feedback from real schools using EduManage.
+              Real feedback from real schools using ZaabuPay.
             </p>
           </div>
 
@@ -476,7 +476,7 @@ export const Landing = () => {
               Ready to Transform Your School?
             </h2>
             <p className="text-xl text-gray-600">
-              Request a free demo and see how EduManage can revolutionize your
+              Request a free demo and see how ZaabuPay can revolutionize your
               school management.
             </p>
           </div>
@@ -595,7 +595,7 @@ export const Landing = () => {
             <div>
               <div className="flex items-center space-x-2 mb-4">
                 <GraduationCap className="w-8 h-8 text-blue-400" />
-                <span className="text-2xl font-bold">EduManage</span>
+                <span className="text-2xl font-bold">ZaabuPay</span>
               </div>
               <p className="text-gray-400 leading-relaxed">
                 Empowering Ugandan schools with modern, efficient management
@@ -685,7 +685,7 @@ export const Landing = () => {
 
           <div className="border-t border-gray-800 mt-12 pt-8 text-center text-gray-400">
             <p>
-              © 2025 EduManage. All rights reserved. Built with ❤️ for Ugandan
+              © 2025 ZaabuPay. All rights reserved. Built with ❤️ for Ugandan
               schools.
             </p>
           </div>

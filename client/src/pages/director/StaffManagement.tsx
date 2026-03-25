@@ -259,8 +259,8 @@ export default function StaffManagement() {
               <div>
                 <p className="text-xs text-gray-500 uppercase font-medium mb-1">Login URL</p>
                 <div className="flex items-center gap-2">
-                  <code className="text-sm flex-1">edupayapp.com/login</code>
-                  <button onClick={() => copyToClipboard('edupayapp.com/login')}><Copy size={14} className="text-gray-500" /></button>
+                  <code className="text-sm flex-1">zaabupayapp.com/login</code>
+                  <button onClick={() => copyToClipboard('zaabupayapp.com/login')}><Copy size={14} className="text-gray-500" /></button>
                 </div>
               </div>
               <div>

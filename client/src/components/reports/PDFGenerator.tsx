@@ -40,7 +40,7 @@ export const PDFGenerator = ({ type, studentId, classId }: PDFGeneratorProps) =>
 
     doc.setFontSize(20);
     doc.setFont('helvetica', 'bold');
-    doc.text(schoolName || 'EduPay School', pageWidth / 2, 20, { align: 'center' });
+    doc.text(schoolName || 'ZaabuPay School', pageWidth / 2, 20, { align: 'center' });
 
     doc.setFontSize(16);
     doc.setFont('helvetica', 'normal');

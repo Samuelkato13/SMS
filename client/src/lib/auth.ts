@@ -1,9 +1,9 @@
-// ─── EduPay Auth — backed entirely by Replit PostgreSQL ──────────────────────
+// ─── ZaabuPay Auth — backed entirely by Replit PostgreSQL ──────────────────────
 // No Firebase. No Supabase. Just the server API + this Replit DB.
 
 import { User, AuthUser } from '@/types';
 
-const SESSION_KEY = 'edupay_session';
+const SESSION_KEY = 'zaabupay_session';
 
 // ── Session helpers ───────────────────────────────────────────────────────────
 const saveSession = (user: AuthUser) => {
@@ -90,9 +90,9 @@ export const isDemoMode = (): boolean => false; // always using real DB now
 // Fallback school info used if the API call fails
 export const getDemoSchool = () => ({
   id: 'a0000000-0000-0000-0000-000000000001',
-  name: 'EduPay Demo School',
+  name: 'ZaabuPay Demo School',
   abbreviation: 'EDS',
-  email: 'demo@edupayapp.com',
+  email: 'demo@zaabupayapp.com',
   phone: '0742 751 956',
   address: 'Kampala, Uganda',
 });

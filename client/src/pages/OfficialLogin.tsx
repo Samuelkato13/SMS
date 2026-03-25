@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { EduPayLogo } from "@/components/ui/EduPayLogo";
+import { ZaabuPayLogo } from "@/components/ui/ZaabuPayLogo";
 import { Lock, User, Phone, ArrowRight } from "lucide-react";
 
 const loginSchema = z.object({
@@ -66,8 +66,8 @@ export default function OfficialLogin() {
         <div className="relative z-10 flex flex-col h-full p-12">
           {/* Logo */}
           <div className="flex items-center gap-3">
-            <EduPayLogo size={44} />
-            <span className="text-white font-extrabold text-2xl tracking-tight">EduPay</span>
+            <ZaabuPayLogo size={44} />
+            <span className="text-white font-extrabold text-2xl tracking-tight">ZaabuPay</span>
           </div>
 
           {/* Main content */}
@@ -99,7 +99,7 @@ export default function OfficialLogin() {
           {/* Footer */}
           <div className="text-blue-400 text-xs">
             <p>SKYVALE Technologies Uganda Limited</p>
-            <p className="mt-1">edupayapp.com</p>
+            <p className="mt-1">zaabupayapp.com</p>
           </div>
         </div>
       </div>
@@ -108,8 +108,8 @@ export default function OfficialLogin() {
       <div className="flex-1 flex flex-col items-center justify-center px-6 py-12">
         {/* Mobile logo */}
         <div className="lg:hidden mb-10 flex items-center gap-3">
-          <EduPayLogo size={40} />
-          <span className="font-extrabold text-2xl text-gray-900">EduPay</span>
+          <ZaabuPayLogo size={40} />
+          <span className="font-extrabold text-2xl text-gray-900">ZaabuPay</span>
         </div>
 
         <div className="w-full max-w-[420px]">
@@ -185,7 +185,7 @@ export default function OfficialLogin() {
 
           {/* Demo link */}
           <div className="mt-6 p-4 bg-blue-50 border border-blue-100 rounded-xl">
-            <p className="text-sm text-blue-700 font-medium mb-2">Exploring EduPay?</p>
+            <p className="text-sm text-blue-700 font-medium mb-2">Exploring ZaabuPay?</p>
             <Link href="/demo-login">
               <button className="text-sm text-blue-600 hover:text-blue-800 font-semibold flex items-center gap-1 underline underline-offset-2">
                 View demo accounts for all roles

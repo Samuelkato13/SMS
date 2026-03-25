@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link } from "wouter";
-import { EduPayLogo } from "@/components/ui/EduPayLogo";
+import { ZaabuPayLogo } from "@/components/ui/ZaabuPayLogo";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -184,7 +184,7 @@ export const LandingOnly = () => {
       name: "Sarah Nakato",
       role: "Head Teacher, Kampala Primary School",
       content:
-        "EduPay has transformed how we run our school. The mobile money integration alone has saved us countless hours every term.",
+        "ZaabuPay has transformed how we run our school. The mobile money integration alone has saved us countless hours every term.",
       rating: 5,
     },
     {
@@ -271,9 +271,9 @@ export const LandingOnly = () => {
       <header className="border-b bg-white/90 backdrop-blur-sm sticky top-0 z-50 shadow-sm">
         <div className="container mx-auto px-4 py-4 flex justify-between items-center">
           <div className="flex items-center space-x-2">
-            <EduPayLogo size={36} />
+            <ZaabuPayLogo size={36} />
             <span className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
-              EduPay
+              ZaabuPay
             </span>
           </div>
           <nav className="hidden md:flex space-x-8">
@@ -328,7 +328,7 @@ export const LandingOnly = () => {
             Simplified for Uganda
           </h1>
           <p className="text-xl md:text-2xl text-gray-600 mb-10 max-w-4xl mx-auto leading-relaxed">
-            EduPay is the all-in-one school management platform designed for
+            ZaabuPay is the all-in-one school management platform designed for
             Ugandan schools. Manage students, collect fees via mobile money,
             track academic performance — all in one place.
           </p>
@@ -375,7 +375,7 @@ export const LandingOnly = () => {
               Everything Your School Needs
             </h2>
             <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-              From student registration to fee collection, EduPay handles every
+              From student registration to fee collection, ZaabuPay handles every
               aspect of school administration.
             </p>
           </div>
@@ -467,7 +467,7 @@ export const LandingOnly = () => {
               What School Leaders Say
             </h2>
             <p className="text-xl text-gray-600">
-              Real feedback from real Ugandan schools using EduPay.
+              Real feedback from real Ugandan schools using ZaabuPay.
             </p>
           </div>
 
@@ -580,7 +580,7 @@ export const LandingOnly = () => {
                 Ready to Transform Your School?
               </h2>
               <p className="text-lg text-gray-600 mb-6">
-                Request a free demo and see how EduPay can revolutionize your
+                Request a free demo and see how ZaabuPay can revolutionize your
                 school management. Our team will contact you within 24 hours.
               </p>
               <div className="space-y-4 text-gray-600">
@@ -744,14 +744,14 @@ export const LandingOnly = () => {
           <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-12">
             <div>
               <div className="flex items-center space-x-2 mb-4">
-                <EduPayLogo size={32} />
-                <span className="text-2xl font-bold">EduPay</span>
+                <ZaabuPayLogo size={32} />
+                <span className="text-2xl font-bold">ZaabuPay</span>
               </div>
               <p className="text-gray-400 leading-relaxed text-sm">
                 Empowering Ugandan schools with modern, efficient management
                 tools designed for the local context.
               </p>
-              <p className="text-gray-500 text-sm mt-3">edupayapp.com</p>
+              <p className="text-gray-500 text-sm mt-3">zaabupayapp.com</p>
             </div>
 
             <div>
@@ -826,7 +826,7 @@ export const LandingOnly = () => {
                 </li>
                 <li className="flex items-center gap-2">
                   <Mail className="w-4 h-4" />
-                  <span>hello@edupayapp.com</span>
+                  <span>hello@zaabupayapp.com</span>
                 </li>
                 <li className="flex items-center gap-2">
                   <MapPin className="w-4 h-4" />
@@ -834,7 +834,7 @@ export const LandingOnly = () => {
                 </li>
                 <li className="flex items-center gap-2">
                   <Globe className="w-4 h-4" />
-                  <span>edupayapp.com</span>
+                  <span>zaabupayapp.com</span>
                 </li>
               </ul>
             </div>
@@ -852,7 +852,7 @@ export const LandingOnly = () => {
                     SKYVALE Technologies Uganda Limited
                   </p>
                   <p className="text-gray-400 text-xs">
-                    The team behind EduPay
+                    The team behind ZaabuPay
                   </p>
                 </div>
               </div>
@@ -868,7 +868,7 @@ export const LandingOnly = () => {
 
           <div className="flex flex-col md:flex-row justify-between items-center gap-4 text-gray-500 text-xs">
             <p>
-              &copy; {new Date().getFullYear()} EduPay by SKYVALE Technologies
+              &copy; {new Date().getFullYear()} ZaabuPay by SKYVALE Technologies
               Uganda Limited. All rights reserved.
             </p>
             <div className="flex gap-6">
@@ -903,7 +903,7 @@ export const LandingOnly = () => {
               <div>
                 <h3 className="text-lg font-semibold text-gray-900 mb-2">We've received your request!</h3>
                 <p className="text-gray-600 text-sm">
-                  Our team will review your details and set up your school on EduPay within <strong>24 hours</strong>.
+                  Our team will review your details and set up your school on ZaabuPay within <strong>24 hours</strong>.
                   You'll receive an email with your login credentials.
                 </p>
               </div>

@@ -1,9 +1,9 @@
-interface EduPayLogoProps {
+interface ZaabuPayLogoProps {
   size?: number;
   className?: string;
 }
 
-export function EduPayLogo({ size = 40, className = "" }: EduPayLogoProps) {
+export function ZaabuPayLogo({ size = 40, className = "" }: ZaabuPayLogoProps) {
   return (
     <svg
       width={size}
@@ -70,8 +70,8 @@ export function EduPayLogo({ size = 40, className = "" }: EduPayLogoProps) {
   );
 }
 
-/* Wordmark version: logo + "EduPay" text side by side */
-export function EduPayWordmark({
+/* Wordmark version: logo + "ZaabuPay" text side by side */
+export function ZaabuPayWordmark({
   size = 36,
   textClass = "text-gray-900",
   className = "",
@@ -82,9 +82,9 @@ export function EduPayWordmark({
 }) {
   return (
     <div className={`flex items-center gap-2.5 ${className}`}>
-      <EduPayLogo size={size} />
+      <ZaabuPayLogo size={size} />
       <span className={`font-extrabold tracking-tight ${textClass}`} style={{ fontSize: size * 0.55 }}>
-        EduPay
+        ZaabuPay
       </span>
     </div>
   );

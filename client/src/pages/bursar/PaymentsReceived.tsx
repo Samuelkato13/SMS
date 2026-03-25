@@ -54,7 +54,7 @@ export default function PaymentsReceived() {
   const { school } = useSchoolContext();
   const { toast } = useToast();
   const schoolId = profile?.schoolId;
-  const schoolName = school?.name ?? "EduPay School";
+  const schoolName = school?.name ?? "ZaabuPay School";
 
   const [search, setSearch] = useState("");
   const [tab, setTab] = useState("payments");

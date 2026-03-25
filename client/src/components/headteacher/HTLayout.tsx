@@ -1,6 +1,6 @@
 import { ReactNode, useState } from 'react';
 import { Link, useLocation } from 'wouter';
-import { EduPayLogo } from '@/components/ui/EduPayLogo';
+import { ZaabuPayLogo } from '@/components/ui/ZaabuPayLogo';
 import {
   LayoutDashboard, CalendarDays, Users, UserSquare2, ClipboardList,
   BarChart3, FileText, CreditCard, Menu, LogOut, ChevronRight,
@@ -58,9 +58,9 @@ export function HTLayout({ children }: { children: ReactNode }) {
       `}>
         <div className="p-5 border-b border-emerald-700/50 flex items-center justify-between">
           <div className="flex items-center gap-3 min-w-0">
-            <EduPayLogo size={36} className="flex-shrink-0" />
+            <ZaabuPayLogo size={36} className="flex-shrink-0" />
             <div className="min-w-0">
-              <p className="font-bold text-white text-sm leading-tight">EduPay</p>
+              <p className="font-bold text-white text-sm leading-tight">ZaabuPay</p>
               <p className="text-emerald-300 text-xs truncate">{school?.name || 'Head Teacher'}</p>
             </div>
           </div>

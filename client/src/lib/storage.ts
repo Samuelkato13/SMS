@@ -1,4 +1,4 @@
-// ─── EduPay File Storage — backed by Replit server filesystem ────────────────
+// ─── ZaabuPay File Storage — backed by Replit server filesystem ────────────────
 // Files are uploaded to the Express server and stored in /uploads/
 // Served back at /uploads/<filename>
 
