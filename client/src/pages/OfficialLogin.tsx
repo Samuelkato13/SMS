@@ -66,7 +66,7 @@ export default function OfficialLogin() {
         <div className="relative z-10 flex flex-col h-full p-12">
           {/* Logo */}
           <div className="flex items-center">
-            <ZaabuPayLogo size={64} variant="dark" />
+            <ZaabuPayLogo size={88} variant="dark" />
           </div>
 
           {/* Main content */}
@@ -107,7 +107,7 @@ export default function OfficialLogin() {
       <div className="flex-1 flex flex-col items-center justify-center px-6 py-12">
         {/* Mobile logo */}
         <div className="lg:hidden mb-10 flex items-center">
-          <ZaabuPayLogo size={64} variant="light" />
+          <ZaabuPayLogo size={80} variant="light" />
         </div>
 
         <div className="w-full max-w-[420px]">
