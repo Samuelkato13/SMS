@@ -1,9 +1,11 @@
+import express from "express";
+import { createServer } from "http";
+import { setupDatabase } from "../db";
+import { storage } from "../storage";
+import { log } from "../vite";
 import type { Express } from "express";
-import { createServer, type Server } from "http";
-import pool from "../db";
-import bcrypt from "bcryptjs";
+import type { Server } from "http";
 import { registerAuthRoutes } from "./auth";
-import { registerReplitAuthRoutes } from "../replit_integrations/auth";
 import { registerSchoolRoutes } from "./schools";
 import { registerUserRoutes } from "./users";
 import { registerStudentRoutes } from "./students";
@@ -20,6 +22,8 @@ import { registerUploadRoutes } from "./upload";
 import { registerPromotionRoutes } from "./promotions";
 import { registerGroupRoutes } from "./groups";
 import { registerTimetableRoutes } from "./timetable";
+import pool from "../db";
+import bcrypt from "bcryptjs";
 
 // ── DB bootstrap: ensure all required tables and seed data exist ─────────────
 async function bootstrap() {
@@ -33,6 +37,7 @@ async function bootstrap() {
     await pool.query(`ALTER TABLE schools ADD COLUMN IF NOT EXISTS subdomain VARCHAR(100)`);
     await pool.query(`ALTER TABLE schools ADD COLUMN IF NOT EXISTS motto VARCHAR(255)`);
     await pool.query(`ALTER TABLE schools ADD COLUMN IF NOT EXISTS school_type VARCHAR(30)`);
+    await pool.query(`ALTER TABLE schools ADD COLUMN IF NOT EXISTS section_type VARCHAR(30)`);
     await pool.query(`ALTER TABLE schools ADD COLUMN IF NOT EXISTS bank_account_title VARCHAR(255)`);
     await pool.query(`ALTER TABLE schools ADD COLUMN IF NOT EXISTS bank_account_type VARCHAR(50)`);
     await pool.query(`ALTER TABLE schools ADD COLUMN IF NOT EXISTS bank_account_number VARCHAR(100)`);
@@ -451,7 +456,8 @@ async function bootstrap() {
 
     console.log("[bootstrap] DB ready. Super admin seeded. Demo passwords set.");
   } catch (err: any) {
-    console.error("[bootstrap] Error:", err.message);
+    console.error("[bootstrap] Error:", err);
+    throw err;
   }
 }
 
@@ -459,8 +465,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   await bootstrap();
 
   // Register all route modules
-  registerUploadRoutes(app);
   registerAuthRoutes(app);
+  registerUploadRoutes(app);
   registerSchoolRoutes(app);
   registerUserRoutes(app);
   registerStudentRoutes(app);
@@ -476,7 +482,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
   registerPromotionRoutes(app);
   registerGroupRoutes(app);
   registerTimetableRoutes(app);
-  registerReplitAuthRoutes(app);
 
   return createServer(app);
 }

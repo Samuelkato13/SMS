@@ -23,6 +23,7 @@ export const generateUsername = (
 
 const getRoleAbbreviation = (role: UserRole): string => {
   const roleMap: Record<UserRole, string> = {
+    super_admin: 'SUP',
     admin: 'ADM',
     director: 'DIR',
     head_teacher: 'HT',

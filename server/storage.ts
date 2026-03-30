@@ -34,6 +34,7 @@ export class MemStorage implements IStorage {
     const user: User = { 
       ...insertUser, 
       id,
+      username: insertUser.username || '',
       createdAt: new Date(),
       updatedAt: new Date()
     };

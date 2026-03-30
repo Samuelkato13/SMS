@@ -1,8 +1,8 @@
-// EduPay Service Worker v1.0
+// ZaabuPay Service Worker v1.0
 // Handles caching + offline fallback for PWA
 
-const CACHE_NAME = 'edupay-v1';
-const API_CACHE = 'edupay-api-v1';
+const CACHE_NAME = 'zaabupay-v1';
+const API_CACHE = 'zaabupay-api-v1';
 
 // Static shell assets to cache on install
 const SHELL_ASSETS = [
@@ -125,7 +125,7 @@ self.addEventListener('fetch', event => {
 
 // ── Background Sync: replay queued actions ────────────────────────────────────
 self.addEventListener('sync', event => {
-  if (event.tag === 'edupay-sync') {
+  if (event.tag === 'zaabupay-sync') {
     event.waitUntil(
       // Notify all clients to trigger their sync
       self.clients.matchAll().then(clients =>

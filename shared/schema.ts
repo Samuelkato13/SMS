@@ -60,7 +60,6 @@ export const userSchema = z.object({
 
 export const insertUserSchema = userSchema.omit({
   id: true,
-  username: true,
   createdAt: true,
   updatedAt: true,
 });

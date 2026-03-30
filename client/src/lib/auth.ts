@@ -1,5 +1,5 @@
-// ─── ZaabuPay Auth — backed entirely by Replit PostgreSQL ──────────────────────
-// No Firebase. No Supabase. Just the server API + this Replit DB.
+// ─── ZaabuPay Auth — backed by your server + Postgres ─────────────────────────
+// No Firebase. No Supabase. Just your own API + database.
 
 import { User, AuthUser } from '@/types';
 

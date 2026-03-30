@@ -30,6 +30,20 @@ const createReadUpdate: Permission = { create: true, read: true, update: true, d
 const readUpdate: Permission = { create: false, read: true, update: true, delete: false };
 
 export const rolePermissions: Record<UserRole, RolePermissions> = {
+  super_admin: {
+    dashboard: full,
+    students: full,
+    classes: full,
+    subjects: full,
+    exams: full,
+    marks: full,
+    attendance: full,
+    fees: full,
+    payments: full,
+    users: full,
+    reports: full,
+    schools: full,
+  },
   // ── System Admin: manages the SaaS platform, NOT school academics/finances ──
   admin: {
     dashboard: full,
@@ -219,6 +233,7 @@ export const canAccessRoute = (userRole: UserRole, path: string): boolean => {
 
 // What roles a given role can CREATE (for user management)
 export const creatableRoles: Record<UserRole, UserRole[]> = {
+  super_admin: ['admin', 'director', 'head_teacher', 'class_teacher', 'subject_teacher', 'bursar'],
   admin: ['director', 'head_teacher', 'class_teacher', 'subject_teacher', 'bursar'],
   director: ['head_teacher', 'class_teacher', 'subject_teacher', 'bursar'],
   head_teacher: ['class_teacher', 'subject_teacher'],
