@@ -13,6 +13,7 @@ import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import jsPDF from 'jspdf';
+import { drawReportCardPerformancePage } from '@/utils/reportCardPdfCharts';
 
 export default function ReportCards() {
   const { profile } = useAuth();
@@ -54,7 +55,11 @@ export default function ReportCards() {
   const filteredStudents = students
     .filter((s: any) => {
       const matchClass = !selectedClass || s.class_id === selectedClass;
-      const matchSearch = !search || `${s.first_name} ${s.last_name} ${s.student_number}`.toLowerCase().includes(search.toLowerCase());
+      const matchSearch =
+        !search ||
+        `${s.first_name} ${s.last_name} ${s.student_number || ''} ${s.admission_number || ''}`
+          .toLowerCase()
+          .includes(search.toLowerCase());
       return matchClass && matchSearch;
     });
 
@@ -147,6 +152,20 @@ export default function ReportCards() {
     doc.text(`Head Teacher: ${profile?.firstName} ${profile?.lastName}`, 20, y);
     doc.line(20, y + 5, 90, y + 5);
 
+    if (sm.length > 0) {
+      const examTitle = exams.find((e: any) => e.id === selectedExam)?.title || 'All exams';
+      drawReportCardPerformancePage(doc, {
+        studentLabel: `${student.first_name} ${student.last_name}`,
+        termYear: examTitle,
+        rows: sm.map((m: any) => ({
+          subject: m.subject_name || '—',
+          obtained: Number(m.marks_obtained) || 0,
+          total: Number(m.exam_total_marks ?? m.total_marks) || 100,
+          grade: String(m.grade || 'F8'),
+        })),
+      });
+    }
+
     doc.save(`report_card_${student.last_name}_${student.first_name}.pdf`);
     toast({ title: `Report card downloaded for ${student.first_name} ${student.last_name}` });
   };
@@ -212,6 +231,17 @@ export default function ReportCards() {
         doc.setFont('helvetica', 'normal');
         doc.text(htRemark, 55, y, { maxWidth: 135 });
       }
+
+      drawReportCardPerformancePage(doc, {
+        studentLabel: `${student.first_name} ${student.last_name}`,
+        termYear: exams.find((e: any) => e.id === selectedExam)?.title || 'All exams',
+        rows: sm.map((m: any) => ({
+          subject: m.subject_name || '—',
+          obtained: Number(m.marks_obtained) || 0,
+          total: Number(m.exam_total_marks ?? m.total_marks) || 100,
+          grade: String(m.grade || 'F8'),
+        })),
+      });
     });
 
     if (isFirst) return toast({ variant: 'destructive', title: 'No marks found for selected students' });
@@ -295,7 +325,7 @@ export default function ReportCards() {
                             </div>
                             <div>
                               <p className="text-sm font-medium text-gray-900">{s.first_name} {s.last_name}</p>
-                              <p className="text-xs text-gray-400">{s.student_number}</p>
+                              <p className="text-xs text-gray-400">{s.student_number || s.admission_number || '—'}</p>
                             </div>
                           </div>
                         </td>
@@ -336,7 +366,7 @@ export default function ReportCards() {
           {viewingCard && (
             <div className="space-y-4 mt-2">
               <div className="grid grid-cols-3 gap-3 text-xs">
-                <div className="bg-gray-50 rounded-lg p-3"><p className="text-gray-500">Student No.</p><p className="font-semibold">{viewingCard.student.student_number}</p></div>
+                <div className="bg-gray-50 rounded-lg p-3"><p className="text-gray-500">Student No.</p><p className="font-semibold">{viewingCard.student.student_number || viewingCard.student.admission_number || '—'}</p></div>
                 <div className="bg-gray-50 rounded-lg p-3"><p className="text-gray-500">Class</p><p className="font-semibold">{viewingCard.student.class_name || '—'}</p></div>
                 <div className="bg-gray-50 rounded-lg p-3"><p className="text-gray-500">Guardian</p><p className="font-semibold truncate">{viewingCard.student.guardian_name || '—'}</p></div>
               </div>
