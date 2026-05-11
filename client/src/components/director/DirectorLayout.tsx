@@ -117,12 +117,16 @@ export function DirectorLayout({ children }: { children: ReactNode }) {
             <p className="text-xs text-gray-500">{school?.name} · Academic Management System</p>
           </div>
           <Button variant="ghost" size="sm" className="text-gray-400"><Bell className="w-4 h-4" /></Button>
-          <div className="flex items-center gap-2 text-sm">
+          <Link
+            href="/profile"
+            className="flex items-center gap-2 text-sm hover:bg-gray-50 rounded-lg px-2 py-1 transition-colors"
+            title="View profile"
+          >
             <div className="w-7 h-7 bg-blue-600 rounded-full flex items-center justify-center">
               <span className="text-white text-xs font-bold">{profile?.firstName?.[0] ?? 'D'}</span>
             </div>
             <span className="hidden sm:block text-gray-700 font-medium">{profile?.firstName} {profile?.lastName}</span>
-          </div>
+          </Link>
         </header>
         <OfflineBanner />
         <main className="flex-1 overflow-y-auto p-5">{children}</main>

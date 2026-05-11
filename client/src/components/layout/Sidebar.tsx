@@ -135,9 +135,14 @@ export const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
           })}
         </nav>
 
-        {/* User Profile Footer */}
+        {/* User Profile Footer (click → /profile) */}
         <div className="p-4 border-t border-white/10">
-          <div className="flex items-center space-x-3 px-2 py-2 rounded-xl bg-white/5">
+          <Link
+            href="/profile"
+            onClick={() => onClose()}
+            className="flex items-center space-x-3 px-2 py-2 rounded-xl bg-white/5 hover:bg-white/10 transition-colors"
+            title="View profile"
+          >
             <div
               className="w-9 h-9 rounded-full flex items-center justify-center shrink-0"
               style={{
@@ -153,10 +158,10 @@ export const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
                 {profile?.firstName} {profile?.lastName}
               </p>
               <p className="text-xs text-white/40 capitalize truncate">
-                {theme.label}
+                {theme.label} · View profile
               </p>
             </div>
-          </div>
+          </Link>
         </div>
       </aside>
     </>

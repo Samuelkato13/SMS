@@ -22,6 +22,7 @@ import Fees from "@/pages/Fees";
 import Payments from "@/pages/Payments";
 import Users from "@/pages/Users";
 import Reports from "@/pages/Reports";
+import Profile from "@/pages/Profile";
 import NotFound from "@/pages/not-found";
 
 // Super Admin pages
@@ -75,6 +76,28 @@ import PromotionStudio from "@/pages/shared/PromotionStudio";
 import GroupingStudio from "@/pages/shared/GroupingStudio";
 import ReportsHub from "@/pages/shared/ReportsHub";
 import { CTLayout } from "@/components/classteacher/CTLayout";
+
+// Generic "any signed-in user" route — used for routes that should work for
+// every role (e.g. /profile). Renders inside the standard Layout so the
+// theme/sidebar match the user's role automatically.
+function AuthenticatedRoute({ children }: { children: React.ReactNode }) {
+  const { isAuthenticated, loading } = useAuth();
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 to-blue-50">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
+          <p className="mt-4 text-gray-600">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!isAuthenticated) return <OfficialLogin />;
+
+  return <Layout>{children}</Layout>;
+}
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, loading, isSuperAdmin, profile } = useAuth();
@@ -258,6 +281,11 @@ function Router() {
       <Route path="/" component={LandingOnly} />
       <Route path="/login" component={OfficialLogin} />
       <Route path="/demo-login" component={Login} />
+
+      {/* ── Profile (available to all signed-in roles) ─────────────── */}
+      <Route path="/profile">
+        <AuthenticatedRoute><Profile /></AuthenticatedRoute>
+      </Route>
 
       {/* ── Super Admin routes ─────────────────────────────────────── */}
       <Route path="/admin">

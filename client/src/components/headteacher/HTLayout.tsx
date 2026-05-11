@@ -109,7 +109,11 @@ export function HTLayout({ children }: { children: ReactNode }) {
               <Bell className="w-4 h-4 text-gray-500" />
               <span className="absolute top-1 right-1 w-2 h-2 bg-emerald-500 rounded-full"></span>
             </button>
-            <div className="flex items-center gap-2 pl-2 border-l border-gray-200">
+            <Link
+              href="/profile"
+              className="flex items-center gap-2 pl-2 border-l border-gray-200 hover:bg-gray-50 rounded-lg px-2 py-1 transition-colors"
+              title="View profile"
+            >
               <div className="w-8 h-8 bg-emerald-600 rounded-full flex items-center justify-center text-white text-xs font-bold">
                 {profile?.firstName?.charAt(0)}{profile?.lastName?.charAt(0)}
               </div>
@@ -117,7 +121,7 @@ export function HTLayout({ children }: { children: ReactNode }) {
                 <p className="text-xs font-semibold text-gray-800">{profile?.firstName} {profile?.lastName}</p>
                 <p className="text-[10px] text-gray-400">Head Teacher</p>
               </div>
-            </div>
+            </Link>
           </div>
         </header>
 

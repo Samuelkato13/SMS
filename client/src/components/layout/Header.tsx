@@ -1,4 +1,5 @@
 import { Bell, Menu, Wifi, WifiOff, LogOut } from 'lucide-react';
+import { Link } from 'wouter';
 import { ZaabuPayLogo } from '@/components/ui/ZaabuPayLogo';
 import { Button } from '@/components/ui/button';
 import { useSchool } from '@/hooks/useSchool';
@@ -71,20 +72,26 @@ export const Header = ({ onMenuClick }: HeaderProps) => {
 
           {/* User avatar + logout */}
           <div className="flex items-center space-x-2 pl-2 border-l border-gray-200">
-            <div
-              className="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold"
-              style={{
-                background: `linear-gradient(135deg, var(--theme-accent-from, #3b82f6), var(--theme-accent-to, #1d4ed8))`,
-              }}
+            <Link
+              href="/profile"
+              className="flex items-center space-x-2 hover:bg-gray-50 rounded-lg px-1 py-1 transition-colors"
+              title="View profile"
             >
-              {profile?.firstName?.charAt(0)}{profile?.lastName?.charAt(0)}
-            </div>
-            <div className="hidden sm:block text-right">
-              <p className="text-xs font-semibold text-gray-800">
-                {profile?.firstName} {profile?.lastName}
-              </p>
-              <p className="text-[10px] text-gray-400">{profile?.username}</p>
-            </div>
+              <div
+                className="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold"
+                style={{
+                  background: `linear-gradient(135deg, var(--theme-accent-from, #3b82f6), var(--theme-accent-to, #1d4ed8))`,
+                }}
+              >
+                {profile?.firstName?.charAt(0)}{profile?.lastName?.charAt(0)}
+              </div>
+              <div className="hidden sm:block text-right">
+                <p className="text-xs font-semibold text-gray-800">
+                  {profile?.firstName} {profile?.lastName}
+                </p>
+                <p className="text-[10px] text-gray-400">{profile?.username}</p>
+              </div>
+            </Link>
             <Button
               variant="ghost"
               size="sm"

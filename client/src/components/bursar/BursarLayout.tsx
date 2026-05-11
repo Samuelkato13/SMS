@@ -63,15 +63,21 @@ export function BursarLayout({ children }: { children: React.ReactNode }) {
       </nav>
 
       <div className="p-4 border-t border-teal-700">
-        <div className="flex items-center gap-3 mb-3 px-1">
-          <div className="w-8 h-8 rounded-full bg-teal-500 flex items-center justify-center text-white text-sm font-bold">
-            {profile?.firstName?.[0] ?? "B"}
-          </div>
-          <div className="min-w-0 flex-1">
-            <p className="text-white text-sm font-medium truncate">{profile?.firstName} {profile?.lastName}</p>
-            <p className="text-teal-300 text-xs capitalize">Bursar</p>
-          </div>
-        </div>
+        <Link href="/profile">
+          <a
+            onClick={() => setSideOpen(false)}
+            className="flex items-center gap-3 mb-3 px-1 py-1 rounded-lg hover:bg-teal-700/40 transition-colors"
+            title="View profile"
+          >
+            <div className="w-8 h-8 rounded-full bg-teal-500 flex items-center justify-center text-white text-sm font-bold">
+              {profile?.firstName?.[0] ?? "B"}
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="text-white text-sm font-medium truncate">{profile?.firstName} {profile?.lastName}</p>
+              <p className="text-teal-300 text-xs capitalize">Bursar · View profile</p>
+            </div>
+          </a>
+        </Link>
         <Button
           variant="ghost"
           size="sm"

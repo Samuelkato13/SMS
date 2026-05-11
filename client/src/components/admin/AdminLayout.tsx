@@ -4,7 +4,7 @@ import { ZaabuPayLogo } from '@/components/ui/ZaabuPayLogo';
 import { useQuery } from '@tanstack/react-query';
 import {
   LayoutDashboard, School, Users, CreditCard, Settings, ScrollText,
-  Menu, X, LogOut, Bell, ChevronRight, ClipboardList
+  Menu, X, LogOut, Bell, ChevronRight, ClipboardList, UserCircle
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -25,6 +25,7 @@ const NAV: NavItem[] = [
   { label: 'Signup Requests',     href: '/admin/signup-requests',     icon: ClipboardList   },
   { label: 'System Settings',     href: '/admin/settings',            icon: Settings        },
   { label: 'Audit Logs',          href: '/admin/audit-logs',          icon: ScrollText      },
+  { label: 'My Profile',          href: '/profile',                   icon: UserCircle      },
 ];
 
 function SidebarLink({ item, collapsed, pendingCount }: { item: NavItem; collapsed: boolean; pendingCount?: number }) {
@@ -177,12 +178,16 @@ export function AdminLayout({ children }: { children: ReactNode }) {
           <Button variant="ghost" size="sm" className="text-gray-400 hover:text-gray-600">
             <Bell className="w-5 h-5" />
           </Button>
-          <div className="flex items-center gap-2 text-sm text-gray-600">
+          <Link
+            href="/profile"
+            className="flex items-center gap-2 text-sm text-gray-600 hover:bg-gray-50 rounded-lg px-2 py-1 transition-colors"
+            title="View profile"
+          >
             <div className="w-7 h-7 bg-indigo-600 rounded-full flex items-center justify-center">
               <span className="text-white text-xs font-bold">{profile?.firstName?.[0] ?? 'S'}</span>
             </div>
             <span className="hidden sm:block font-medium">{profile?.firstName} {profile?.lastName}</span>
-          </div>
+          </Link>
         </header>
 
         {/* Page content */}
