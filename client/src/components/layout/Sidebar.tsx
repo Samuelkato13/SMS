@@ -8,7 +8,7 @@ import { useTheme } from '@/hooks/useTheme';
 import {
   GraduationCap, Home, Users, BookOpen, FileText, Star,
   CheckSquare, DollarSign, CreditCard, UsersRound,
-  BarChart3, School, Building2, ClipboardList,
+  BarChart3, School, Building2, ClipboardList, Network,
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -30,6 +30,7 @@ const iconMap: Record<string, React.ElementType> = {
   chart: BarChart3,
   'building-office': School,
   clipboard: ClipboardList,
+  network: Network,
 };
 
 const GROUP_LABELS: Record<string, string> = {

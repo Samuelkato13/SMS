@@ -79,15 +79,15 @@ export const rolePermissions: Record<UserRole, RolePermissions> = {
   // ── Head Teacher: academic supervisor ──
   head_teacher: {
     dashboard: readOnly,
-    students: createReadUpdate, // add and edit students
-    classes: readUpdate,        // assign teachers, not create classes
-    subjects: readUpdate,       // assign teachers to subjects
-    exams: full,                // create, manage, lock exams
-    marks: { create: false, read: true, update: true, delete: false }, // approve and lock marks
+    students: createReadUpdate,
+    classes: createReadUpdate,
+    subjects: createReadUpdate,
+    exams: full,
+    marks: { create: false, read: true, update: true, delete: false },
     attendance: readOnly,
-    fees: none,
+    fees: readOnly,
     payments: none,
-    users: createRead,          // create class/subject teachers only
+    users: { create: true, read: true, update: true, delete: false },
     reports: { create: true, read: true, update: false, delete: false },
     schools: none,
   },
@@ -199,6 +199,17 @@ export const getNavigationItems = (userRole: UserRole): NavItem[] => {
   if (p.users.read) {
     items.push({ name: 'Users', path: '/users', icon: 'user-group', group: 'admin' });
   }
+  if (
+    p.users.read &&
+    (userRole === 'admin' || userRole === 'director' || userRole === 'head_teacher')
+  ) {
+    items.push({
+      name: 'Teaching assignments',
+      path: '/teaching-assignments',
+      icon: 'network',
+      group: 'admin',
+    });
+  }
   if (p.reports.read) {
     items.push({ name: 'Reports', path: '/reports', icon: 'chart', group: 'admin' });
   }
@@ -221,6 +232,7 @@ export const routeAccess: Record<string, UserRole[]> = {
   '/fees': ['admin', 'director', 'bursar'],
   '/payments': ['admin', 'director', 'bursar'],
   '/users': ['admin', 'director', 'head_teacher'],
+  '/teaching-assignments': ['admin', 'director', 'head_teacher'],
   '/reports': ['admin', 'director', 'head_teacher', 'class_teacher', 'subject_teacher', 'bursar'],
   '/schools': ['admin'],
 };

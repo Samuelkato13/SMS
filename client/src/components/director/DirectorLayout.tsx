@@ -4,7 +4,7 @@ import { ZaabuPayLogo } from '@/components/ui/ZaabuPayLogo';
 import {
   LayoutDashboard, Settings, Users, UserSquare2, BookOpen, DollarSign,
   BarChart3, FileText, PieChart, Menu, LogOut, ChevronRight, Bell,
-  TrendingUp, Layers
+  TrendingUp, Layers, ListChecks
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -18,6 +18,7 @@ const NAV: NavItem[] = [
   { label: 'Dashboard',          href: '/director',                  icon: LayoutDashboard },
   { label: 'School Setup',       href: '/director/school-setup',     icon: Settings        },
   { label: 'Staff Management',   href: '/director/staff',            icon: Users           },
+  { label: 'Teaching assignments', href: '/director/teaching-assignments', icon: ListChecks },
   { label: 'Student Management', href: '/director/students',         icon: UserSquare2     },
   { label: 'Academic Setup',     href: '/director/academic',         icon: BookOpen        },
   { label: 'Fees Management',    href: '/director/fees',             icon: DollarSign      },

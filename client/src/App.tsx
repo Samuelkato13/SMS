@@ -75,6 +75,7 @@ import FinancialSummary from "@/pages/director/FinancialSummary";
 import PromotionStudio from "@/pages/shared/PromotionStudio";
 import GroupingStudio from "@/pages/shared/GroupingStudio";
 import ReportsHub from "@/pages/shared/ReportsHub";
+import TeachingAssignments from "@/pages/shared/TeachingAssignments";
 import { CTLayout } from "@/components/classteacher/CTLayout";
 
 // Generic "any signed-in user" route — used for routes that should work for
@@ -97,6 +98,19 @@ function AuthenticatedRoute({ children }: { children: React.ReactNode }) {
   if (!isAuthenticated) return <OfficialLogin />;
 
   return <Layout>{children}</Layout>;
+}
+
+function TeachingAssignmentsSchoolGuard({ children }: { children: React.ReactNode }) {
+  const { profile } = useAuth();
+  const [, navigate] = useLocation();
+  const allowed =
+    profile?.role === "admin" || profile?.role === "director" || profile?.role === "head_teacher";
+  if (!profile) return null;
+  if (!allowed) {
+    setTimeout(() => navigate("/dashboard"), 0);
+    return null;
+  }
+  return <>{children}</>;
 }
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -347,6 +361,13 @@ function Router() {
       <Route path="/schools">
         <ProtectedRoute><Schools /></ProtectedRoute>
       </Route>
+      <Route path="/teaching-assignments">
+        <AuthenticatedRoute>
+          <TeachingAssignmentsSchoolGuard>
+            <TeachingAssignments variant="embedded" />
+          </TeachingAssignmentsSchoolGuard>
+        </AuthenticatedRoute>
+      </Route>
 
       {/* ── HeadTeacher routes ─────────────────────────────────────── */}
       <Route path="/headteacher">
@@ -357,6 +378,9 @@ function Router() {
       </Route>
       <Route path="/headteacher/teachers">
         <HeadTeacherRoute><TeacherManagement /></HeadTeacherRoute>
+      </Route>
+      <Route path="/headteacher/teaching-assignments">
+        <HeadTeacherRoute><TeachingAssignments variant="headteacher" /></HeadTeacherRoute>
       </Route>
       <Route path="/headteacher/students">
         <HeadTeacherRoute><HTStudents /></HeadTeacherRoute>
@@ -443,6 +467,9 @@ function Router() {
       </Route>
       <Route path="/director/staff">
         <DirectorRoute><StaffManagement /></DirectorRoute>
+      </Route>
+      <Route path="/director/teaching-assignments">
+        <DirectorRoute><TeachingAssignments variant="director" /></DirectorRoute>
       </Route>
       <Route path="/director/students">
         <DirectorRoute><StudentManagement /></DirectorRoute>
