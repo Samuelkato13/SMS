@@ -1,8 +1,4 @@
-import express from "express";
 import { createServer } from "http";
-import { setupDatabase } from "../db";
-import { storage } from "../storage";
-import { log } from "../vite";
 import type { Express } from "express";
 import type { Server } from "http";
 import { DEFAULT_USER_PASSWORD } from "../lib/constants";
