@@ -1,5 +1,5 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
-import { onAuthChange, getUserProfile, signOut } from '@/lib/auth';
+import { onAuthChange, getUserProfile, getCachedUserProfile, signOut } from '@/lib/auth';
 import { AuthUser, User } from '@/types';
 
 interface AuthContextType {
@@ -31,7 +31,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
 
   const refreshProfile = async () => {
     if (user?.uid) {
-      const userProfile = await getUserProfile(user.uid, user.email ?? undefined);
+      const userProfile = await getUserProfile(user.uid);
       setProfile(userProfile);
     }
   };
@@ -50,8 +50,10 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     const unsubscribe = onAuthChange(async (authUser: AuthUser | null) => {
       if (authUser) {
         setUser(authUser);
-        const userProfile = await getUserProfile(authUser.uid, authUser.email ?? undefined);
-        setProfile(userProfile);
+        const cached = await getCachedUserProfile(authUser.uid);
+        if (cached) setProfile(cached);
+        const userProfile = await getUserProfile(authUser.uid);
+        if (userProfile) setProfile(userProfile);
       } else {
         setUser(null);
         setProfile(null);

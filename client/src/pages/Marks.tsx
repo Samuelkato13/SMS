@@ -4,6 +4,7 @@ import { queryClient, apiRequest } from '@/lib/queryClient';
 import { useAuth } from '@/hooks/useAuth';
 import { useRole } from '@/hooks/useRole';
 import { useOffline } from '@/hooks/useOffline';
+import { useOfflineSchoolQuery } from '@/hooks/useOfflineSchoolQuery';
 import { syncManager } from '@/lib/syncManager';
 import { RoleGuard } from '@/components/layout/RoleGuard';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -45,23 +46,23 @@ export default function Marks() {
   const [selectedYear, setSelectedYear] = useState('2025');
   const [localMarks, setLocalMarks] = useState<Record<string, { score: string; remarks: string }>>({});
 
-  const { data: exams = [] } = useQuery<any[]>({
-    queryKey: ['/api/exams', schoolId],
-    queryFn: () => fetch(`/api/exams?schoolId=${schoolId}`).then(r => r.json()),
-    enabled: !!schoolId,
-  });
+  const { data: exams = [] } = useOfflineSchoolQuery<any[]>(
+    schoolId ? `/api/exams?schoolId=${schoolId}` : undefined,
+    ['/api/exams', schoolId],
+    !!schoolId,
+  );
 
-  const { data: classes = [] } = useQuery<any[]>({
-    queryKey: ['/api/classes', schoolId],
-    queryFn: () => fetch(`/api/classes?schoolId=${schoolId}`).then(r => r.json()),
-    enabled: !!schoolId,
-  });
+  const { data: classes = [] } = useOfflineSchoolQuery<any[]>(
+    schoolId ? `/api/classes?schoolId=${schoolId}` : undefined,
+    ['/api/classes', schoolId],
+    !!schoolId,
+  );
 
-  const { data: subjects = [] } = useQuery<any[]>({
-    queryKey: ['/api/subjects', schoolId],
-    queryFn: () => fetch(`/api/subjects?schoolId=${schoolId}`).then(r => r.json()),
-    enabled: !!schoolId,
-  });
+  const { data: subjects = [] } = useOfflineSchoolQuery<any[]>(
+    schoolId ? `/api/subjects?schoolId=${schoolId}` : undefined,
+    ['/api/subjects', schoolId],
+    !!schoolId,
+  );
 
   // Subject teachers only see subjects assigned to them
   const isSubjectTeacher = profile?.role === 'subject_teacher';
@@ -69,17 +70,27 @@ export default function Marks() {
     ? subjects.filter((s: any) => s.teacher_id === profile?.id)
     : subjects;
 
-  const { data: students = [] } = useQuery<any[]>({
-    queryKey: ['/api/students', schoolId, selectedClass],
-    queryFn: () => fetch(`/api/students?schoolId=${schoolId}${selectedClass ? `&classId=${selectedClass}` : ''}`).then(r => r.json()),
-    enabled: !!schoolId && !!selectedClass,
-  });
+  const studentsUrl =
+    schoolId && selectedClass
+      ? `/api/students?schoolId=${schoolId}&classId=${selectedClass}`
+      : undefined;
 
-  const { data: marks = [], isLoading: marksLoading } = useQuery<any[]>({
-    queryKey: ['/api/marks', schoolId, selectedExam, selectedClass, selectedSubject, selectedTerm, selectedYear],
-    queryFn: () => fetch(`/api/marks?schoolId=${schoolId}&examId=${selectedExam}&classId=${selectedClass}&subjectId=${selectedSubject}&term=${encodeURIComponent(selectedTerm)}&academicYear=${selectedYear}`).then(r => r.json()),
-    enabled: !!(schoolId && selectedExam && selectedClass && selectedSubject),
-  });
+  const { data: students = [] } = useOfflineSchoolQuery<any[]>(
+    studentsUrl,
+    ['/api/students', schoolId, selectedClass],
+    !!studentsUrl,
+  );
+
+  const marksUrl =
+    schoolId && selectedExam && selectedClass && selectedSubject
+      ? `/api/marks?schoolId=${schoolId}&examId=${selectedExam}&classId=${selectedClass}&subjectId=${selectedSubject}&term=${encodeURIComponent(selectedTerm)}&academicYear=${selectedYear}`
+      : undefined;
+
+  const { data: marks = [], isLoading: marksLoading } = useOfflineSchoolQuery<any[]>(
+    marksUrl,
+    ['/api/marks', schoolId, selectedExam, selectedClass, selectedSubject, selectedTerm, selectedYear],
+    !!marksUrl,
+  );
 
   const saveMutation = useMutation({
     mutationFn: (data: any) => apiRequest('POST', '/api/marks/bulk', data),

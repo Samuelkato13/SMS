@@ -9,7 +9,7 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
 // Serve uploaded files (school logos, student photos, PDFs, etc.)
-app.use("/uploads", express.static(nodePath.join(process.cwd(), "uploads")));
+app.use("/uploads", express.static(nodePath.join(process.cwd(), "server", "uploads")));
 
 app.use((req, res, next) => {
   const start = Date.now();

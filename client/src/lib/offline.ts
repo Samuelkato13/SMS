@@ -53,12 +53,41 @@ export interface CachedSubject {
   [key: string]: any;
 }
 
+export interface CachedProfileRow {
+  id: string;
+  username: string;
+  email: string | null;
+  role: string;
+  schoolId: string | null;
+  firstName: string;
+  lastName: string;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+  cachedAt: number;
+}
+
+export interface ApiCacheEntry {
+  url: string;
+  data: string;
+  cachedAt: number;
+}
+
+export interface CachedSchoolRow {
+  id: string;
+  data: string;
+  cachedAt: number;
+}
+
 // ── Dexie Database ────────────────────────────────────────────────────────────
 class ZaabuPayDB extends Dexie {
   syncQueue!: Table<SyncQueueEntry, number>;
   students!: Table<CachedStudent, string>;
   classes!: Table<CachedClass, string>;
   subjects!: Table<CachedSubject, string>;
+  profile!: Table<CachedProfileRow, string>;
+  apiCache!: Table<ApiCacheEntry, string>;
+  schools!: Table<CachedSchoolRow, string>;
 
   constructor() {
     super('ZaabuPayDB_v2');
@@ -67,6 +96,15 @@ class ZaabuPayDB extends Dexie {
       students: 'id, class_id, school_id',
       classes: 'id, school_id',
       subjects: 'id, school_id',
+    });
+    this.version(2).stores({
+      syncQueue: '++id, status, action, createdAt',
+      students: 'id, class_id, school_id',
+      classes: 'id, school_id',
+      subjects: 'id, school_id',
+      profile: 'id',
+      apiCache: 'url, cachedAt',
+      schools: 'id',
     });
   }
 }
@@ -160,6 +198,67 @@ export const localCache = {
 
   async getSubjects(schoolId: string): Promise<CachedSubject[]> {
     return db.subjects.where('school_id').equals(schoolId).toArray();
+  },
+};
+
+// ── Profile & school cache ────────────────────────────────────────────────────
+export const profileCache = {
+  async save(profile: CachedProfileRow) {
+    await db.profile.put({ ...profile, cachedAt: Date.now() });
+  },
+
+  async get(userId: string): Promise<CachedProfileRow | null> {
+    return (await db.profile.get(userId)) ?? null;
+  },
+
+  async clear(userId?: string) {
+    if (userId) await db.profile.delete(userId);
+    else await db.profile.clear();
+  },
+};
+
+export const schoolCache = {
+  async save(schoolId: string, data: unknown) {
+    await db.schools.put({
+      id: schoolId,
+      data: JSON.stringify(data),
+      cachedAt: Date.now(),
+    });
+  },
+
+  async get<T = unknown>(schoolId: string): Promise<T | null> {
+    const row = await db.schools.get(schoolId);
+    if (!row) return null;
+    try {
+      return JSON.parse(row.data) as T;
+    } catch {
+      return null;
+    }
+  },
+
+  async clear(schoolId?: string) {
+    if (schoolId) await db.schools.delete(schoolId);
+    else await db.schools.clear();
+  },
+};
+
+export const apiCache = {
+  async put(url: string, data: unknown) {
+    await db.apiCache.put({
+      url,
+      data: JSON.stringify(data),
+      cachedAt: Date.now(),
+    });
+  },
+
+  async get<T = unknown>(url: string): Promise<T | null> {
+    const row = await db.apiCache.get(url);
+    if (!row) return null;
+    try {
+      return JSON.parse(row.data) as T;
+    } catch {
+      return null;
+    }
   },
 };
 

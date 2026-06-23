@@ -77,6 +77,7 @@ import GroupingStudio from "@/pages/shared/GroupingStudio";
 import ReportsHub from "@/pages/shared/ReportsHub";
 import TeachingAssignments from "@/pages/shared/TeachingAssignments";
 import { CTLayout } from "@/components/classteacher/CTLayout";
+import { useOfflineBootstrap } from "@/hooks/useOfflineBootstrap";
 
 // Generic "any signed-in user" route — used for routes that should work for
 // every role (e.g. /profile). Renders inside the standard Layout so the
@@ -111,6 +112,36 @@ function TeachingAssignmentsSchoolGuard({ children }: { children: React.ReactNod
     return null;
   }
   return <>{children}</>;
+}
+
+function ProfileLoadFallback() {
+  const { refreshProfile, logout } = useAuth();
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 to-slate-100 p-6">
+      <div className="max-w-md text-center space-y-4">
+        <p className="text-gray-800 font-medium">Could not load your account from the server.</p>
+        <p className="text-sm text-gray-600">
+          Check your connection, or confirm the API is reachable. If you were logged in before, try closing and reopening the app — your cached session may still work offline.
+        </p>
+        <div className="flex flex-wrap gap-3 justify-center">
+          <button
+            type="button"
+            className="px-4 py-2 rounded-lg bg-emerald-600 text-white text-sm font-medium hover:bg-emerald-700"
+            onClick={() => refreshProfile()}
+          >
+            Try again
+          </button>
+          <button
+            type="button"
+            className="px-4 py-2 rounded-lg border border-gray-300 text-sm text-gray-700 hover:bg-gray-50"
+            onClick={() => logout()}
+          >
+            Sign out
+          </button>
+        </div>
+      </div>
+    </div>
+  );
 }
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -177,7 +208,9 @@ function HeadTeacherRoute({ children }: { children: React.ReactNode }) {
 
   if (!isAuthenticated) return <OfficialLogin />;
 
-  if (profile?.role !== 'head_teacher' && profile?.role !== 'admin') {
+  if (!profile) return <ProfileLoadFallback />;
+
+  if (profile.role !== 'head_teacher' && profile.role !== 'admin') {
     setTimeout(() => navigate('/dashboard'), 0);
     return null;
   }
@@ -202,7 +235,9 @@ function ClassTeacherRoute({ children }: { children: React.ReactNode }) {
 
   if (!isAuthenticated) return <OfficialLogin />;
 
-  if (profile?.role !== 'class_teacher' && profile?.role !== 'admin') {
+  if (!profile) return <ProfileLoadFallback />;
+
+  if (profile.role !== 'class_teacher' && profile.role !== 'admin') {
     setTimeout(() => navigate('/dashboard'), 0);
     return null;
   }
@@ -227,7 +262,9 @@ function BursarRoute({ children }: { children: React.ReactNode }) {
 
   if (!isAuthenticated) return <OfficialLogin />;
 
-  if (profile?.role !== 'bursar' && profile?.role !== 'admin') {
+  if (!profile) return <ProfileLoadFallback />;
+
+  if (profile.role !== 'bursar' && profile.role !== 'admin') {
     setTimeout(() => navigate('/dashboard'), 0);
     return null;
   }
@@ -254,7 +291,9 @@ function DirectorRoute({ children }: { children: React.ReactNode }) {
     return <OfficialLogin />;
   }
 
-  if (profile?.role !== 'director' && profile?.role !== 'admin') {
+  if (!profile) return <ProfileLoadFallback />;
+
+  if (profile.role !== 'director' && profile.role !== 'admin') {
     setTimeout(() => navigate('/dashboard'), 0);
     return null;
   }
@@ -501,12 +540,18 @@ function Router() {
   );
 }
 
+function OfflineBootstrap() {
+  useOfflineBootstrap();
+  return null;
+}
+
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
         <AuthProvider>
           <SchoolProvider>
+            <OfflineBootstrap />
             <Toaster />
             <Router />
           </SchoolProvider>

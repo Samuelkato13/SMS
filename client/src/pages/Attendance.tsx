@@ -4,6 +4,7 @@ import { queryClient, apiRequest } from '@/lib/queryClient';
 import { useAuth } from '@/hooks/useAuth';
 import { useRole } from '@/hooks/useRole';
 import { useOffline } from '@/hooks/useOffline';
+import { useOfflineSchoolQuery } from '@/hooks/useOfflineSchoolQuery';
 import { syncManager } from '@/lib/syncManager';
 import { RoleGuard } from '@/components/layout/RoleGuard';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -36,23 +37,32 @@ export default function Attendance() {
   const [selectedDate, setSelectedDate] = useState(today);
   const [localStatus, setLocalStatus] = useState<Record<string, AttendanceStatus>>({});
 
-  const { data: classes = [] } = useQuery<any[]>({
-    queryKey: ['/api/classes', schoolId],
-    queryFn: () => fetch(`/api/classes?schoolId=${schoolId}`).then(r => r.json()),
-    enabled: !!schoolId,
-  });
+  const { data: classes = [] } = useOfflineSchoolQuery<any[]>(
+    schoolId ? `/api/classes?schoolId=${schoolId}` : undefined,
+    ['/api/classes', schoolId],
+    !!schoolId,
+  );
 
-  const { data: students = [] } = useQuery<any[]>({
-    queryKey: ['/api/students', schoolId, selectedClass],
-    queryFn: () => fetch(`/api/students?schoolId=${schoolId}${selectedClass ? `&classId=${selectedClass}` : ''}`).then(r => r.json()),
-    enabled: !!schoolId,
-  });
+  const studentsUrl = schoolId
+    ? `/api/students?schoolId=${schoolId}${selectedClass ? `&classId=${selectedClass}` : ''}`
+    : undefined;
 
-  const { data: attendance = [] } = useQuery<any[]>({
-    queryKey: ['/api/attendance', selectedClass, selectedDate],
-    queryFn: () => fetch(`/api/attendance?schoolId=${schoolId}&classId=${selectedClass}&date=${selectedDate}`).then(r => r.json()),
-    enabled: !!(schoolId && selectedClass && selectedDate),
-  });
+  const { data: students = [] } = useOfflineSchoolQuery<any[]>(
+    studentsUrl,
+    ['/api/students', schoolId, selectedClass],
+    !!studentsUrl,
+  );
+
+  const attendanceUrl =
+    schoolId && selectedClass && selectedDate
+      ? `/api/attendance?schoolId=${schoolId}&classId=${selectedClass}&date=${selectedDate}`
+      : undefined;
+
+  const { data: attendance = [] } = useOfflineSchoolQuery<any[]>(
+    attendanceUrl,
+    ['/api/attendance', selectedClass, selectedDate],
+    !!attendanceUrl,
+  );
 
   const saveMutation = useMutation({
     mutationFn: (data: any) => apiRequest('POST', '/api/attendance/bulk', data),

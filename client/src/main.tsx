@@ -4,13 +4,25 @@ import "./index.css";
 
 createRoot(document.getElementById("root")!).render(<App />);
 
+const SESSION_KEY = 'zaabupay_session';
+
+function getSessionSchoolId(): string | null {
+  try {
+    const raw = localStorage.getItem(SESSION_KEY) || sessionStorage.getItem(SESSION_KEY);
+    if (!raw) return null;
+    const session = JSON.parse(raw);
+    return session?.profile?.schoolId ?? null;
+  } catch {
+    return null;
+  }
+}
+
 // ── Register Service Worker ───────────────────────────────────────────────────
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', async () => {
     try {
       const reg = await navigator.serviceWorker.register('/sw.js', { scope: '/' });
 
-      // Auto-update SW when new version available
       reg.addEventListener('updatefound', () => {
         const newWorker = reg.installing;
         if (!newWorker) return;
@@ -23,21 +35,25 @@ if ('serviceWorker' in navigator) {
 
       console.log('[ZaabuPay] Service worker registered:', reg.scope);
 
-      // Pre-warm API cache after app loads
-      const schoolId = sessionStorage.getItem('zaabupay_demo_auth')
-        ? JSON.parse(sessionStorage.getItem('zaabupay_demo_auth') || '{}')?.profile?.schoolId
-        : null;
-
-      if (schoolId && navigator.serviceWorker.controller) {
+      const warmCache = (schoolId: string | null) => {
+        if (!schoolId || !navigator.serviceWorker.controller) return;
         navigator.serviceWorker.controller.postMessage({
           type: 'CACHE_URLS',
           urls: [
             `/api/classes?schoolId=${schoolId}`,
+            `/api/students?schoolId=${schoolId}`,
             `/api/subjects?schoolId=${schoolId}`,
             `/api/exams?schoolId=${schoolId}`,
-          ]
+          ],
         });
-      }
+      };
+
+      warmCache(getSessionSchoolId());
+
+      // Re-warm when user logs in during this session
+      window.addEventListener('storage', (e) => {
+        if (e.key === SESSION_KEY) warmCache(getSessionSchoolId());
+      });
     } catch (err) {
       console.warn('[ZaabuPay] Service worker registration failed:', err);
     }

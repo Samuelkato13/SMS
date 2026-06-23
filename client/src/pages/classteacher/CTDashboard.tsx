@@ -1,7 +1,6 @@
-import { useQuery } from '@tanstack/react-query';
+import { useOfflineSchoolQuery } from '@/hooks/useOfflineSchoolQuery';
 import { useAuth } from '@/hooks/useAuth';
 import { CTLayout } from '@/components/classteacher/CTLayout';
-import { useDataPrecache } from '@/hooks/useDataPrecache';
 import { Users, TrendingUp, Star, CalendarCheck, AlertCircle, UserCheck, PenLine, MessageSquare } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -26,34 +25,31 @@ export default function CTDashboard() {
   const { profile } = useAuth();
   const schoolId = profile?.schoolId;
 
-  const { data: classes = [] } = useQuery<any[]>({
-    queryKey: ['/api/classes', schoolId],
-    queryFn: () => fetch(`/api/classes?schoolId=${schoolId}`).then(r => r.json()),
-    enabled: !!schoolId,
-  });
+  const { data: classes = [] } = useOfflineSchoolQuery<any[]>(
+    schoolId ? `/api/classes?schoolId=${schoolId}` : undefined,
+    ['/api/classes', schoolId],
+    !!schoolId,
+  );
   const myClass = classes.find((c: any) => c.class_teacher_id === profile?.id);
 
-  const { data: allStudents = [] } = useQuery<any[]>({
-    queryKey: ['/api/students', schoolId],
-    queryFn: () => fetch(`/api/students?schoolId=${schoolId}`).then(r => r.json()),
-    enabled: !!schoolId,
-  });
+  const { data: allStudents = [] } = useOfflineSchoolQuery<any[]>(
+    schoolId ? `/api/students?schoolId=${schoolId}` : undefined,
+    ['/api/students', schoolId],
+    !!schoolId,
+  );
   const students = allStudents.filter((s: any) => s.class_id === myClass?.id);
 
-  const { data: marks = [] } = useQuery<any[]>({
-    queryKey: ['/api/marks', schoolId, myClass?.id],
-    queryFn: () => fetch(`/api/marks?schoolId=${schoolId}&classId=${myClass?.id}`).then(r => r.json()),
-    enabled: !!schoolId && !!myClass?.id,
-  });
+  const { data: marks = [] } = useOfflineSchoolQuery<any[]>(
+    schoolId && myClass?.id ? `/api/marks?schoolId=${schoolId}&classId=${myClass.id}` : undefined,
+    ['/api/marks', schoolId, myClass?.id],
+    !!schoolId && !!myClass?.id,
+  );
 
-  const { data: exams = [] } = useQuery<any[]>({
-    queryKey: ['/api/exams', schoolId],
-    queryFn: () => fetch(`/api/exams?schoolId=${schoolId}`).then(r => r.json()),
-    enabled: !!schoolId,
-  });
-
-  // Pre-cache critical data to IndexedDB for offline use
-  useDataPrecache(schoolId, allStudents, classes, []);
+  const { data: exams = [] } = useOfflineSchoolQuery<any[]>(
+    schoolId ? `/api/exams?schoolId=${schoolId}` : undefined,
+    ['/api/exams', schoolId],
+    !!schoolId,
+  );
 
   const boys = students.filter((s: any) => s.gender === 'male').length;
   const girls = students.filter((s: any) => s.gender === 'female').length;

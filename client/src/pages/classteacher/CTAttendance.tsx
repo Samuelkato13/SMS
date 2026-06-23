@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react';
-import { useQuery, useMutation } from '@tanstack/react-query';
+import { useMutation } from '@tanstack/react-query';
 import { useAuth } from '@/hooks/useAuth';
 import { CTLayout } from '@/components/classteacher/CTLayout';
 import { queryClient, apiRequest } from '@/lib/queryClient';
 import { useToast } from '@/hooks/use-toast';
 import { useOffline } from '@/hooks/useOffline';
+import { useOfflineSchoolQuery } from '@/hooks/useOfflineSchoolQuery';
 import { syncManager } from '@/lib/syncManager';
 import { CalendarCheck, CheckCircle, XCircle, Clock, BarChart2, Save, Users, TrendingUp, WifiOff } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
@@ -45,26 +46,26 @@ export default function CTAttendance() {
   const [showHistory, setShowHistory] = useState(false);
   const [initialized, setInitialized] = useState(false);
 
-  const { data: classes = [] } = useQuery<any[]>({
-    queryKey: ['/api/classes', schoolId],
-    queryFn: () => fetch(`/api/classes?schoolId=${schoolId}`).then(r => r.json()),
-    enabled: !!schoolId,
-  });
+  const { data: classes = [] } = useOfflineSchoolQuery<any[]>(
+    schoolId ? `/api/classes?schoolId=${schoolId}` : undefined,
+    ['/api/classes', schoolId],
+    !!schoolId,
+  );
   const myClass = classes.find((c: any) => c.class_teacher_id === profile?.id);
 
-  const { data: allStudents = [] } = useQuery<any[]>({
-    queryKey: ['/api/students', schoolId],
-    queryFn: () => fetch(`/api/students?schoolId=${schoolId}`).then(r => r.json()),
-    enabled: !!schoolId,
-  });
+  const { data: allStudents = [] } = useOfflineSchoolQuery<any[]>(
+    schoolId ? `/api/students?schoolId=${schoolId}` : undefined,
+    ['/api/students', schoolId],
+    !!schoolId,
+  );
   const students = allStudents.filter((s: any) => s.class_id === myClass?.id && s.is_active !== false)
     .sort((a: any, b: any) => a.last_name.localeCompare(b.last_name));
 
-  const { data: attendance = [] } = useQuery<any[]>({
-    queryKey: ['/api/attendance', schoolId, myClass?.id],
-    queryFn: () => fetch(`/api/attendance?schoolId=${schoolId}&classId=${myClass?.id}`).then(r => r.json()),
-    enabled: !!schoolId && !!myClass?.id,
-  });
+  const { data: attendance = [] } = useOfflineSchoolQuery<any[]>(
+    schoolId && myClass?.id ? `/api/attendance?schoolId=${schoolId}&classId=${myClass.id}` : undefined,
+    ['/api/attendance', schoolId, myClass?.id],
+    !!schoolId && !!myClass?.id,
+  );
 
   // Load saved attendance for the selected date when data changes
   useEffect(() => {

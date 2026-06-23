@@ -5,6 +5,7 @@ import { CTLayout } from '@/components/classteacher/CTLayout';
 import { queryClient, apiRequest } from '@/lib/queryClient';
 import { useToast } from '@/hooks/use-toast';
 import { useOffline } from '@/hooks/useOffline';
+import { useOfflineSchoolQuery } from '@/hooks/useOfflineSchoolQuery';
 import { syncManager } from '@/lib/syncManager';
 import {
   PenLine, Save, Lock, ShieldCheck, AlertTriangle,
@@ -51,50 +52,55 @@ export default function CTMarks() {
   const [editReason, setEditReason] = useState('');
   const [pendingSave, setPendingSave] = useState<null | (() => void)>(null);
 
-  const { data: classes = [] } = useQuery<any[]>({
-    queryKey: ['/api/classes', schoolId],
-    queryFn: () => fetch(`/api/classes?schoolId=${schoolId}`).then(r => r.json()),
-    enabled: !!schoolId,
-  });
+  const { data: classes = [] } = useOfflineSchoolQuery<any[]>(
+    schoolId ? `/api/classes?schoolId=${schoolId}` : undefined,
+    ['/api/classes', schoolId],
+    !!schoolId,
+  );
   const myClass = classes.find((c: any) => c.class_teacher_id === profile?.id);
 
-  const { data: allStudents = [] } = useQuery<any[]>({
-    queryKey: ['/api/students', schoolId],
-    queryFn: () => fetch(`/api/students?schoolId=${schoolId}`).then(r => r.json()),
-    enabled: !!schoolId,
-  });
+  const { data: allStudents = [] } = useOfflineSchoolQuery<any[]>(
+    schoolId ? `/api/students?schoolId=${schoolId}` : undefined,
+    ['/api/students', schoolId],
+    !!schoolId,
+  );
   const students = allStudents
     .filter((s: any) => s.class_id === myClass?.id && s.is_active !== false)
     .sort((a: any, b: any) => a.last_name.localeCompare(b.last_name));
 
-  const { data: subjects = [] } = useQuery<any[]>({
-    queryKey: ['/api/subjects', schoolId],
-    queryFn: () => fetch(`/api/subjects?schoolId=${schoolId}`).then(r => r.json()),
-    enabled: !!schoolId,
-  });
+  const { data: subjects = [] } = useOfflineSchoolQuery<any[]>(
+    schoolId ? `/api/subjects?schoolId=${schoolId}` : undefined,
+    ['/api/subjects', schoolId],
+    !!schoolId,
+  );
 
-  const { data: exams = [] } = useQuery<any[]>({
-    queryKey: ['/api/exams', schoolId],
-    queryFn: () => fetch(`/api/exams?schoolId=${schoolId}`).then(r => r.json()),
-    enabled: !!schoolId,
-  });
+  const { data: exams = [] } = useOfflineSchoolQuery<any[]>(
+    schoolId ? `/api/exams?schoolId=${schoolId}` : undefined,
+    ['/api/exams', schoolId],
+    !!schoolId,
+  );
 
-  const { data: existingMarks = [] } = useQuery<any[]>({
-    queryKey: ['/api/marks', schoolId, myClass?.id, selectedExam, selectedSubject],
-    queryFn: () =>
-      fetch(`/api/marks?schoolId=${schoolId}&classId=${myClass?.id}&examId=${selectedExam}&subjectId=${selectedSubject}`)
-        .then(r => r.json()),
-    enabled: !!schoolId && !!myClass?.id && !!selectedExam && !!selectedSubject,
-  });
+  const marksUrl =
+    schoolId && myClass?.id && selectedExam && selectedSubject
+      ? `/api/marks?schoolId=${schoolId}&classId=${myClass.id}&examId=${selectedExam}&subjectId=${selectedSubject}`
+      : undefined;
 
-  // Check if subject teacher has granted permission for this class/subject/exam
-  const { data: permissions = [] } = useQuery<any[]>({
-    queryKey: ['/api/marks-permissions', schoolId, myClass?.id, selectedSubject, selectedExam],
-    queryFn: () =>
-      fetch(`/api/marks-permissions?schoolId=${schoolId}&classId=${myClass?.id}&subjectId=${selectedSubject}&examId=${selectedExam}`)
-        .then(r => r.json()),
-    enabled: !!schoolId && !!myClass?.id && !!selectedSubject && !!selectedExam,
-  });
+  const { data: existingMarks = [] } = useOfflineSchoolQuery<any[]>(
+    marksUrl,
+    ['/api/marks', schoolId, myClass?.id, selectedExam, selectedSubject],
+    !!marksUrl,
+  );
+
+  const permissionsUrl =
+    schoolId && myClass?.id && selectedSubject && selectedExam
+      ? `/api/marks-permissions?schoolId=${schoolId}&classId=${myClass.id}&subjectId=${selectedSubject}&examId=${selectedExam}`
+      : undefined;
+
+  const { data: permissions = [] } = useOfflineSchoolQuery<any[]>(
+    permissionsUrl,
+    ['/api/marks-permissions', schoolId, myClass?.id, selectedSubject, selectedExam],
+    !!permissionsUrl,
+  );
 
   const hasPermission = permissions.some((p: any) => p.is_active);
   const permissionRecord = permissions.find((p: any) => p.is_active);

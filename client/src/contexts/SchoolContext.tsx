@@ -2,6 +2,7 @@ import { createContext, useContext, useEffect, useState, ReactNode } from 'react
 import { School } from '@/types';
 import { useAuthContext } from './AuthContext';
 import { getDemoSchool } from '@/lib/auth';
+import { offlineFetchSchool } from '@/lib/offlineApi';
 
 interface SchoolContextType {
   school: School | null;
@@ -23,6 +24,20 @@ interface SchoolProviderProps {
   children: ReactNode;
 }
 
+const demoSchoolFallback = (): School => {
+  const demo = getDemoSchool();
+  return {
+    id: demo.id,
+    name: demo.name,
+    abbreviation: demo.abbreviation,
+    email: demo.email,
+    phone: demo.phone,
+    address: demo.address,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  } as School;
+};
+
 export const SchoolProvider = ({ children }: SchoolProviderProps) => {
   const [school, setSchool] = useState<School | null>(null);
   const [loading, setLoading] = useState(true);
@@ -34,36 +49,14 @@ export const SchoolProvider = ({ children }: SchoolProviderProps) => {
       return;
     }
     try {
-      const res = await fetch(`/api/schools/${profile.schoolId}`);
-      if (res.ok) {
-        const data = await res.json();
+      const data = await offlineFetchSchool<School>(profile.schoolId);
+      if (data) {
         setSchool(data);
       } else {
-        // Fall back to demo school data
-        const demo = getDemoSchool();
-        setSchool({
-          id: demo.id,
-          name: demo.name,
-          abbreviation: demo.abbreviation,
-          email: demo.email,
-          phone: demo.phone,
-          address: demo.address,
-          createdAt: new Date(),
-          updatedAt: new Date(),
-        } as School);
+        setSchool(demoSchoolFallback());
       }
-    } catch (_) {
-      const demo = getDemoSchool();
-      setSchool({
-        id: demo.id,
-        name: demo.name,
-        abbreviation: demo.abbreviation,
-        email: demo.email,
-        phone: demo.phone,
-        address: demo.address,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      } as School);
+    } catch {
+      setSchool(demoSchoolFallback());
     } finally {
       setLoading(false);
     }
