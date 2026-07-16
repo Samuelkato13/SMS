@@ -85,23 +85,28 @@ export default function ReportCards() {
     const schoolPhone = school?.phone ?? '';
 
     let y = 15;
+    
+    // Header - exactly as template
     doc.setFontSize(18);
     doc.setFont('helvetica', 'bold');
     doc.text(schoolName.toUpperCase(), 105, y, { align: 'center' });
     y += 7;
+    
     if (schoolMotto) {
       doc.setFontSize(9);
       doc.setFont('helvetica', 'italic');
       doc.text(`"${schoolMotto}"`, 105, y, { align: 'center' });
       y += 5;
     }
+    
     if (schoolAddress || schoolPhone) {
       doc.setFontSize(8);
       doc.setFont('helvetica', 'normal');
-      const contact = [schoolAddress, schoolPhone].filter(Boolean).join('  |  ');
+      const contact = [schoolAddress, schoolPhone].filter(Boolean).join(' | ');
       doc.text(contact, 105, y, { align: 'center' });
       y += 5;
     }
+    
     doc.setFontSize(13);
     doc.setFont('helvetica', 'bold');
     doc.text('STUDENT REPORT CARD', 105, y + 4, { align: 'center' });
@@ -109,6 +114,7 @@ export default function ReportCards() {
     doc.line(20, y, 190, y);
     y += 8;
 
+    // Student info section - exactly as template
     doc.setFontSize(10);
     doc.setFont('helvetica', 'normal');
     doc.text(`Student: ${student.first_name} ${student.last_name}`, 20, y);
@@ -120,12 +126,17 @@ export default function ReportCards() {
     if (student.section) doc.text(`Section: ${student.section === 'boarding' ? 'Boarding' : 'Day'}`, 110, y);
     y += 8;
 
+    // Table header - exactly as template
     doc.setFont('helvetica', 'bold');
-    doc.text('Subject', 20, y); doc.text('Score', 100, y); doc.text('Grade', 140, y); doc.text('Remarks', 160, y);
+    doc.text('Subject', 20, y); 
+    doc.text('Score', 100, y); 
+    doc.text('Grade', 140, y); 
+    doc.text('Remarks', 160, y);
     y += 5;
     doc.line(20, y, 190, y);
     y += 7;
 
+    // Table rows - exactly as template
     doc.setFont('helvetica', 'normal');
     sm.forEach((m: any) => {
       doc.text(m.subject_name || '—', 20, y);
@@ -139,19 +150,12 @@ export default function ReportCards() {
     doc.line(20, y, 190, y);
     y += 10;
 
-    if (htRemark) {
-      doc.setFont('helvetica', 'bold');
-      doc.text("Head Teacher's Remarks:", 20, y);
-      y += 8;
-      doc.setFont('helvetica', 'normal');
-      doc.text(htRemark, 20, y, { maxWidth: 170 });
-      y += 15;
-    }
-
+    // Head Teacher line - exactly as template
     doc.setFont('helvetica', 'bold');
-    doc.text(`Head Teacher: ${profile?.firstName} ${profile?.lastName}`, 20, y);
+    doc.text(`Head Teacher: ${profile?.firstName || 'Master'} ${profile?.lastName || 'Godfrey'}`, 20, y);
     doc.line(20, y + 5, 90, y + 5);
 
+    // Performance page if there are marks
     if (sm.length > 0) {
       const examTitle = exams.find((e: any) => e.id === selectedExam)?.title || 'All exams';
       drawReportCardPerformancePage(doc, {
@@ -174,7 +178,11 @@ export default function ReportCards() {
     const doc = new jsPDF();
     const schoolName = school?.name ?? 'School';
     const schoolMotto = school?.motto ?? '';
+    const schoolAddress = school?.address ?? '';
+    const schoolPhone = school?.phone ?? '';
+    const schoolEmail = school?.email ?? '';
     let isFirst = true;
+    
     filteredStudents.forEach((student: any) => {
       const sm = getStudentMarks(student.id);
       if (sm.length === 0) return;
@@ -182,66 +190,75 @@ export default function ReportCards() {
       isFirst = false;
 
       let y = 15;
-      doc.setFontSize(16);
+      
+      // Header - exactly as template
+      doc.setFontSize(18);
       doc.setFont('helvetica', 'bold');
       doc.text(schoolName.toUpperCase(), 105, y, { align: 'center' });
-      y += 6;
+      y += 7;
+      
       if (schoolMotto) {
-        doc.setFontSize(8);
+        doc.setFontSize(9);
         doc.setFont('helvetica', 'italic');
         doc.text(`"${schoolMotto}"`, 105, y, { align: 'center' });
         y += 5;
       }
-      doc.setFontSize(12);
+      
+      if (schoolAddress || schoolPhone) {
+        doc.setFontSize(8);
+        doc.setFont('helvetica', 'normal');
+        const contact = [schoolAddress, schoolPhone].filter(Boolean).join(' | ');
+        doc.text(contact, 105, y, { align: 'center' });
+        y += 5;
+      }
+      
+      doc.setFontSize(13);
       doc.setFont('helvetica', 'bold');
-      doc.text('STUDENT REPORT CARD', 105, y + 3, { align: 'center' });
-      y += 9;
+      doc.text('STUDENT REPORT CARD', 105, y + 4, { align: 'center' });
+      y += 10;
       doc.line(20, y, 190, y);
-      y += 7;
+      y += 8;
 
+      // Student info section - exactly as template
       doc.setFontSize(10);
       doc.setFont('helvetica', 'normal');
-      doc.text(`${student.first_name} ${student.last_name}`, 20, y);
-      doc.text(`Class: ${student.class_name || '—'}`, 130, y);
-      y += 7;
-      doc.text(`No: ${student.student_number || student.admission_number || '—'}`, 20, y);
-      doc.text(`Exam: ${exams.find((e:any)=>e.id===selectedExam)?.title || 'All Exams'}`, 130, y);
-      y += 6;
-      doc.line(20, y, 190, y);
-      y += 6;
+      doc.text(`Student: ${student.first_name} ${student.last_name}`, 20, y);
+      y += 8;
+      doc.text(`Student No: ${student.student_number || student.admission_number || '—'}`, 20, y);
+      doc.text(`Class: ${student.class_name || '—'}`, 110, y);
+      y += 8;
+      doc.text(`Exam: ${exams.find((e:any)=>e.id===selectedExam)?.title || 'All Exams'}`, 20, y);
+      if (student.section) doc.text(`Section: ${student.section === 'boarding' ? 'Boarding' : 'Day'}`, 110, y);
+      y += 8;
 
+      // Table header - exactly as template
       doc.setFont('helvetica', 'bold');
-      doc.text('Subject', 20, y); doc.text('Score', 100, y); doc.text('Grade', 140, y);
+      doc.text('Subject', 20, y); 
+      doc.text('Score', 100, y); 
+      doc.text('Grade', 140, y); 
+      doc.text('Remarks', 160, y);
       y += 5;
       doc.line(20, y, 190, y);
-      y += 5;
+      y += 7;
 
+      // Table rows - exactly as template
       doc.setFont('helvetica', 'normal');
       sm.forEach((m: any) => {
         doc.text(m.subject_name || '—', 20, y);
         doc.text(`${m.marks_obtained}/${m.exam_total_marks}`, 100, y);
         doc.text(m.grade || '—', 140, y);
-        y += 7;
+        doc.text(m.remarks || '', 160, y);
+        y += 8;
       });
 
-      if (htRemark) {
-        y += 5;
-        doc.setFont('helvetica', 'bold');
-        doc.text("HT Remarks: ", 20, y);
-        doc.setFont('helvetica', 'normal');
-        doc.text(htRemark, 55, y, { maxWidth: 135 });
-      }
+      y += 5;
+      doc.line(20, y, 190, y);
+      y += 10;
 
-      drawReportCardPerformancePage(doc, {
-        studentLabel: `${student.first_name} ${student.last_name}`,
-        termYear: exams.find((e: any) => e.id === selectedExam)?.title || 'All exams',
-        rows: sm.map((m: any) => ({
-          subject: m.subject_name || '—',
-          obtained: Number(m.marks_obtained) || 0,
-          total: Number(m.exam_total_marks ?? m.total_marks) || 100,
-          grade: String(m.grade || 'F8'),
-        })),
-      });
+      // Head Teacher line - exactly as template
+      doc.setFont('helvetica', 'bold');
+      doc.text(`Head Teacher: ${profile?.firstName || 'Master'} ${profile?.lastName || 'Godfrey'}`, 20, y);
+      doc.line(20, y + 5, 90, y + 5);
     });
 
     if (isFirst) return toast({ variant: 'destructive', title: 'No marks found for selected students' });
