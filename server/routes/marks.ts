@@ -1,8 +1,88 @@
 import type { Express } from "express";
 import pool from "../db";
+import ExcelJS from "exceljs";
 import { canUserRecordMarksForClassSubject } from "./staffAssignments";
 
 export function registerMarksRoutes(app: Express) {
+  app.get("/api/marks/template", async (req, res) => {
+    try {
+      const { schoolId, classId, examId, subjectId } = req.query;
+      if (!schoolId || !classId || !examId) {
+        return res.status(400).json({ message: "schoolId, classId, and examId required" });
+      }
+
+      const studentsRes = await pool.query(
+        `SELECT s.id, s.first_name, s.last_name, s.admission_number, s.payment_code
+         FROM students s WHERE s.class_id=$1 AND s.school_id=$2 AND s.is_active=true
+         ORDER BY s.last_name, s.first_name`,
+        [classId, schoolId]
+      );
+
+      const subjectsRes = await pool.query(
+        `SELECT id, name, code FROM subjects WHERE school_id=$1 ${subjectId ? `AND id=$2` : ''}
+         ORDER BY name`,
+        subjectId ? [schoolId, subjectId] : [schoolId]
+      );
+
+      const examRes = await pool.query(
+        `SELECT title, total_marks FROM exams WHERE id=$1`,
+        [examId]
+      );
+      const examData = examRes.rows[0];
+
+      const workbook = new ExcelJS.Workbook();
+      const sheet = workbook.addWorksheet("Marks");
+
+      const subjectList = subjectsRes.rows;
+      const columnDefs = [
+        { header: "Admission Number", key: "admission", width: 18 },
+        { header: "Student Name", key: "studentName", width: 20 },
+      ];
+      
+      subjectList.forEach((s: any) => {
+        columnDefs.push({
+          header: s.name + (s.code ? ` (${s.code})` : ''),
+          key: `subject_${s.id}`,
+          width: 15,
+        });
+      });
+      
+      columnDefs.push({ header: "Remarks", key: "remarks", width: 20 });
+
+      sheet.columns = columnDefs;
+
+      sheet.getRow(1).font = { bold: true };
+      sheet.getRow(1).fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFDCE6F1" } };
+
+      studentsRes.rows.forEach((student: any) => {
+        const row: any = {
+          admission: student.admission_number || student.payment_code,
+          studentName: `${student.first_name} ${student.last_name}`,
+          remarks: '',
+        };
+        sheet.addRow(row);
+      });
+
+      const refSheet = workbook.addWorksheet("Info (do not edit)");
+      refSheet.addRow([`Exam: ${examData?.title || 'N/A'}`]);
+      refSheet.addRow([`Max Marks: ${examData?.total_marks || 100}`]);
+      refSheet.addRow([]);
+      refSheet.addRow(["Instructions:"]);
+      refSheet.addRow(["1. Enter marks for each student in the respective subject columns"]);
+      refSheet.addRow(["2. Leave blank if student did not take the exam"]);
+      refSheet.addRow(["3. Do not modify Admission Number or Student Name columns"]);
+      refSheet.addRow(["4. Add optional remarks in the Remarks column"]);
+
+      res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+      res.setHeader("Content-Disposition", `attachment; filename=marks_template_${examData?.title || 'marks'}.xlsx`);
+      res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate, private");
+      await workbook.xlsx.write(res);
+      res.end();
+    } catch (err: any) {
+      res.status(500).json({ message: err.message });
+    }
+  });
+
   app.get("/api/marks", async (req, res) => {
     try {
       const { schoolId, examId, studentId, classId, subjectId, term, academicYear } = req.query;
@@ -10,9 +90,12 @@ export function registerMarksRoutes(app: Express) {
       // `students.student_number` does not exist in the current Postgres schema.
       // Use `admission_number` (kept for compatibility by aliasing to student_number in the response).
       let query = `SELECT m.*, s.first_name, s.last_name, s.admission_number AS student_number, s.payment_code,
+                         s.section, s.class_id, st.name as stream_name, c.name as class_name,
                           sub.name as subject_name, sub.code as subject_code,
                           e.title as exam_title, e.total_marks as exam_total_marks, e.exam_type
                    FROM marks m JOIN students s ON m.student_id=s.id
+                   LEFT JOIN streams st ON s.stream_id=st.id
+                   LEFT JOIN classes c ON s.class_id=c.id
                    JOIN subjects sub ON m.subject_id=sub.id JOIN exams e ON m.exam_id=e.id
                    WHERE m.school_id=$1`;
       const params: any[] = [schoolId]; let idx = 2;
@@ -30,28 +113,38 @@ export function registerMarksRoutes(app: Express) {
 
   app.post("/api/marks/bulk", async (req, res) => {
     try {
-      const { entries, examId, subjectId, classId, schoolId, term, academicYear, recordedBy,
+      const { entries, examId, classId, schoolId, term, academicYear, recordedBy,
               editReason, editedBy, editedByName } = req.body;
-      if (!Array.isArray(entries) || !examId || !subjectId || !classId || !schoolId)
+      if (!Array.isArray(entries) || !examId || !classId || !schoolId)
         return res.status(400).json({ message: "Missing required fields" });
 
       if (recordedBy) {
-        const allowed = await canUserRecordMarksForClassSubject(
-          String(recordedBy),
-          String(subjectId),
-          String(classId),
-          String(schoolId)
-        );
-        if (!allowed) {
-          return res.status(403).json({
-            message: "Not allowed to record marks for this class and subject. Ask your director or head teacher to assign you as class teacher or to the subject for this class.",
-          });
+        for (const entry of entries) {
+    const {
+        studentId,
+        subjectId,
+        marksObtained,
+        subjectTeacherRemarks,
+    } = entry;
+
+    if (!subjectId) continue;
+          const allowed = await canUserRecordMarksForClassSubject(
+            String(recordedBy),
+            String(subjectId),
+            String(classId),
+            String(schoolId)
+          );
+          if (!allowed) {
+            return res.status(403).json({
+              message: "Not allowed to record marks for one or more selected subjects in this class. Ask your director or head teacher to assign you as class teacher or subject teacher for the relevant subjects.",
+            });
+          }
         }
       }
       const results = [];
       for (const entry of entries) {
-        const { studentId, marksObtained, subjectTeacherRemarks } = entry;
-        if (!studentId || marksObtained === undefined || marksObtained === null || marksObtained === '') continue;
+        const { studentId, subjectId, marksObtained, subjectTeacherRemarks } = entry;
+        if (!studentId || !subjectId || marksObtained === undefined || marksObtained === null || marksObtained === '') continue;
         const score = parseFloat(marksObtained);
         if (isNaN(score)) continue;
         const examRow = await pool.query('SELECT total_marks FROM exams WHERE id=$1', [examId]);
@@ -298,6 +391,171 @@ export function registerMarksRoutes(app: Express) {
         totalMarks: parseInt(marksRes.rows[0].count),
         presentToday: parseInt(attRes.rows[0].present),
       });
+    } catch (err: any) { res.status(500).json({ message: err.message }); }
+  });
+
+  // ── Marks Submission Workflow ────────────────────────────────────────────
+  app.post("/api/marks/submit", async (req, res) => {
+    try {
+      const { classId, examId, schoolId, submittedBy } = req.body;
+      if (!classId || !examId || !schoolId || !submittedBy) {
+        return res.status(400).json({ message: "classId, examId, schoolId, submittedBy required" });
+      }
+
+      // Get all marks for this class/exam that are in draft status
+      const marksRes = await pool.query(
+        `SELECT COUNT(*) as count FROM marks 
+         WHERE class_id=$1 AND exam_id=$2 AND school_id=$3 AND submission_status='draft'`,
+        [classId, examId, schoolId]
+      );
+
+      const totalMarks = parseInt(marksRes.rows[0].count);
+
+      if (totalMarks === 0) {
+        return res.status(400).json({ message: "No marks in draft status to submit" });
+      }
+
+      // Update all marks to submitted status
+      await pool.query(
+        `UPDATE marks SET submission_status='submitted', submitted_by=$1, submitted_at=NOW()
+         WHERE class_id=$2 AND exam_id=$3 AND school_id=$4 AND submission_status='draft'`,
+        [submittedBy, classId, examId, schoolId]
+      );
+
+      // Create/update submission record
+      const result = await pool.query(
+        `INSERT INTO marks_submissions (school_id, class_id, exam_id, submitted_by, submission_status, submitted_at, total_marks_count)
+         VALUES ($1,$2,$3,$4,'submitted',NOW(),$5)
+         ON CONFLICT (school_id, class_id, exam_id, submitted_by) DO UPDATE SET
+           submission_status='submitted', submitted_at=NOW(), total_marks_count=$5
+         RETURNING *`,
+        [schoolId, classId, examId, submittedBy, totalMarks]
+      );
+
+      res.json({ message: "Marks submitted successfully", submission: result.rows[0] });
+    } catch (err: any) { res.status(500).json({ message: err.message }); }
+  });
+
+  // Head Teacher: Get pending submissions
+  app.get("/api/marks/pending-submissions", async (req, res) => {
+    try {
+      const { schoolId } = req.query;
+      if (!schoolId) return res.status(400).json({ message: "schoolId required" });
+
+      const result = await pool.query(
+        `SELECT ms.*, c.name as class_name, e.title as exam_title, 
+                u.first_name || ' ' || u.last_name as submitted_by_name
+         FROM marks_submissions ms
+         JOIN classes c ON ms.class_id=c.id
+         JOIN exams e ON ms.exam_id=e.id
+         JOIN users u ON ms.submitted_by=u.id
+         WHERE ms.school_id=$1 AND ms.submission_status IN ('submitted', 'under_review')
+         ORDER BY ms.submitted_at DESC`,
+        [schoolId]
+      );
+
+      res.json(result.rows);
+    } catch (err: any) { res.status(500).json({ message: err.message }); }
+  });
+
+  // Head Teacher: Get marks for a specific submission
+  app.get("/api/marks/submission-details", async (req, res) => {
+    try {
+      const { classId, examId, schoolId } = req.query;
+      if (!classId || !examId || !schoolId) {
+        return res.status(400).json({ message: "classId, examId, schoolId required" });
+      }
+
+      const result = await pool.query(
+        `SELECT m.*, s.first_name, s.last_name, s.admission_number, sub.name as subject_name
+         FROM marks m
+         JOIN students s ON m.student_id=s.id
+         JOIN subjects sub ON m.subject_id=sub.id
+         WHERE m.class_id=$1 AND m.exam_id=$2 AND m.school_id=$3 AND m.submission_status IN ('submitted', 'under_review', 'approved')
+         ORDER BY s.last_name, s.first_name, sub.name`,
+        [classId, examId, schoolId]
+      );
+
+      res.json(result.rows);
+    } catch (err: any) { res.status(500).json({ message: err.message }); }
+  });
+
+  // Generate auto-comment based on performance
+  function generateAutoComment(average: number, aggregate: number): string {
+    if (average >= 80) {
+      return "Excellent performance. Continue with this dedicated spirit.";
+    } else if (average >= 70) {
+      return "Good progress. Keep up the excellent effort.";
+    } else if (average >= 60) {
+      return "Satisfactory performance. Work on areas of weakness.";
+    } else if (average >= 50) {
+      return "Average performance. More effort needed in key subjects.";
+    } else {
+      return "Below average performance. Seek additional support in weak areas.";
+    }
+  }
+
+  // Head Teacher: Approve submission
+  app.post("/api/marks/approve-submission", async (req, res) => {
+    try {
+      const { classId, examId, schoolId, htReviewedBy, htSignature } = req.body;
+      if (!classId || !examId || !schoolId || !htReviewedBy) {
+        return res.status(400).json({ message: "classId, examId, schoolId, htReviewedBy required" });
+      }
+
+      // Get all marks for this submission
+      const marksRes = await pool.query(
+        `SELECT m.*, s.first_name, s.last_name, sub.name as subject_name
+         FROM marks m
+         JOIN students s ON m.student_id=s.id
+         JOIN subjects sub ON m.subject_id=sub.id
+         WHERE m.class_id=$1 AND m.exam_id=$2 AND m.school_id=$3 AND m.submission_status='submitted'`,
+        [classId, examId, schoolId]
+      );
+
+      const marks = marksRes.rows;
+
+      // Calculate performance metrics for each student
+      const studentMetrics: Record<string, any> = {};
+      marks.forEach((m: any) => {
+        if (!studentMetrics[m.student_id]) {
+          studentMetrics[m.student_id] = { totalObtained: 0, totalMax: 0, count: 0 };
+        }
+        studentMetrics[m.student_id].totalObtained += parseFloat(m.marks_obtained) || 0;
+        studentMetrics[m.student_id].totalMax += parseFloat(m.total_marks) || 100;
+        studentMetrics[m.student_id].count += 1;
+      });
+
+      // Update marks with auto-comments and signature
+      for (const studentId in studentMetrics) {
+        const metrics = studentMetrics[studentId];
+        const average = metrics.totalMax > 0 ? (metrics.totalObtained / metrics.totalMax) * 100 : 0;
+        const autoComment = generateAutoComment(average, 0);
+
+        await pool.query(
+          `UPDATE marks SET 
+             submission_status='approved', 
+             ht_comment=$1, 
+             ht_signature=$2,
+             ht_approved_at=NOW(),
+             auto_comment=$1
+           WHERE student_id=$3 AND class_id=$4 AND exam_id=$5 AND school_id=$6`,
+          [autoComment, htSignature || '', studentId, classId, examId, schoolId]
+        );
+      }
+
+      // Update submission record
+      await pool.query(
+        `UPDATE marks_submissions SET 
+           submission_status='approved',
+           ht_reviewed_at=NOW(),
+           ht_reviewed_by=$1,
+           approved_marks_count=$2
+         WHERE class_id=$3 AND exam_id=$4 AND school_id=$5`,
+        [htReviewedBy, marks.length, classId, examId, schoolId]
+      );
+
+      res.json({ message: "Marks approved successfully", approvedCount: marks.length });
     } catch (err: any) { res.status(500).json({ message: err.message }); }
   });
 }

@@ -31,6 +31,26 @@ async function bootstrap() {
     await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS department VARCHAR(100)`);
     await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS phone VARCHAR(50)`);
     await pool.query(`ALTER TABLE classes ADD COLUMN IF NOT EXISTS section VARCHAR(50)`);
+    await pool.query(`ALTER TABLE students ADD COLUMN IF NOT EXISTS payment_code VARCHAR(100)`);
+    await pool.query(`ALTER TABLE students ADD COLUMN IF NOT EXISTS email VARCHAR(255)`);
+    await pool.query(`ALTER TABLE students ADD COLUMN IF NOT EXISTS date_of_birth DATE`);
+    await pool.query(`ALTER TABLE students ADD COLUMN IF NOT EXISTS parent_name VARCHAR(255)`);
+    await pool.query(`ALTER TABLE students ADD COLUMN IF NOT EXISTS parent_phone VARCHAR(50)`);
+    await pool.query(`ALTER TABLE students ADD COLUMN IF NOT EXISTS parent_email VARCHAR(255)`);
+    await pool.query(`ALTER TABLE students ADD COLUMN IF NOT EXISTS admission_number VARCHAR(100)`);
+    await pool.query(`ALTER TABLE students ADD COLUMN IF NOT EXISTS gender VARCHAR(20)`);
+    await pool.query(`ALTER TABLE students ADD COLUMN IF NOT EXISTS section VARCHAR(30)`);
+    await pool.query(`ALTER TABLE students ADD COLUMN IF NOT EXISTS school_section VARCHAR(30)`);
+    await pool.query(`ALTER TABLE students ADD COLUMN IF NOT EXISTS address VARCHAR(255)`);
+    await pool.query(`ALTER TABLE students ADD COLUMN IF NOT EXISTS is_active BOOLEAN DEFAULT true`);
+    await pool.query(`ALTER TABLE students ADD COLUMN IF NOT EXISTS medical_notes TEXT`);
+    await pool.query(`ALTER TABLE students ADD COLUMN IF NOT EXISTS stream_id UUID`);
+    await pool.query(`ALTER TABLE students ADD COLUMN IF NOT EXISTS created_at TIMESTAMPTZ DEFAULT NOW()`);
+    await pool.query(`ALTER TABLE students ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ DEFAULT NOW()`);
+    await pool.query(`ALTER TABLE students ALTER COLUMN last_name DROP NOT NULL`);
+    try {
+      await pool.query(`ALTER TABLE students ADD CONSTRAINT fk_students_stream_id FOREIGN KEY (stream_id) REFERENCES streams(id) ON DELETE SET NULL`);
+    } catch (_) { /* Constraint may already exist */ }
     await pool.query(`ALTER TABLE schools ADD COLUMN IF NOT EXISTS status VARCHAR(20) DEFAULT 'active'`);
     await pool.query(`ALTER TABLE schools ADD COLUMN IF NOT EXISTS subdomain VARCHAR(100)`);
     await pool.query(`ALTER TABLE schools ADD COLUMN IF NOT EXISTS motto VARCHAR(255)`);
@@ -161,6 +181,34 @@ async function bootstrap() {
         class_id UUID REFERENCES classes(id) ON DELETE CASCADE,
         name VARCHAR(50) NOT NULL,
         created_at TIMESTAMPTZ DEFAULT NOW()
+      )
+    `);
+
+    // Marks workflow tracking
+    await pool.query(`ALTER TABLE marks ADD COLUMN IF NOT EXISTS submission_status VARCHAR(30) DEFAULT 'draft'`);
+    await pool.query(`ALTER TABLE marks ADD COLUMN IF NOT EXISTS submitted_by UUID REFERENCES users(id)`);
+    await pool.query(`ALTER TABLE marks ADD COLUMN IF NOT EXISTS submitted_at TIMESTAMPTZ`);
+    await pool.query(`ALTER TABLE marks ADD COLUMN IF NOT EXISTS ht_comment TEXT`);
+    await pool.query(`ALTER TABLE marks ADD COLUMN IF NOT EXISTS ht_signature VARCHAR(255)`);
+    await pool.query(`ALTER TABLE marks ADD COLUMN IF NOT EXISTS ht_approved_at TIMESTAMPTZ`);
+    await pool.query(`ALTER TABLE marks ADD COLUMN IF NOT EXISTS auto_comment TEXT`);
+
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS marks_submissions (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        school_id UUID REFERENCES schools(id) ON DELETE CASCADE,
+        class_id UUID REFERENCES classes(id),
+        exam_id UUID REFERENCES exams(id),
+        submitted_by UUID REFERENCES users(id),
+        submission_status VARCHAR(30) DEFAULT 'draft',
+        submitted_at TIMESTAMPTZ,
+        ht_reviewed_at TIMESTAMPTZ,
+        ht_reviewed_by UUID REFERENCES users(id),
+        total_marks_count INTEGER DEFAULT 0,
+        approved_marks_count INTEGER DEFAULT 0,
+        created_at TIMESTAMPTZ DEFAULT NOW(),
+        updated_at TIMESTAMPTZ DEFAULT NOW(),
+        UNIQUE(school_id, class_id, exam_id, submitted_by)
       )
     `);
 

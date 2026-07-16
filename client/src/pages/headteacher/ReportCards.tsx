@@ -4,8 +4,8 @@ import { useAuth } from '@/hooks/useAuth';
 import { HTLayout } from '@/components/headteacher/HTLayout';
 import { queryClient, apiRequest } from '@/lib/queryClient';
 import { useToast } from '@/hooks/use-toast';
-import { FileText, Search, CheckCircle, Eye, Printer, Download } from 'lucide-react';
-import { Card, CardContent, CardHeader } from '@/components/ui/card';
+import { FileText, Search, CheckCircle, Eye, Printer, Download, AlertCircle, CheckCircle2 } from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -49,6 +49,12 @@ export default function ReportCards() {
   const { data: marks = [] } = useQuery<any[]>({
     queryKey: ['/api/marks', schoolId],
     queryFn: () => fetch(`/api/marks?schoolId=${schoolId}`).then(r => r.json()),
+    enabled: !!schoolId,
+  });
+
+  const { data: pendingSubmissions = [] } = useQuery<any[]>({
+    queryKey: ['/api/marks/pending-submissions', schoolId],
+    queryFn: () => fetch(`/api/marks/pending-submissions?schoolId=${schoolId}`).then(r => r.json()),
     enabled: !!schoolId,
   });
 
@@ -266,6 +272,30 @@ export default function ReportCards() {
     toast({ title: 'Bulk report cards downloaded' });
   };
 
+  const approveMutation = useMutation({
+    mutationFn: (data: any) => fetch('/api/marks/approve-submission', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data)
+    }).then(r => r.json()),
+    onSuccess: (data: any) => {
+      queryClient.invalidateQueries({ queryKey: ['/api/marks'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/marks/pending-submissions'] });
+      toast({ title: data.message || 'Marks approved successfully' });
+    },
+    onError: (e: any) => toast({ title: 'Approval failed', description: e.message, variant: 'destructive' }),
+  });
+
+  const handleApproveSubmission = (submission: any) => {
+    approveMutation.mutate({
+      classId: submission.class_id,
+      examId: submission.exam_id,
+      schoolId,
+      htReviewedBy: profile?.id,
+      htSignature: `${profile?.firstName} ${profile?.lastName}`
+    });
+  };
+
   return (
     <HTLayout>
       <div className="space-y-5">
@@ -278,6 +308,40 @@ export default function ReportCards() {
             <Printer className="w-4 h-4" />Print All
           </Button>
         </div>
+
+        {/* Pending Submissions Alert */}
+        {pendingSubmissions.length > 0 && (
+          <Card className="border-blue-200 bg-blue-50">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base flex items-center gap-2 text-blue-900">
+                <AlertCircle className="w-4 h-4" />
+                Pending Marks Submissions ({pendingSubmissions.length})
+              </CardTitle>
+              <p className="text-xs text-blue-700 mt-1">Teachers have submitted marks for your review and approval</p>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-2">
+                {pendingSubmissions.map((sub: any) => (
+                  <div key={`${sub.class_id}-${sub.exam_id}`} className="flex items-center justify-between p-3 bg-white rounded-lg border border-blue-100">
+                    <div>
+                      <p className="font-medium text-gray-900">{sub.class_name} - {sub.exam_title}</p>
+                      <p className="text-xs text-gray-600">Submitted by {sub.submitted_by_name} on {new Date(sub.submitted_at).toLocaleDateString()}</p>
+                    </div>
+                    <Button 
+                      size="sm" 
+                      className="gap-1.5 bg-blue-600 hover:bg-blue-700"
+                      onClick={() => handleApproveSubmission(sub)}
+                      disabled={approveMutation.isPending}
+                    >
+                      <CheckCircle2 className="w-4 h-4" />
+                      {approveMutation.isPending ? 'Approving...' : 'Review & Approve'}
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         <Card className="border-0 shadow-sm p-4">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
