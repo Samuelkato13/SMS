@@ -115,6 +115,11 @@ export default function ReportsHub() {
     queryFn: () => fetch(`/api/subjects?schoolId=${schoolId}`).then(r => r.json()),
     enabled: !!schoolId,
   });
+  const { data: exams = [] } = useQuery<any[]>({
+    queryKey: ["/api/exams", schoolId],
+    queryFn: () => fetch(`/api/exams?schoolId=${schoolId}`).then(r => r.json()),
+    enabled: !!schoolId,
+  });
   const { data: users = [] } = useQuery<any[]>({
     queryKey: ["/api/users", schoolId],
     queryFn: () => fetch(`/api/users?schoolId=${schoolId}`).then(r => r.json()),
@@ -228,6 +233,7 @@ export default function ReportsHub() {
   }, [timetableData]);
 
   const teachers = users.filter((u: any) => ["subject_teacher", "class_teacher"].includes(u.role));
+
 
   // ── PDF Exports ───────────────────────────────────────────────────────────
   const exportTransactionPDF = () => {
@@ -394,6 +400,7 @@ export default function ReportsHub() {
             })}
           </div>
 
+
           {/* ── Tab: Channel Graphs ──────────────────────────────────────── */}
           {activeTab === "channel_graphs" && (
             <div className="space-y-4">
@@ -490,6 +497,7 @@ export default function ReportsHub() {
               </Card>
             </div>
           )}
+
 
           {/* ── Tab: Class Graphs ────────────────────────────────────────── */}
           {activeTab === "class_graphs" && (

@@ -42,14 +42,14 @@ export default function AcademicSetup() {
   const schoolId = profile?.schoolId;
 
   const [showAddExam, setShowAddExam] = useState(false);
-  const [examForm, setExamForm] = useState({ name: '', examType: 'End-term', term: 'Term I', academicYear: '' });
+  const [examForm, setExamForm] = useState({ name: '', examType: 'End-term', term: 'Term I', academicYear: '', startDate: '', endDate: '' });
 
   const { data: exams = [], isLoading: loadingExams } = useQuery<any[]>({ queryKey: ['/api/exams', schoolId], queryFn: () => fetch(`/api/exams?schoolId=${schoolId}`).then(r => r.json()), enabled: !!schoolId });
   const { data: gradingSystems = [] } = useQuery<any[]>({ queryKey: ['/api/grading-systems', schoolId], queryFn: () => fetch(`/api/grading-systems?schoolId=${schoolId}`).then(r => r.json()), enabled: !!schoolId });
 
   const createExamMut = useMutation({
     mutationFn: (data: any) => apiRequest('POST', '/api/exams', data),
-    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['/api/exams', schoolId] }); toast({ title: 'Exam created' }); setShowAddExam(false); setExamForm({ name: '', examType: 'End-term', term: 'Term I', academicYear: '' }); },
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['/api/exams', schoolId] }); toast({ title: 'Exam created' }); setShowAddExam(false); setExamForm({ name: '', examType: 'End-term', term: 'Term I', academicYear: '', startDate: '', endDate: '' }); },
     onError: (e: any) => toast({ variant: 'destructive', title: 'Error', description: e.message }),
   });
 
@@ -198,7 +198,20 @@ export default function AcademicSetup() {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowAddExam(false)}>Cancel</Button>
-            <Button onClick={() => { if (examForm.name) createExamMut.mutate({ ...examForm, schoolId }); }} disabled={!examForm.name || createExamMut.isPending} className="bg-blue-600 hover:bg-blue-700">
+            <Button onClick={() => {
+              if (!examForm.name) return;
+              createExamMut.mutate({
+                title: examForm.name,
+                description: examForm.examType,
+                term: examForm.term,
+                examDate: examForm.startDate || new Date().toISOString().slice(0, 10),
+                duration: 180,
+                totalMarks: 100,
+                passingMarks: 50,
+                examType: examForm.examType,
+                schoolId,
+              });
+            }} disabled={!examForm.name || createExamMut.isPending} className="bg-blue-600 hover:bg-blue-700">
               {createExamMut.isPending ? 'Creating...' : 'Create Exam'}
             </Button>
           </DialogFooter>

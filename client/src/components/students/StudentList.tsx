@@ -43,6 +43,7 @@ interface NewStudentForm {
   address: string;
   email: string;
   section: string;
+  schoolSection: string;
 }
 
 export const StudentList = () => {
@@ -55,7 +56,7 @@ export const StudentList = () => {
   const [deleteTarget, setDeleteTarget] = useState<Student | null>(null);
   const [newStudent, setNewStudent] = useState<NewStudentForm>({
     firstName: '', lastName: '', dateOfBirth: '', gender: 'male',
-    classId: '', guardianName: '', guardianPhone: '', address: '', email: '', section: 'day'
+    classId: '', guardianName: '', guardianPhone: '', address: '', email: '', section: 'day', schoolSection: 'primary'
   });
 
   const { data: students = [], isLoading } = useQuery<Student[]>({
@@ -83,7 +84,7 @@ export const StudentList = () => {
       queryClient.invalidateQueries({ queryKey: ['/api/students', profile?.schoolId] });
       toast({ title: "Student Added!", description: "New student has been registered successfully." });
       setShowAddDialog(false);
-      setNewStudent({ firstName: '', lastName: '', dateOfBirth: '', gender: 'male', classId: '', guardianName: '', guardianPhone: '', address: '', email: '', section: 'day' });
+      setNewStudent({ firstName: '', lastName: '', dateOfBirth: '', gender: 'male', classId: '', guardianName: '', guardianPhone: '', address: '', email: '', section: 'day', schoolSection: 'primary' });
     },
     onError: () => {
       toast({ variant: 'destructive', title: "Error", description: "Failed to add student. Please try again." });
@@ -106,7 +107,7 @@ export const StudentList = () => {
   });
 
   const handleAddStudent = () => {
-    if (!newStudent.firstName || !newStudent.lastName || !newStudent.classId || !newStudent.guardianName || !newStudent.guardianPhone || !newStudent.dateOfBirth || !newStudent.address) {
+    if (!newStudent.firstName || !newStudent.lastName || !newStudent.classId || !newStudent.guardianName || !newStudent.guardianPhone || !newStudent.dateOfBirth || !newStudent.address || !newStudent.gender || !newStudent.section || !newStudent.schoolSection) {
       toast({ variant: 'destructive', title: "Validation Error", description: "Please fill all required fields." });
       return;
     }
@@ -121,6 +122,7 @@ export const StudentList = () => {
       guardianPhone: newStudent.guardianPhone,
       address: newStudent.address,
       section: newStudent.section,
+      schoolSection: newStudent.schoolSection,
     });
   };
 
@@ -218,6 +220,20 @@ export const StudentList = () => {
                     <SelectContent>
                       <SelectItem value="day">Day</SelectItem>
                       <SelectItem value="boarding">Boarding</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-1">
+                  <Label>School Section *</Label>
+                  <Select value={newStudent.schoolSection} onValueChange={v => setNewStudent(p => ({...p, schoolSection: v}))}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="nursery">Nursery</SelectItem>
+                      <SelectItem value="primary">Primary</SelectItem>
+                      <SelectItem value="secondary">Secondary</SelectItem>
+                      <SelectItem value="nursery_primary">Nursery & Primary</SelectItem>
+                      <SelectItem value="primary_secondary">Primary & Secondary</SelectItem>
+                      <SelectItem value="all">All</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>

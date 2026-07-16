@@ -53,6 +53,11 @@ export default function SchoolSetup() {
   const [showStreamForm, setShowStreamForm] = useState(false);
   const [streamForm, setStreamForm] = useState({ name: '', classId: '' });
 
+  // Subjects
+  const [showSubjectForm, setShowSubjectForm] = useState(false);
+  const [editingSubjectId, setEditingSubjectId] = useState<string | null>(null);
+  const [subjectForm, setSubjectForm] = useState({ name: '', code: '' });
+
   const { data: academicYears = [], isLoading: loadingYears } = useQuery<any[]>({ queryKey: ['/api/academic-years', schoolId], queryFn: () => fetch(`/api/academic-years?schoolId=${schoolId}`).then(r => r.json()), enabled: !!schoolId });
   const { data: terms = [] } = useQuery<any[]>({ queryKey: ['/api/terms', schoolId], queryFn: () => fetch(`/api/terms?schoolId=${schoolId}`).then(r => r.json()), enabled: !!schoolId });
   const { data: sections = [] } = useQuery<any[]>({ queryKey: ['/api/sections', schoolId], queryFn: () => fetch(`/api/sections?schoolId=${schoolId}`).then(r => r.json()), enabled: !!schoolId });
@@ -68,6 +73,56 @@ export default function SchoolSetup() {
   const deleteClass = useMutation({ mutationFn: (id: string) => apiRequest('DELETE', `/api/classes/${id}`), onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['/api/classes', schoolId] }); toast({ title: 'Class deleted' }); } });
   const deleteStream = useMutation({ mutationFn: (id: string) => apiRequest('DELETE', `/api/streams/${id}`), onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['/api/streams', schoolId] }); toast({ title: 'Stream deleted' }); } });
   const activateYear = useMutation({ mutationFn: (id: string) => apiRequest('PUT', `/api/academic-years/${id}/activate`, {}), onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['/api/academic-years', schoolId] }); toast({ title: 'Academic year activated' }); } });
+
+  // Subject mutations: create, update (edit), delete
+  const createSubject = useMutation({
+    mutationFn: (d: any) => apiRequest('POST', '/api/subjects', d),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/subjects', schoolId] });
+      toast({ title: 'Subject created' });
+      setShowSubjectForm(false);
+      setSubjectForm({ name: '', code: '' });
+    },
+    onError: (e: any) => toast({ variant: 'destructive', title: 'Error', description: e.message }),
+  });
+  const updateSubject = useMutation({
+    mutationFn: ({ id, data }: { id: string; data: any }) => apiRequest('PUT', `/api/subjects/${id}`, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/subjects', schoolId] });
+      toast({ title: 'Subject updated' });
+      setShowSubjectForm(false);
+      setEditingSubjectId(null);
+      setSubjectForm({ name: '', code: '' });
+    },
+    onError: (e: any) => toast({ variant: 'destructive', title: 'Error', description: e.message }),
+  });
+  const deleteSubject = useMutation({
+    mutationFn: (id: string) => apiRequest('DELETE', `/api/subjects/${id}`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/subjects', schoolId] });
+      toast({ title: 'Subject deleted' });
+    },
+    onError: (e: any) => toast({ variant: 'destructive', title: 'Error', description: e.message }),
+  });
+
+  const openAddSubject = () => {
+    setEditingSubjectId(null);
+    setSubjectForm({ name: '', code: '' });
+    setShowSubjectForm(true);
+  };
+  const openEditSubject = (s: any) => {
+    setEditingSubjectId(s.id);
+    setSubjectForm({ name: s.subject_name ?? s.name ?? '', code: s.subject_code ?? s.code ?? '' });
+    setShowSubjectForm(true);
+  };
+  const submitSubject = () => {
+    if (!subjectForm.name) return;
+    if (editingSubjectId) {
+      updateSubject.mutate({ id: editingSubjectId, data: { ...subjectForm, schoolId } });
+    } else {
+      createSubject.mutate({ ...subjectForm, schoolId });
+    }
+  };
 
   const saveSchool = useMutation({
     mutationFn: () => apiRequest('PUT', `/api/schools/${schoolId}`, { ...schoolForm, logoUrl: logoPreview || schoolForm.logoUrl }),
@@ -375,19 +430,28 @@ export default function SchoolSetup() {
           {/* Subjects */}
           <TabsContent value="subjects" className="mt-4">
             <Card className="border-0 shadow-sm">
-              <CardHeader className="pb-2 pt-4 px-5"><CardTitle className="text-sm font-semibold text-gray-700">Subjects ({subjects.length})</CardTitle></CardHeader>
+              <CardHeader className="pb-2 pt-4 px-5 flex flex-row items-center justify-between">
+                <CardTitle className="text-sm font-semibold text-gray-700">Subjects ({subjects.length})</CardTitle>
+                <Button size="sm" onClick={openAddSubject} className="bg-blue-600 hover:bg-blue-700 h-8 text-xs gap-1.5"><Plus className="w-3.5 h-3.5" />Add Subject</Button>
+              </CardHeader>
               <CardContent className="p-0">
                 <table className="w-full text-sm">
                   <thead><tr className="border-b bg-gray-50">
-                    {['Subject Name', 'Code', 'Status'].map(h => <th key={h} className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">{h}</th>)}
+                    {['Subject Name', 'Code', 'Status', 'Actions'].map(h => <th key={h} className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">{h}</th>)}
                   </tr></thead>
                   <tbody className="divide-y divide-gray-50">
-                    {subjects.length === 0 ? <tr><td colSpan={3} className="px-4 py-10 text-center text-gray-400">No subjects configured</td></tr>
+                    {subjects.length === 0 ? <tr><td colSpan={4} className="px-4 py-10 text-center text-gray-400">No subjects configured</td></tr>
                      : (subjects as any[]).map(s => (
                       <tr key={s.id} className="hover:bg-gray-50/60">
                         <td className="px-4 py-3 font-medium text-gray-900">{s.subject_name ?? s.name}</td>
                         <td className="px-4 py-3 font-mono text-xs text-gray-500">{s.subject_code ?? s.code ?? '—'}</td>
                         <td className="px-4 py-3"><Badge className="bg-green-100 text-green-700 text-xs">Active</Badge></td>
+                        <td className="px-4 py-3">
+                          <div className="flex items-center gap-1">
+                            <Button variant="ghost" size="sm" onClick={() => openEditSubject(s)} className="h-7 w-7 p-0 text-gray-400 hover:text-blue-600"><Pencil className="w-3.5 h-3.5" /></Button>
+                            <Button variant="ghost" size="sm" onClick={() => deleteSubject.mutate(s.id)} className="h-7 w-7 p-0 text-gray-400 hover:text-red-500"><Trash2 className="w-3.5 h-3.5" /></Button>
+                          </div>
+                        </td>
                       </tr>
                     ))}
                   </tbody>
@@ -499,6 +563,33 @@ export default function SchoolSetup() {
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowStreamForm(false)}>Cancel</Button>
             <Button onClick={() => { if (streamForm.name) createStream.mutate({ ...streamForm, schoolId }); }} disabled={!streamForm.name || createStream.isPending} className="bg-blue-600 hover:bg-blue-700">{createStream.isPending ? 'Saving...' : 'Create'}</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Add / Edit Subject */}
+      <Dialog open={showSubjectForm} onOpenChange={setShowSubjectForm}>
+        <DialogContent className="max-w-xs">
+          <DialogHeader><DialogTitle>{editingSubjectId ? 'Edit Subject' : 'Add Subject'}</DialogTitle></DialogHeader>
+          <div className="space-y-3 py-2">
+            <div className="space-y-1">
+              <Label>Subject Name *</Label>
+              <Input value={subjectForm.name} onChange={e => setSubjectForm(f => ({ ...f, name: e.target.value }))} placeholder="e.g. Mathematics" />
+            </div>
+            <div className="space-y-1">
+              <Label>Subject Code</Label>
+              <Input value={subjectForm.code} onChange={e => setSubjectForm(f => ({ ...f, code: e.target.value }))} placeholder="e.g. MTC" />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowSubjectForm(false)}>Cancel</Button>
+            <Button
+              onClick={submitSubject}
+              disabled={!subjectForm.name || createSubject.isPending || updateSubject.isPending}
+              className="bg-blue-600 hover:bg-blue-700"
+            >
+              {(createSubject.isPending || updateSubject.isPending) ? 'Saving...' : editingSubjectId ? 'Save' : 'Create'}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

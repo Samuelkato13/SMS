@@ -19,15 +19,22 @@ export function registerExamRoutes(app: Express) {
 
   app.post("/api/exams", async (req, res) => {
     try {
-      const { title, description, subjectId, classId, schoolId, examDate, duration, totalMarks, passingMarks, examType } = req.body;
-      const result = await pool.query(
-        `INSERT INTO exams (title, description, subject_id, class_id, school_id, exam_date, duration, total_marks, passing_marks, exam_type)
-         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10) RETURNING *`,
-        [title, description, subjectId, classId, schoolId, examDate, duration, totalMarks, passingMarks, examType]
-      );
-      res.status(201).json(result.rows[0]);
-    } catch (err: any) { res.status(500).json({ message: err.message }); }
-  });
+        const { title, name, description, subjectId, classId, schoolId, examDate, duration, totalMarks, passingMarks, examType, term } = req.body;
+        const titleValue = (title || name || '').trim();
+        if (!titleValue) return res.status(400).json({ message: 'title required' });
+        if (!schoolId) return res.status(400).json({ message: 'schoolId required' });
+        const finalExamDate = examDate || new Date().toISOString().slice(0, 10);
+        const finalDuration = duration ?? 180;
+        const finalTotalMarks = totalMarks ?? 100;
+        const finalPassingMarks = passingMarks ?? Math.round(finalTotalMarks * 0.5);
+        const result = await pool.query(
+          `INSERT INTO exams (title, description, subject_id, class_id, school_id, exam_date, duration, total_marks, passing_marks, exam_type, term)
+           VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11) RETURNING *`,
+          [titleValue, description || null, subjectId || null, classId || null, schoolId, finalExamDate, finalDuration, finalTotalMarks, finalPassingMarks, examType || null, term || null]
+        );
+        res.status(201).json(result.rows[0]);
+      } catch (err: any) { res.status(500).json({ message: err.message }); }
+    });
 
   app.put("/api/exams/:id", async (req, res) => {
     try {

@@ -652,10 +652,10 @@ export default function PaymentsReceived() {
             </div>
             <div>
               <Label>Related Fee (optional)</Label>
-              <Select value={adjForm.feeStructureId} onValueChange={v => setAdjForm(f => ({ ...f, feeStructureId: v }))}>
+              <Select value={adjForm.feeStructureId} onValueChange={v => setAdjForm(f => ({ ...f, feeStructureId: v === 'none' ? '' : v }))}>
                 <SelectTrigger className="mt-1"><SelectValue placeholder="Select fee type..." /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">General (no specific fee)</SelectItem>
+                  <SelectItem value="none">General (no specific fee)</SelectItem>
                   {(fees as any[]).map((f: any) => (
                     <SelectItem key={f.id} value={f.id}>{f.name} ({CATEGORY_LABELS[f.category ?? "other"] ?? f.category})</SelectItem>
                   ))}

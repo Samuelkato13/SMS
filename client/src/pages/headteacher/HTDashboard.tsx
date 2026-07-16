@@ -32,29 +32,41 @@ export default function HTDashboard() {
     queryFn: () => fetch(`/api/stats?schoolId=${schoolId}`).then(r => r.json()),
     enabled: !!schoolId,
   });
+  // Helper to safely parse responses expected to be arrays.
+  const fetchArray = async (url: string) => {
+    try {
+      const res = await fetch(url);
+      if (!res.ok) return [];
+      const data = await res.json().catch(() => []);
+      return Array.isArray(data) ? data : [];
+    } catch (e) {
+      return [];
+    }
+  };
+
   const { data: classes = [] } = useQuery<any[]>({
     queryKey: ['/api/classes', schoolId],
-    queryFn: () => fetch(`/api/classes?schoolId=${schoolId}`).then(r => r.json()),
+    queryFn: () => fetchArray(`/api/classes?schoolId=${schoolId}`),
     enabled: !!schoolId,
   });
   const { data: users = [] } = useQuery<any[]>({
     queryKey: ['/api/users', schoolId],
-    queryFn: () => fetch(`/api/users?schoolId=${schoolId}`).then(r => r.json()),
+    queryFn: () => fetchArray(`/api/users?schoolId=${schoolId}`),
     enabled: !!schoolId,
   });
   const { data: subjects = [] } = useQuery<any[]>({
     queryKey: ['/api/subjects', schoolId],
-    queryFn: () => fetch(`/api/subjects?schoolId=${schoolId}`).then(r => r.json()),
+    queryFn: () => fetchArray(`/api/subjects?schoolId=${schoolId}`),
     enabled: !!schoolId,
   });
   const { data: exams = [] } = useQuery<any[]>({
     queryKey: ['/api/exams', schoolId],
-    queryFn: () => fetch(`/api/exams?schoolId=${schoolId}`).then(r => r.json()),
+    queryFn: () => fetchArray(`/api/exams?schoolId=${schoolId}`),
     enabled: !!schoolId,
   });
   const { data: marks = [] } = useQuery<any[]>({
     queryKey: ['/api/marks', schoolId],
-    queryFn: () => fetch(`/api/marks?schoolId=${schoolId}`).then(r => r.json()),
+    queryFn: () => fetchArray(`/api/marks?schoolId=${schoolId}`),
     enabled: !!schoolId,
   });
 
